@@ -1,0 +1,55 @@
+@import url("./styles.css");
+:root {
+  --bg: #ffffff;
+  --text: #222222;
+  --bg_input: black;
+  --border: solid 3px red;
+  --bg-success: rgb(25, 135, 84);
+  --bg-secondary: rgb(108, 117, 125);
+  --bg-danger: rgb(220, 53, 69);
+  --bg-warning: rgb(255, 193, 7);
+  --bg-info: rgb(13, 202, 240);
+  --bg-light: rgb(184, 184, 184);
+  --bg-night: rgb(18, 18, 22);
+  --bg-dark: rgb(30, 32, 36);
+  --bg-body: rgb(255, 255, 255);
+  --bg-white: rgb(255, 255, 255);
+}
+
+[data-theme="dark"] {
+  --bg: #121212;
+  --text: #ffffff;
+  --border: solid 3px white;
+  --bg_input: purple;
+  --bg-success: rgb(25, 135, 84);
+  --bg-secondary: rgb(108, 117, 125);
+  --bg-danger: rgb(220, 53, 69);
+  --bg-warning: rgb(255, 193, 7);
+  --bg-info: rgb(13, 202, 240);
+  --bg-light: rgb(184, 184, 184);
+  --bg-night: rgb(18, 18, 22);
+  --bg-dark: rgb(30, 32, 36);
+  --bg-body: rgb(255, 255, 255);
+  --bg-white: rgb(255, 255, 255);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+.loginInput {
+  width: 275.33px;
+  max-width: auto;
+  padding: 8px;
+  margin-bottom: 3.5vh;
+
+  border: 1px solid #083ba974;
+  border: 0;
+  border-bottom: #d4af37cd 1px solid;
+  background-color: var(--bg_input);
+  box-shadow: 0rem 0.125rem 0.425rem 0.0625rem #10192e54;
+  border-radius: 18px;
+}
