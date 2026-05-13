@@ -47,7 +47,7 @@ import { useManuals } from "../hooks/useManuals";
 import { useDownloadManual } from "../hooks/useDownloadManual";
 import { useDeleteManual } from "../hooks/useDeleteManual";
 import { getManuals, uploadManual } from "../services/apiService";
-
+import downloadSvg from '../assets/icons/Import-File--Streamline-Ultimate.svg'
 const ManualsAdmin = () => {
 
   const [title, setTitle] = useState("");
@@ -111,79 +111,77 @@ const handleSubmit = async (e) => {
 };
 
   return (
-    <div>
+    <div className="manualsAdminContainer">
 
-      <h2>Manuals Admin</h2>
+  
 
-      <form onSubmit={handleSubmit} style={{ marginBottom: "30px" }}>
-        
-        <input
-          type="text"
-          placeholder="Manual title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
+  <form onSubmit={handleSubmit} className="manualUploadForm">
+    <input
+      type="text"
+      placeholder="Manual title"
+      value={title}
+      onChange={(e) => setTitle(e.target.value)}
+      className="uploadInput"
+    />
 
-        <input
-          type="file"
-          accept="application/pdf"
-          onChange={(e) => setFile(e.target.files[0])}
-        />
+    <input
+      type="file"
+      accept="application/pdf"
+      onChange={(e) => setFile(e.target.files[0])}
+      className="uploadInput"
+    />
 
-        <button type="submit">Upload</button>
-      </form>
+    <button type="submit" className="uploadBtn">
+      Upload
+    </button>
+  </form>
 
+  <h3 className="sectionTitle">All Documents</h3>
 
-      <h3>All Documents</h3>
-
-      {loading ? (
-        <p>Loading manuals...</p>
-      ) : (
-        manuals.map((manual) => (
-          <div
-            key={manual.id}
-            style={{
-              marginBottom: "20px",
-              paddingBottom: "10px",
-              borderBottom: "1px solid #ddd",
-            }}
-          >
+  {loading ? (
+    <p className="loadingText">Loading manuals...</p>
+  ) : (
+    manuals.map((manual) => (
+      <div key={manual.id} className="manualItem">
+        <div className="manualLeft">
+          
+          <div>
             <h4>{manual.title}</h4>
             <p>{manual.original_filename}</p>
-
-            <button onClick={() => handleDownload(manual)}>
-              Download
-            </button>
-
-            <button
-  onClick={() => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete this manual?\n\n"${manual.title}"`
-    );
-
-    if (!confirmed) return;
-
-    handleDelete(manual.id).then(() => {
-        alert(`Manual "${manual.title}" deleted successfully`);
-      })
-      .catch(() => {
-        alert("Delete failed");
-      });
-  }}
-  disabled={deleteLoading}
-  style={{
-    marginLeft: "10px",
-    background: "red",
-    color: "white",
-  }}
->
-  {deleteLoading ? "Deleting..." : "Delete"}
-</button>
-
           </div>
-        ))
-      )}
-    </div>
+        </div>
+
+        <div className="manualActions">
+          <button
+            onClick={() => handleDownload(manual)}
+            className="downloadBtn"
+          >
+            <img src={downloadSvg} alt="" className="downloadIcon" />
+            Download
+          </button>
+
+          <button
+            onClick={() => {
+              const confirmed = window.confirm(
+                `Are you sure you want to delete this manual?\n\n"${manual.title}"`
+              );
+              if (!confirmed) return;
+
+              handleDelete(manual.id)
+                .then(() => alert(`Manual "${manual.title}" deleted successfully`))
+                .catch(() => alert("Delete failed"));
+            }}
+            disabled={deleteLoading}
+            className="deleteBtn"
+          >
+            {deleteLoading ? "Deleting..." : "Delete"}
+          </button>
+        </div>
+      </div>
+    ))
+  )}
+</div>
+
   );
 };
 

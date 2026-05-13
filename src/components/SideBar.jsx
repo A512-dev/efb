@@ -90,40 +90,61 @@
 // }
 
 import { NavLink } from "react-router-dom";
+import { useState , useEffect } from "react";
+
 import { useAuth } from "../auth/useAuth";
+import ThemeToggle from "./themetoggle";
+import darkSkyTechPng from '../assets/icons/skytech-logo-transparent-white.webp'
+// import lightSkyTechPng from '../assets/icons/Skytech-logo-transparent (1).png'
+import documentSvg from '../assets/icons/Common-File-Stack--Streamline-Ultimate copy.svg'
+import crewProfileSvg from '../assets/icons/Following-1--Streamline-Ultimate.svg'
+import formsSvg from '../assets/icons/Kindle-Hold--Streamline-Ultimate.svg'
+import manualsAdminSvg from '../assets/icons/Monitor-Transfer-1--Streamline-Ultimate.svg'
+import addPilotSvg from '../assets/icons/Add-Circle-Bold--Streamline-Ultimate.svg'
+import logoutSvg from '../assets/icons/Power-Button--Streamline-Ultimate.svg'
+import safetyIssueSvg from '../assets/icons/Laptop-Warning--Streamline-Ultimate.svg'
+import trainingIssueSvg from '../assets/icons/Electronics-Fuse--Streamline-Ultimate.svg'
+import checkListSvg from '../assets/icons/Notes-Checklist-Flip--Streamline-Ultimate.svg'
 
 const SideBar = () =>{
  
-  const { user, logout } = useAuth();
+   const [theme, setTheme] = useState("light");
+
+    useEffect(() => {
+      setTheme(document.documentElement.getAttribute("data-theme") || "light");
+    }, []);
+    const { user, logout } = useAuth();
 
   if (!user) return null;
 
   return (
-    <aside className="sidebar">
-      <h3>SkytechSharif</h3>
+    
 
-      
+<aside className="SideBar">
+  <h3><img src={darkSkyTechPng} style={{width:'50%'}} alt="" /> SkyTechSharif</h3>
 
-      {(user.role === "pilot" || user.role === "admin") && (
-        <>
-        <NavLink className={'nav-item'} to="/dashboard/profile">Me</NavLink>
-        <NavLink className={'nav-item'} to="/dashboard/forms">Forms</NavLink>
-        
-        </>
-      )}
+  {(user.role === "pilot" || user.role === "admin") && (
+    <>
+      <NavLink className={'nav-item'} to="/dashboard/profile"><img src={crewProfileSvg} alt="" className="navIcon" /> Crew profile</NavLink>
+      <NavLink to="/dashboard/manuals" className={'nav-item'}><img src={documentSvg} alt="" className="navIcon" /> Documents</NavLink>
+      <NavLink className={'nav-item'} to="/dashboard/forms"><img src={formsSvg} alt="" className="navIcon" /> Forms</NavLink>
+      <NavLink to="/dashboard/safetyIssue" className={'nav-item'}><img src={safetyIssueSvg} alt="" className="navIcon" /> Safety Issue</NavLink>
+      <NavLink to="/dashboard/trainingIssue" className={'nav-item'}><img src={trainingIssueSvg} alt="" className="navIcon" /> Training Issue</NavLink>
+      <NavLink to="/dashboard/checkList" className={'nav-item'}><img src={checkListSvg} alt="" className="navIcon" /> Check list</NavLink>  
+    </>
+  )}
 
-      <NavLink to="/dashboard/manuals" className={'nav-item'}>Documents</NavLink>
+  {user.role === "admin" && (
+    <>
+      <NavLink to="/dashboard/manuals-admin" className={'nav-item'}><img src={manualsAdminSvg} alt="" className="navIcon" /> Manage</NavLink>
+      <NavLink to="/dashboard/add-profile" className={'nav-item'}><img src={addPilotSvg} alt="" className="navIcon" /> Add Pilot</NavLink>
+    </>
+  )}
 
-      {user.role === "admin" && (
-        <>
-        <NavLink to="/dashboard/manuals-admin" className={'nav-item'}>Manuals Admin</NavLink>
-        <NavLink to="/dashboard/add-profile" className={'nav-item'}>Add new Pilot profile</NavLink>
-        </>
-      )}
+  <button onClick={logout} className="logOutButton"><img src={logoutSvg} alt="" /> Logout</button>
+  <ThemeToggle />
+</aside>
 
-      <button onClick={logout}>Logout</button>
-      
-    </aside>
   );
 }
 export default SideBar

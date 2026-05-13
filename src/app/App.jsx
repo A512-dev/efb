@@ -1,8 +1,7 @@
-import { useState } from 'react'
-import '../assets/App.css'
+import '../assets/theme.css'
 import AppRouter from '../router/AppRouter'
 import AuthProvider  from "../auth/AuthProvider";
-import ThemeToggle from '../components/themetoggle';
+
 import "../assets/theme.css";
 
 const App= ()=> {
@@ -12,7 +11,7 @@ const App= ()=> {
     <>
     <AuthProvider>
 
-        <ThemeToggle />
+        
               <AppRouter />
         
 

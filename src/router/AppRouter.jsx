@@ -27,6 +27,24 @@ export default function AppRouter() {
               <Route index element={<Profile />} />
             </Route>
             <Route
+              path="safetyIssue"
+              element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
+            >
+              <Route index element={<Profile />} />
+            </Route>
+            <Route
+              path="trainingIssue"
+              element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
+            >
+              <Route index element={<Profile />} />
+            </Route>
+            <Route
+              path="checkList"
+              element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
+            >
+              <Route index element={<Profile />} />
+            </Route>
+            <Route
               path="forms"
               element={<RequireAuth allowedRoles={["pilot", "admin"]} />}
             >

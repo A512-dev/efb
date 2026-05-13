@@ -10,7 +10,7 @@ return (
     <>
     <div className="div-main">
     <h3>{user.name}</h3>
-    badge number: <h3> {user.id}</h3>
+     <h3> badge number: {user.id}</h3>
     </div>
     </>
 )
