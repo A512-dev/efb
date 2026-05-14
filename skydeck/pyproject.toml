@@ -1,0 +1,21 @@
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "B008",    # Depends() in function defaults — standard FastAPI pattern
+    "RUF001",  # ambiguous unicode chars (en-dash in aviation strings is intentional)
+    "RUF002",  # ambiguous unicode in docstrings
+    "RUF012",  # mutable class variables (pydantic models need them)
+    "UP045",   # Optional[X] vs X | None — project convention is Optional
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
