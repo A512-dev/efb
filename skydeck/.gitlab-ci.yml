@@ -1,0 +1,250 @@
+# ── SkyDeck CI/CD Pipeline ──────────────────────────────────
+#
+# Stages:
+#   1. lint   — ruff check + format
+#   2. test   — pytest against a disposable Postgres
+#   3. build  — Docker image → GitLab Container Registry
+#   4. deploy — Drop-and-Execute via EU bridge → Iran prod
+#
+# ── Deploy Strategy ────────────────────────────────────────
+#
+#   ZERO HEREDOCS are passed to any SSH command. Every piece
+#   of remote logic lives in a physical script file, executed
+#   with "bash /path/to/script.sh". This is immune to the
+#   "SSH stdin swallowing" bug where an inner ssh/scp command
+#   consumes the heredoc pipe and silently skips all remaining
+#   commands.
+#
+#   Phase A: Runner generates two script files locally:
+#            1) deploy_prod.sh   — runs on Iranian prod server
+#            2) bridge_run.sh    — runs on EU bridge server
+#
+#   Phase B: Runner scp's 4 files to the bridge:
+#            prod SSH key, compose file, prod script, bridge script
+#
+#   Phase C: Runner executes ONE command on the bridge:
+#            sshpass -e ssh bridge "bash /tmp/_dbridge.sh"
+#            The bridge script then scp's files to prod and
+#            runs the prod script. All ssh commands use -n flag
+#            as a belt-and-suspenders safety layer.
+#
+#   Runner ──(pw)──→ Bridge ──(key)──→ Iran Prod
+#           scp 4 files   bash _dbridge.sh
+#                          └─ scp 2 files to prod
+#                          └─ ssh -n prod "bash _dprod.sh"
+#
+# Required CI/CD variables (Settings → CI/CD → Variables):
+#
+#   Auto-provided by GitLab:
+#     CI_REGISTRY, CI_REGISTRY_USER, CI_REGISTRY_PASSWORD,
+#     CI_REGISTRY_IMAGE, CI_COMMIT_REF_SLUG
+#
+#   You must create:
+#     BRIDGE_PASSWORD       — password for manager@bridge (Masked)
+#     PROD_SSH_PRIVATE_KEY  — private key for sajad@prod  (Masked)
+# ────────────────────────────────────────────────────────────────
+
+stages:
+  - lint
+  - test
+  - build
+  - deploy
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip-cache"
+  BRIDGE_HOST: "91.107.160.193"
+  BRIDGE_USER: "manager"
+  PROD_HOST: "185.159.154.217"
+  PROD_USER: "sajad"
+  PROD_DEPLOY_PATH: "/home/sajad/skydeck"
+
+# ── Stage 1: Lint ──────────────────────────────────────────────
+
+lint:
+  stage: lint
+  image: python:3.12-slim
+  cache:
+    key: pip-lint
+    paths:
+      - .pip-cache
+  before_script:
+    - pip install --quiet ruff
+  script:
+    - ruff check app/ tests/
+    - ruff format --check app/ tests/
+
+# ── Stage 2: Test ──────────────────────────────────────────────
+
+test:
+  stage: test
+  image: python:3.12-slim
+  services:
+    - name: postgres:16
+      alias: postgres
+  variables:
+    POSTGRES_USER: skydeck
+    POSTGRES_PASSWORD: skydeck
+    POSTGRES_DB: skydeck_test
+    DATABASE_URL: "postgresql+psycopg2://skydeck:skydeck@postgres:5432/skydeck_test"
+  cache:
+    key: pip-test
+    paths:
+      - .pip-cache
+  before_script:
+    - pip install --quiet -r requirements.txt -r requirements-dev.txt
+    - alembic upgrade head
+    - python -m app.seed
+  script:
+    - pytest tests/ -v --tb=short
+
+# ── Stage 3: Build & Push ─────────────────────────────────────
+
+build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+  script:
+    - docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
+    - docker tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - |
+      if [ "$CI_COMMIT_REF_NAME" = "main" ]; then
+        docker tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" "$CI_REGISTRY_IMAGE:latest"
+        docker push "$CI_REGISTRY_IMAGE:latest"
+      fi
+  only:
+    - main
+    - dev
+
+# ── Stage 4: Deploy (Drop-and-Execute, zero heredocs) ─────────
+
+deploy:
+  stage: deploy
+  image: alpine:latest
+  variables:
+    SSH_OPTS: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=30"
+
+  before_script:
+    - apk add --no-cache openssh-client sshpass
+    - export SSHPASS="$BRIDGE_PASSWORD"
+    - echo "[deploy] Verifying bridge connectivity ..."
+    - sshpass -e ssh $SSH_OPTS "$BRIDGE_USER@$BRIDGE_HOST" "echo '[bridge] Connection OK'"
+
+  script:
+    - export SSHPASS="$BRIDGE_PASSWORD"
+
+    # ── Phase A: Generate script files locally ─────────────────
+    #
+    # Two scripts are generated using cat-heredoc. These heredocs
+    # feed into 'cat' (a file writer), NOT into 'ssh'. No SSH
+    # command ever receives a heredoc in this pipeline.
+
+    - echo "[deploy] Preparing SSH key ..."
+    - echo "$PROD_SSH_PRIVATE_KEY" | tr -d '\r' > /tmp/prod_key
+    - chmod 600 /tmp/prod_key
+
+    # -- Script 1: deploy_prod.sh (runs on the Iranian server) --
+    #
+    # UNQUOTED heredoc: runner expands CI vars ($CI_REGISTRY_*,
+    # $CI_COMMIT_REF_SLUG, $PROD_HOST, $PROD_DEPLOY_PATH).
+    # Prod-side vars use \$ to defer expansion to the server.
+    - echo "[deploy] Generating prod deploy script ..."
+    - |
+      cat > /tmp/deploy_prod.sh << PROD_SCRIPT
+      #!/bin/bash
+      set -e
+      cd $PROD_DEPLOY_PATH
+      echo "[prod] Logging into GitLab Container Registry ..."
+      printf '%s\n' '$CI_REGISTRY_PASSWORD' | docker login -u '$CI_REGISTRY_USER' --password-stdin '$CI_REGISTRY'
+      echo "[prod] Pulling image (tag: $CI_COMMIT_REF_SLUG) ..."
+      export IMAGE_TAG='$CI_COMMIT_REF_SLUG'
+      docker compose -f docker-compose.prod.yml pull backend
+      echo "[prod] Starting services ..."
+      docker compose -f docker-compose.prod.yml up -d
+      echo "[prod] Waiting for backend to initialize ..."
+      sleep 10
+      CONTAINER=\$(docker compose -f docker-compose.prod.yml ps -q backend)
+      if [ -z "\$CONTAINER" ]; then
+        echo "[prod] FATAL: backend container not found!"
+        docker compose -f docker-compose.prod.yml ps
+        exit 1
+      fi
+      echo "[prod] Running Alembic migrations ..."
+      docker exec "\$CONTAINER" alembic upgrade head
+      echo "[prod] Running seed (idempotent) ..."
+      docker exec "\$CONTAINER" python -m app.seed || true
+      echo "[prod] ── Deployment complete ──"
+      docker compose -f docker-compose.prod.yml ps
+      echo "[prod] Swagger UI: http://$PROD_HOST:8000/docs"
+      PROD_SCRIPT
+
+    # -- Script 2: bridge_run.sh (runs on the EU bridge) --------
+    #
+    # UNQUOTED heredoc: runner expands $SSH_OPTS, $PROD_USER,
+    # $PROD_HOST, $PROD_DEPLOY_PATH into the file as literals.
+    # Bridge-local vars (K, O, P, D) use \$ to defer to the
+    # bridge shell. Every ssh command uses -n to redirect stdin
+    # from /dev/null as a second safety layer.
+    - echo "[deploy] Generating bridge orchestration script ..."
+    - |
+      cat > /tmp/bridge_run.sh << BRIDGE_GEN
+      #!/bin/bash
+      set -e
+      K="/tmp/_dkey"
+      O="$SSH_OPTS"
+      P="$PROD_USER@$PROD_HOST"
+      D="$PROD_DEPLOY_PATH"
+      chmod 600 "\$K"
+      echo "[bridge] Verifying prod connectivity ..."
+      ssh -n \$O -i "\$K" "\$P" "echo '[prod] Connection OK'"
+      echo "[bridge] Creating deploy directory on prod ..."
+      ssh -n \$O -i "\$K" "\$P" "mkdir -p \$D"
+      echo "[bridge] Copying compose file to prod ..."
+      scp \$O -i "\$K" /tmp/_dcompose.yml "\$P:\$D/docker-compose.prod.yml"
+      echo "[bridge] Copying deploy script to prod ..."
+      scp \$O -i "\$K" /tmp/_dprod.sh "\$P:/tmp/_dprod.sh"
+      echo "[bridge] Executing deployment on prod (this takes ~60s) ..."
+      ssh -n \$O -i "\$K" "\$P" "bash /tmp/_dprod.sh"
+      echo "[bridge] Cleaning up prod temp files ..."
+      ssh -n \$O -i "\$K" "\$P" "rm -f /tmp/_dprod.sh"
+      echo "[bridge] Cleaning up bridge temp files ..."
+      rm -f "\$K" /tmp/_dprod.sh /tmp/_dcompose.yml /tmp/_dbridge.sh
+      echo "[bridge] ── Pipeline complete ──"
+      BRIDGE_GEN
+
+    # ── Phase B: Upload all artifacts to bridge ────────────────
+
+    - echo "[deploy] Uploading 4 artifacts to bridge ..."
+    - sshpass -e scp $SSH_OPTS /tmp/prod_key "$BRIDGE_USER@$BRIDGE_HOST:/tmp/_dkey"
+    - sshpass -e scp $SSH_OPTS /tmp/deploy_prod.sh "$BRIDGE_USER@$BRIDGE_HOST:/tmp/_dprod.sh"
+    - sshpass -e scp $SSH_OPTS docker-compose.prod.yml "$BRIDGE_USER@$BRIDGE_HOST:/tmp/_dcompose.yml"
+    - sshpass -e scp $SSH_OPTS /tmp/bridge_run.sh "$BRIDGE_USER@$BRIDGE_HOST:/tmp/_dbridge.sh"
+
+    # ── Phase C: Execute (one command, zero heredocs) ──────────
+    #
+    # This is the ONLY ssh command that does real work. It passes
+    # a simple command string — NOT a heredoc. The bridge reads
+    # commands from the script file, not from stdin. Inner ssh
+    # commands use -n. Stdin swallowing is structurally impossible.
+
+    - echo "[deploy] ── Executing deployment via bridge ──"
+    - sshpass -e ssh $SSH_OPTS "$BRIDGE_USER@$BRIDGE_HOST" "bash /tmp/_dbridge.sh"
+    - echo "[deploy] ✓ Deployment pipeline finished."
+
+  after_script:
+    - rm -f /tmp/prod_key /tmp/deploy_prod.sh /tmp/bridge_run.sh
+    - export SSHPASS="$BRIDGE_PASSWORD" 2>/dev/null || true
+    - sshpass -e ssh $SSH_OPTS "$BRIDGE_USER@$BRIDGE_HOST" "rm -f /tmp/_dkey /tmp/_dprod.sh /tmp/_dcompose.yml /tmp/_dbridge.sh" 2>/dev/null || true
+
+  environment:
+    name: production
+    url: http://185.159.154.217:8000
+  only:
+    - main
+  when: manual
