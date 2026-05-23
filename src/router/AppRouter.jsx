@@ -8,7 +8,10 @@ import Forms from "../pages/Forms";
 import RequireAuth from "../auth/RequireAuth";
 import Profile from "../pages/Profile";
 import SignUp from "../pages/SignUp";
-
+import AllDocuments from "../pages/allDocuments";
+import Clipboard from "../pages/ClipBoard";
+import AircraftDocuments from "../pages/AircraftDocuments";
+import A300_600 from "../pages/A300_600";
 export default function AppRouter() {
   return (
     <BrowserRouter>
@@ -56,7 +59,25 @@ export default function AppRouter() {
               element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
             >
               <Route index element={<Manuals />} />
+              
             </Route>
+            <Route path="allDocuments" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
+            >
+            <Route index element={<AllDocuments/>} />
+            </Route>
+            <Route path="clipboard" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
+            >
+            <Route index element={<Clipboard/>} />
+            </Route>
+            <Route path="A300_600" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
+            >
+            <Route index element={<A300_600/>} />
+            </Route>
+            <Route path="aircraftdocuments" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
+            >
+            <Route index element={<AircraftDocuments/>} />
+            </Route>
+
 
             <Route
               path="manuals-admin"

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useAuth } from "../auth/useAuth";
 import { useNavigate } from "react-router-dom";
 import ThemeToggle from "../components/themetoggle";
-import loginImg from '../assets/icons/Skytech-logo-transparent (1).png';
+import loginLogo from '../assets/icons/Skytech-logo-transparent (1).png';
+import loginImg from "../assets/icons/bgEFB.png"
 const Loginpage = () =>{
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -37,13 +38,13 @@ const Loginpage = () =>{
 
       <button className="loginBtn" type="submit">Login</button>
       <div class="loginLinks">
-        <a href="#">Forgot password?</a>
+        <a style={{color:'#000000'}} href="#">Forgot password?</a>
         
       </div>  
-    
+    <img src={loginImg} alt="" className="imgLogin"/>  
     </form>
     
-    <img src={loginImg} alt="" className="imgLogin"/>  
+    
   <ThemeToggle />
     </div>
     

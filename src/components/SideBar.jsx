@@ -101,11 +101,11 @@ import crewProfileSvg from '../assets/icons/Following-1--Streamline-Ultimate.svg
 import formsSvg from '../assets/icons/Kindle-Hold--Streamline-Ultimate.svg'
 import manualsAdminSvg from '../assets/icons/Monitor-Transfer-1--Streamline-Ultimate.svg'
 import addPilotSvg from '../assets/icons/Add-Circle-Bold--Streamline-Ultimate.svg'
-import logoutSvg from '../assets/icons/Power-Button--Streamline-Ultimate.svg'
+
 import safetyIssueSvg from '../assets/icons/Laptop-Warning--Streamline-Ultimate.svg'
 import trainingIssueSvg from '../assets/icons/Electronics-Fuse--Streamline-Ultimate.svg'
 import checkListSvg from '../assets/icons/Notes-Checklist-Flip--Streamline-Ultimate.svg'
-
+import iranAirLogo from '../assets/icons/iranair-logo (1).png'
 const SideBar = () =>{
  
    const [theme, setTheme] = useState("light");
@@ -113,7 +113,7 @@ const SideBar = () =>{
     useEffect(() => {
       setTheme(document.documentElement.getAttribute("data-theme") || "light");
     }, []);
-    const { user, logout } = useAuth();
+    const { user} = useAuth();
 
   if (!user) return null;
 
@@ -121,16 +121,17 @@ const SideBar = () =>{
     
 
 <aside className="SideBar">
-  <h3><img src={darkSkyTechPng} style={{width:'50%'}} alt="" /> SkyTechSharif</h3>
+  <img src={iranAirLogo} style={{width:'50%', marginLeft:'25%',marginBottom:'-15%'}} alt="" />
+  <h3> IranAir EFB</h3>
 
   {(user.role === "pilot" || user.role === "admin") && (
     <>
-      <NavLink className={'nav-item'} to="/dashboard/profile"><img src={crewProfileSvg} alt="" className="navIcon" /> Crew profile</NavLink>
+      <NavLink className={'nav-item'} to="/dashboard/profile"><img src={crewProfileSvg} alt="" className="navIcon" />profile</NavLink>
       <NavLink to="/dashboard/manuals" className={'nav-item'}><img src={documentSvg} alt="" className="navIcon" /> Documents</NavLink>
-      <NavLink className={'nav-item'} to="/dashboard/forms"><img src={formsSvg} alt="" className="navIcon" /> Forms</NavLink>
-      <NavLink to="/dashboard/safetyIssue" className={'nav-item'}><img src={safetyIssueSvg} alt="" className="navIcon" /> Safety Issue</NavLink>
-      <NavLink to="/dashboard/trainingIssue" className={'nav-item'}><img src={trainingIssueSvg} alt="" className="navIcon" /> Training Issue</NavLink>
-      <NavLink to="/dashboard/checkList" className={'nav-item'}><img src={checkListSvg} alt="" className="navIcon" /> Check list</NavLink>  
+      <NavLink className={'nav-item'} to="/dashboard/forms"><img src={formsSvg} alt="" className="navIcon" /> Iranair chat</NavLink>
+      {/* <NavLink to="/dashboard/safetyIssue" className={'nav-item'}><img src={safetyIssueSvg} alt="" className="navIcon" /> Safety Issue</NavLink>
+      <NavLink to="/dashboard/trainingIssue" className={'nav-item'}><img src={trainingIssueSvg} alt="" className="navIcon" /> Training Issue</NavLink> */}
+      {/* <NavLink to="/dashboard/checkList" className={'nav-item'}><img src={checkListSvg} alt="" className="navIcon" /> Check list</NavLink>   */}
     </>
   )}
 
@@ -141,7 +142,7 @@ const SideBar = () =>{
     </>
   )}
 
-  <button onClick={logout} className="logOutButton"><img src={logoutSvg} alt="" /> Logout</button>
+  
   <ThemeToggle />
 </aside>
 
