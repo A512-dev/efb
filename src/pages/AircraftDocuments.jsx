@@ -134,61 +134,153 @@
 
 // export default AircraftDocuments;
 
+// import React from 'react';
+// import { NavLink } from "react-router-dom";
+// import { useManuals } from "../hooks/useManuals";
+// import { useDownloadManual } from "../hooks/useDownloadManual";
+// import downloadSvg from '../assets/icons/Import-File--Streamline-Ultimate.svg'
+// import folderSvg from '../assets/icons/Office-Folder--Streamline-Ultimate.svg'
+// import bookmarkIcon from '../assets/icons/bookmarkadd.svg'
+// import backIcon from '../assets/icons/arrowback.svg'
+// import bookmarkfill from '../assets/icons/bookmarkpor.svg'
+// import bookmarkunfill from '../assets/icons/bookmarkadd.svg'
+// import { useBookmark } from '../auth/BookmarkContext';
+
+// const AircraftDocuments = () => {
+//   const { manuals, loading } = useManuals();
+//   const { handleDownload } = useDownloadManual();
+//   const { showBookmarkText, showSOPInClipboard } = useBookmark();
+//   const { toggleBookmarkText, toggleSOPInClipboard } = useBookmark(); 
+
+//   if (loading) return <p>Loading manuals...</p>;
+
+//   const handleBookmarkClick = () => {
+    
+//     toggleBookmarkText();
+//     toggleSOPInClipboard();
+//     console.log("Bookmark clicked! Toggling states via context.");
+//   };
+
+//   return (
+//     <>
+//       <div className="manualsContainerLeft">
+//         <div className="div-header">
+//           <NavLink className="card-header1" to={'/dashboard/a300_600'}>
+//             <img src={backIcon} style={{width:'25px'}} alt="" />
+//           </NavLink>
+//           <NavLink className="card-header2 active" to={'/dashboard/clipboard'}>
+//             Aircraft documents
+//           </NavLink>
+//         </div>
+
+//         <div style={{ display: 'inline-flex', alignItems: 'center' }}> 
+//           <p className="headersForManuals" onClick={handleBookmarkClick} style={{cursor: 'pointer'}}>
+//             A30e6-310-SOP
+//           </p>
+//           <img
+//               src={bookmarkfill}
+//               onClick={handleBookmarkClick}
+//               alt="Bookmark"
+//               className="imgBookmark"
+//               style={{
+//                 width: '25px',
+//                 marginLeft: '1em',
+//                 marginBottom: '-.3em',
+//                 cursor: 'pointer',
+//               }}
+//             />
+//         </div>
+//       </div>
+
+//       <div className="manualsContainer">
+//         <div style={{ width: '100%', height: '100vh' }}>
+//           {showSOPInClipboard && (
+//             <object
+//               data="/A306-310-SOP.pdf"
+//               type="application/pdf"
+//               width="100%"
+//               height="100%"
+//             >
+          
+//               This browser does not support PDFs. Please download the PDF to view it: <a href="/A306-310-SOP.pdf">Download PDF</a>
+//             </object>
+//           )}
+//         </div>
+//       </div>
+//     </>
+//   );
+// };
+
+// export default AircraftDocuments;
+
 import React from 'react';
 import { NavLink } from "react-router-dom";
 import { useManuals } from "../hooks/useManuals";
 import { useDownloadManual } from "../hooks/useDownloadManual";
-import downloadSvg from '../assets/icons/Import-File--Streamline-Ultimate.svg'
-import folderSvg from '../assets/icons/Office-Folder--Streamline-Ultimate.svg'
-import bookmarkIcon from '../assets/icons/bookmarkadd.svg'
-import backIcon from '../assets/icons/arrowback.svg'
-
+// import downloadSvg from '../assets/icons/Import-File--Streamline-Ultimate.svg' // این موارد استفاده نشده‌اند
+// import folderSvg from '../assets/icons/Office-Folder--Streamline-Ultimate.svg'
+import backIcon from '../assets/icons/arrowback.svg';
+// import bookmarkIcon from '../assets/icons/bookmarkadd.svg' // این هم استفاده نشده
+import bookmarkfill from '../assets/icons/bookmarkpor.svg'; // آیکون بوکمارک پر شده
+import bookmarkunfill from '../assets/icons/bookmarkadd.svg'; // آیکون بوکمارک خالی
 import { useBookmark } from '../auth/BookmarkContext';
 
 const AircraftDocuments = () => {
   const { manuals, loading } = useManuals();
   const { handleDownload } = useDownloadManual();
-  const { showBookmarkText, showSOPInClipboard } = useBookmark();
-  const { toggleBookmarkText, toggleSOPInClipboard } = useBookmark(); 
+
+  // دریافت state ها و توابع مورد نیاز از context
+  const {
+    showSOPInClipboard,
+    isBookmarkActive, // وضعیت فعال بودن بوکمارک (boolean)
+    currentBookmarkIcon // یا مستقیماً آیکون فعلی را دریافت کنید
+  } = useBookmark();
+  const { toggleSOPInClipboard, handleBookmarkIconToggle } = useBookmark();
 
   if (loading) return <p>Loading manuals...</p>;
 
+  
   const handleBookmarkClick = () => {
-    
-    toggleBookmarkText();
-    toggleSOPInClipboard();
+    handleBookmarkIconToggle(); 
+    toggleSOPInClipboard(); 
     console.log("Bookmark clicked! Toggling states via context.");
   };
+
+  
+  const bookmarkImageSrc = isBookmarkActive ? bookmarkfill : bookmarkunfill;
 
   return (
     <>
       <div className="manualsContainerLeft">
         <div className="div-header">
           <NavLink className="card-header1" to={'/dashboard/a300_600'}>
-            <img src={backIcon} style={{width:'25px'}} alt="" />
+            <img src={backIcon} style={{ width: '25px' }} alt="" />
           </NavLink>
           <NavLink className="card-header2 active" to={'/dashboard/clipboard'}>
             Aircraft documents
           </NavLink>
         </div>
 
-        <div style={{ display: 'inline-flex', alignItems: 'center' }}> 
-          <p className="headersForManuals" onClick={handleBookmarkClick} style={{cursor: 'pointer'}}>
+        
+          <p className="headersForManuals" onClick={handleBookmarkClick} style={{ cursor: 'pointer', }}>
             A30e6-310-SOP
           </p>
           <img
-              src={bookmarkIcon}
-              onClick={handleBookmarkClick}
-              alt="Bookmark"
-              className="imgBookmark"
-              style={{
-                width: '25px',
-                marginLeft: '1em',
-                marginBottom: '-.3em',
-                cursor: 'pointer',
-              }}
-            />
-        </div>
+            src={bookmarkImageSrc}
+            
+            onClick={handleBookmarkClick}
+            alt="Bookmark"
+            className="imgBookmark"
+            style={{
+              position:'absolute',right:'8%',
+              width: '25px',
+              marginLeft: '1em',
+              marginTop:'-35px',
+              
+              cursor: 'pointer',
+            }}
+          />
+        
       </div>
 
       <div className="manualsContainer">
@@ -200,7 +292,6 @@ const AircraftDocuments = () => {
               width="100%"
               height="100%"
             >
-          
               This browser does not support PDFs. Please download the PDF to view it: <a href="/A306-310-SOP.pdf">Download PDF</a>
             </object>
           )}

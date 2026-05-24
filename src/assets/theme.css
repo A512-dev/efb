@@ -147,7 +147,43 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
+.submitIssueButton {
+  display: block;
+  padding: 10px 18px;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
 
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  text-decoration: none;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  background-color: var(--bgSideBar);
+  margin-bottom: 15px;
+}
+.submitIssueButton:hover {
+  transform: translateY(-2px);
+  background-color: #213347;
+}
+textarea {
+  width: 100%;
+
+  padding-top: 20px;
+  padding-left: 20px;
+  background-color: #c7c7c7a8;
+  border-radius: 45px;
+  border: solid 0.1px rgb(121, 107, 107);
+  color: var(--text);
+  font-size: 14px;
+  margin-left: -10px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
 .changethemebutton {
   left: 20px;
   background-color: #cdcdcd82;
@@ -160,7 +196,22 @@ body {
   transform: translateY(-3px);
   box-shadow: 0 8px 20px #33333373;
 }
+label {
+  color: var(--text);
+}
 
+.testReport {
+  padding: 10px 20px;
+  padding-bottom: 10px;
+}
+.divMain {
+  height: 90vh;
+  margin-left: 20%;
+  border-radius: 2rem;
+  box-shadow: 0rem 0.125rem 0.625rem 0.0625rem rgba(145, 104, 104, 0.15);
+  background: transparent;
+  backdrop-filter: blur(5px);
+}
 .logOutButton {
   left: auto;
   right: 20px;
@@ -291,7 +342,7 @@ h3 {
   top: 0;
   width: 100vw;
   z-index: -1;
-  filter: blur(1px);
+  /* filter: blur(1px); */
 }
 .loginBtn {
   width: 50%;
@@ -704,7 +755,11 @@ h3 {
     padding: 10px 20px;
     margin: 0;
   }
-
+  .chatboxicon {
+    width: 24px;
+    height: 24px;
+    background-color: #fff;
+  }
   .logOutButton {
     font-size: 0;
     padding-right: 3px;

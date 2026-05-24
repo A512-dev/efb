@@ -3,7 +3,7 @@ import { useAuth } from "../auth/useAuth";
 import { useNavigate } from "react-router-dom";
 import ThemeToggle from "../components/ThemeToggle";
 import loginLogo from '../assets/icons/Skytech-logo-transparent (1).png';
-import loginImg from "../assets/icons/bgEFB.png"
+import loginImg from "../assets/icons/bgEFB..webp"
 const Loginpage = () =>{
   const { login } = useAuth();
   const navigate = useNavigate();

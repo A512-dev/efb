@@ -12,6 +12,7 @@ import AllDocuments from "../pages/allDocuments";
 import Clipboard from "../pages/Clipboard";
 import AircraftDocuments from "../pages/AircraftDocuments";
 import A300_600 from "../pages/A300_600";
+import IranAirChat from "../pages/IranAirChat";
 export default function AppRouter() {
   return (
     <BrowserRouter>
@@ -76,6 +77,10 @@ export default function AppRouter() {
             <Route path="aircraftdocuments" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
             >
             <Route index element={<AircraftDocuments/>} />
+            </Route>
+            <Route path="IranAirChat" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
+            >
+            <Route index element={<IranAirChat/>} />
             </Route>
 
 

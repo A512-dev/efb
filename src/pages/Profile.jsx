@@ -1,7 +1,7 @@
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import logoutSvg from '../assets/icons/Power-Button--Streamline-Ultimate.svg'
 import { useAuth } from "../auth/useAuth";
-import pilotProfile from '../assets/icons/7e4a0f8a-a628-4727-8735-43fe3ceffb19.webp'
+import pilotProfile from '../assets/icons/2f095d9b-a548-4eb4-bb79-ce067d91f1b6 copy.webp'
 const Profile =( ) =>{
     const {user,loading}=useCurrentUser()
      if (loading) return <div>Loading...</div>;
