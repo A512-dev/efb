@@ -93,7 +93,7 @@ import { NavLink } from "react-router-dom";
 import { useState , useEffect } from "react";
 
 import { useAuth } from "../auth/useAuth";
-import ThemeToggle from "./themetoggle";
+import ThemeToggle from "./ThemeToggle";
 import darkSkyTechPng from '../assets/icons/skytech-logo-transparent-white.webp'
 // import lightSkyTechPng from '../assets/icons/Skytech-logo-transparent (1).png'
 import documentSvg from '../assets/icons/Common-File-Stack--Streamline-Ultimate copy.svg'

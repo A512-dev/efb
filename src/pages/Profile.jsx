@@ -7,7 +7,7 @@ const Profile =( ) =>{
      if (loading) return <div>Loading...</div>;
 
   if (!user) return
-  console.log(user)
+  
   const { logout } = useAuth();
 
   if (!user) return  <div>Not authenticated</div>;
