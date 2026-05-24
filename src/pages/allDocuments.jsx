@@ -19,7 +19,7 @@ return(
       <NavLink className={'headersForManuals'} to="/dashboard/A300_600">A300/600</NavLink>
       <NavLink to="/dashboard/manuals" className={'headersForManuals'}>Iran Air</NavLink>
       <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Training & resources</NavLink>
-      <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Forms</NavLink>
+      <NavLink className={'headersForManuals'} to="/dashboard/forms"> Forms</NavLink>
       <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Safety issue </NavLink>
     </div>
     {/* <div className="manualsContainer">

@@ -134,7 +134,7 @@
 
 // export default AircraftDocuments;
 
-import React from 'react'; // useState حذف می‌شود
+import React from 'react';
 import { NavLink } from "react-router-dom";
 import { useManuals } from "../hooks/useManuals";
 import { useDownloadManual } from "../hooks/useDownloadManual";
@@ -142,25 +142,22 @@ import downloadSvg from '../assets/icons/Import-File--Streamline-Ultimate.svg'
 import folderSvg from '../assets/icons/Office-Folder--Streamline-Ultimate.svg'
 import bookmarkIcon from '../assets/icons/bookmarkadd.svg'
 import backIcon from '../assets/icons/arrowback.svg'
-// import { BookmarkContext } from "../auth/BookmarkContext"; // این خط لازم نیست اگر از useBookmark استفاده کنیم
-// import { useContext } from "react"; // این خط لازم نیست
-// import { useState } from "react"; // این خط لازم نیست
-import { useBookmark } from '../auth/BookmarkContext'; // Import the custom hook
+
+import { useBookmark } from '../auth/BookmarkContext';
 
 const AircraftDocuments = () => {
   const { manuals, loading } = useManuals();
   const { handleDownload } = useDownloadManual();
   const { showBookmarkText, showSOPInClipboard } = useBookmark();
-  // const [showSOP, setShowSOP] = useState(false); // حذف state محلی
-  const { toggleBookmarkText, toggleSOPInClipboard } = useBookmark(); // دریافت توابع از context
+  const { toggleBookmarkText, toggleSOPInClipboard } = useBookmark(); 
 
   if (loading) return <p>Loading manuals...</p>;
 
   const handleBookmarkClick = () => {
-    // setShowSOP(prev => !prev); // حذف این خط
-    toggleBookmarkText(); // برای نمایش متن در Clipboard
-    toggleSOPInClipboard(); // برای نمایش SOP در Clipboard
-    console.log("Bookmark clicked! Toggling states via context."); // برای دیباگ
+    
+    toggleBookmarkText();
+    toggleSOPInClipboard();
+    console.log("Bookmark clicked! Toggling states via context.");
   };
 
   return (
@@ -175,17 +172,15 @@ const AircraftDocuments = () => {
           </NavLink>
         </div>
 
-        <div style={{ display: 'inline-flex', alignItems: 'center' }}> {/* Align items vertically */}
-          {/* این پاراگراف SOP فقط در AircraftDocuments نمایش داده می‌شود تا زمانی که فعال شده باشد */}
-          {/* نمایش آن به context وابسته نیست، بلکه فقط متن نشان داده می‌شود */}
-          <p className="headersForManuals" onClick={handleBookmarkClick} style={{cursor: 'pointer'}}> {/* Add cursor pointer */}
+        <div style={{ display: 'inline-flex', alignItems: 'center' }}> 
+          <p className="headersForManuals" onClick={handleBookmarkClick} style={{cursor: 'pointer'}}>
             A30e6-310-SOP
           </p>
           <img
               src={bookmarkIcon}
               onClick={handleBookmarkClick}
               alt="Bookmark"
-              className="imgBookmark active" // اگر کلاس active معنی خاصی دارد نگه دارید
+              className="imgBookmark"
               style={{
                 width: '25px',
                 marginLeft: '1em',
