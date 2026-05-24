@@ -9,7 +9,7 @@ import RequireAuth from "../auth/RequireAuth";
 import Profile from "../pages/Profile";
 import SignUp from "../pages/SignUp";
 import AllDocuments from "../pages/allDocuments";
-import Clipboard from "../pages/ClipBoard";
+import Clipboard from "../pages/Clipboard";
 import AircraftDocuments from "../pages/AircraftDocuments";
 import A300_600 from "../pages/A300_600";
 export default function AppRouter() {

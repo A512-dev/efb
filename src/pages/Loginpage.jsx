@@ -27,7 +27,7 @@ const Loginpage = () =>{
   
   <div>
   <div className="loginBox">
-    <form  onSubmit={submit}>
+    <form  className="LoginRedesigned" onSubmit={submit}>
       <h2>Login</h2>
 
       <input type="email" className="loginInput" placeholder="Email"

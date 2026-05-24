@@ -22,7 +22,7 @@ return(
       <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Forms</NavLink>
       <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Safety issue </NavLink>
     </div>
-    <div className="manualsContainer">
+    {/* <div className="manualsContainer">
 
   <h2 className="card-header">Manuals</h2>
 
@@ -50,7 +50,7 @@ return(
     </div>
   ))}
 
-</div>
+</div> */}
     </>
 )
 }

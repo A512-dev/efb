@@ -14,15 +14,14 @@ const Manuals = () =>{
     <>
     <div className="manualsContainerLeft">
       <div className="div-header">
-        <NavLink className="card-header1" to={'/dashboard/allDocuments'} active onClick={()=>{ document.querySelector('.manualsContainerLeft').style.height=document.querySelector('.manualsContainerLeft').style.height==='auto' ? '0' : 'auto';}}>all documents </NavLink>
-      <NavLink className="card-header2" to={ '/dashboard/clipboard'} onClick={()=>{ document.querySelector('.manualsContainerLeft').style.height=document.querySelector('.manualsContainerLeft').style.height==='auto' ? '0' : 'auto';}}>Clipboard </NavLink>
+        <NavLink className="card-header1 active" to={'/dashboard/allDocuments'}>all documents </NavLink>
+      <NavLink className="card-header2"  to={ '/dashboard/clipboard'}>Clipboard </NavLink>
       
     </div>
-      <NavLink className={'headersForManuals'} to="/dashboard/manuals/">A300/600</NavLink>
+      <NavLink className={'headersForManuals'} to="/dashboard/a300_600">A300/600</NavLink>
       <NavLink to="/dashboard/manuals" className={'headersForManuals'}>Iran Air</NavLink>
-      <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Iranair chat</NavLink>
       <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Training & resources</NavLink>
-      <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Forms</NavLink>
+      <NavLink className={'headersForManuals'} to="/dashboard/forms"> Forms</NavLink>
       <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Safety issue </NavLink>
       
       {/* <NavLink to="/dashboard/safetyIssue" className={'headersForManuals'}><img src={safetyIssueSvg} alt="" className="navIcon" /> Safety Issue</NavLink>
@@ -37,7 +36,7 @@ const Manuals = () =>{
       <h5 className="headersForManuals" onClick={()=>{ document.querySelector('.manualsContainerLeft').style.height=document.querySelector('.manualsContainerLeft').style.height==='auto' ? '0' : 'auto';}}><img src={folderSvg} alt="" style={{width:"16px ",marginRight:'6%'}}/>Training </h5>
       <h5 className="headersForManuals" onClick={()=>{ document.querySelector('.manualsContainerLeft').style.height=document.querySelector('.manualsContainerLeft').style.height==='auto' ? '0' : 'auto';}}> <img src={folderSvg} alt="" style={{width:"16px ",marginRight:'6%'}} />Checklists </h5> */}
     </div>
-    <div className="manualsContainer">
+    {/* <div className="manualsContainer">
 
   <h2 className="card-header">Manuals</h2>
 
@@ -65,7 +64,7 @@ const Manuals = () =>{
     </div>
   ))}
 
-</div>
+</div> */}
 </>
   );
 }
