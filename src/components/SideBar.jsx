@@ -127,7 +127,7 @@ const SideBar = () =>{
 
   {(user.role === "pilot" || user.role === "admin") && (
     <>
-      <NavLink className={'nav-item'} to="/dashboard/profile"><img src={crewProfileSvg} alt="" className="navIcon" /> profile</NavLink>
+      <NavLink className={'nav-item'} to="/dashboard/profile"><img src={crewProfileSvg} alt="" className="navIcon" /> Profile</NavLink>
       <NavLink to="/dashboard/manuals" className={'nav-item'}><img src={documentSvg} alt="" className="navIcon" /> Documents</NavLink>
       <NavLink className={'nav-item'} to="/dashboard/IranAirChat"><img src={chatboxicon} alt="" className="navIcon chatboxicon" /> IranAir chat</NavLink>
       {/* <NavLink to="/dashboard/safetyIssue" className={'nav-item'}><img src={safetyIssueSvg} alt="" className="navIcon" /> Safety Issue</NavLink>

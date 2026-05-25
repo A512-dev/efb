@@ -217,23 +217,23 @@ import React from 'react';
 import { NavLink } from "react-router-dom";
 import { useManuals } from "../hooks/useManuals";
 import { useDownloadManual } from "../hooks/useDownloadManual";
-// import downloadSvg from '../assets/icons/Import-File--Streamline-Ultimate.svg' // این موارد استفاده نشده‌اند
-// import folderSvg from '../assets/icons/Office-Folder--Streamline-Ultimate.svg'
+
+
 import backIcon from '../assets/icons/arrowback.svg';
-// import bookmarkIcon from '../assets/icons/bookmarkadd.svg' // این هم استفاده نشده
-import bookmarkfill from '../assets/icons/bookmarkpor.svg'; // آیکون بوکمارک پر شده
-import bookmarkunfill from '../assets/icons/bookmarkadd.svg'; // آیکون بوکمارک خالی
+
+import bookmarkfill from '../assets/icons/bookmarkpor.svg';
+import bookmarkunfill from '../assets/icons/bookmarkadd.svg';
 import { useBookmark } from '../auth/BookmarkContext';
 
 const AircraftDocuments = () => {
   const { manuals, loading } = useManuals();
   const { handleDownload } = useDownloadManual();
 
-  // دریافت state ها و توابع مورد نیاز از context
+  
   const {
     showSOPInClipboard,
-    isBookmarkActive, // وضعیت فعال بودن بوکمارک (boolean)
-    currentBookmarkIcon // یا مستقیماً آیکون فعلی را دریافت کنید
+    isBookmarkActive,
+    currentBookmarkIcon
   } = useBookmark();
   const { toggleSOPInClipboard, handleBookmarkIconToggle } = useBookmark();
 
@@ -242,10 +242,12 @@ const AircraftDocuments = () => {
   
   const handleBookmarkClick = () => {
     handleBookmarkIconToggle(); 
-    toggleSOPInClipboard(); 
+toggleSOPInClipboard();     
     console.log("Bookmark clicked! Toggling states via context.");
   };
-
+const handleOpenPdfClick=()=>{
+toggleSOPInClipboard();     
+}
   
   const bookmarkImageSrc = isBookmarkActive ? bookmarkfill : bookmarkunfill;
 
@@ -262,7 +264,7 @@ const AircraftDocuments = () => {
         </div>
 
         
-          <p className="headersForManuals" onClick={handleBookmarkClick} style={{ cursor: 'pointer', }}>
+          <p className="headersForManuals" onClick={handleOpenPdfClick} style={{ cursor: 'pointer', }}>
             A30e6-310-SOP
           </p>
           <img

@@ -197,7 +197,7 @@
 
 // export default Clipboard;
 
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useBookmark } from '../auth/BookmarkContext'; 
 import { useManuals } from "../hooks/useManuals";
@@ -209,7 +209,7 @@ const Clipboard = () => {
   const { showBookmarkText, showSOPInClipboard } = useBookmark();
   const { manuals, loading } = useManuals();
   const { handleDownload } = useDownloadManual();
-
+  const[showDoc,setShowDoc]= useState('');
   if (loading) return <p>Loading manuals...</p>;
 
   return (
@@ -224,7 +224,7 @@ const Clipboard = () => {
 
         
         {showSOPInClipboard && (
-          <p className="headersForManuals">
+          <p className="headersForManuals" onClick={()=>{ setShowDoc(!showDoc)}}> 
             A30e6-310-SOP
           </p>
         )}
@@ -236,7 +236,7 @@ const Clipboard = () => {
 
         <div style={{ width: '100%', height: '100vh' }}>
           
-          {showSOPInClipboard && (
+          {showDoc && (
             <object
               data="/A306-310-SOP.pdf"
               type="application/pdf"

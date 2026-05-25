@@ -502,16 +502,18 @@ h3 {
 .card-header2:hover {
   transform: translateY(-4px);
   border-right: none;
-  border-bottom: solid 1px white;
+  border-bottom: solid 1px var(--text);
 }
 .card-header1.active {
-  background-color: #827c7c;
+  background-color: var(--firoozepor);
   border-top-left-radius: 8px;
+  color: white;
 }
 .card-header2.active {
-  background-color: #827c7c;
+  background-color: var(--firoozepor);
   border-top-right-radius: 8px;
   font-size: 12px;
+  color: white;
 }
 .card-header1:active,
 .card-header2:active {
