@@ -5,6 +5,7 @@ from app.models.form_version import FormVersion
 from app.models.login_attempt import LoginAttempt
 from app.models.manual import Manual
 from app.models.manual_access_log import ManualAccessLog
+from app.models.message import Message
 from app.models.org import Org
 from app.models.session import Session
 from app.models.submission import Submission
@@ -19,6 +20,7 @@ __all__ = [
     "Manual",
     "ManualAccessLog",
     "ManualAction",
+    "Message",
     "Org",
     "Session",
     "Submission",
