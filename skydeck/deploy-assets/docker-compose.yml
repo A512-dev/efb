@@ -1,0 +1,75 @@
+# ────────────────────────────────────────────────────────────
+# Orchestration file — lives in the Infra repo.
+# Kept here temporarily in deploy-assets/ until migrated.
+#
+# Usage (from repo root):
+#   docker compose -f deploy-assets/docker-compose.yml up --build
+# ────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL 18 ────────────────────────────────────────
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-skydeck}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-skydeck}
+      POSTGRES_DB: ${POSTGRES_DB:-skydeck}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-skydeck} -d ${POSTGRES_DB:-skydeck}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ── pgAdmin ─────────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@skydeck.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_LISTEN_PORT: 5050
+    ports:
+      - "5050:5050"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── FastAPI Backend ─────────────────────────────────────
+  backend:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-skydeck}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-skydeck}
+      POSTGRES_DB: ${POSTGRES_DB:-skydeck}
+      POSTGRES_SERVER: db
+      POSTGRES_PORT: 5432
+      APP_NAME: ${APP_NAME:-SkyDeck}
+      DEBUG: ${DEBUG:-false}
+      BACKEND_PORT: ${BACKEND_PORT:-8000}
+      SECRET_KEY: ${SECRET_KEY:-CHANGE-ME-generate-a-64-byte-random-key}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000","http://localhost:5173"]}
+      RUN_SEED: ${RUN_SEED:-true}
+    ports:
+      - "${BACKEND_PORT:-8000}:${BACKEND_PORT:-8000}"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  pgadmin_data:
