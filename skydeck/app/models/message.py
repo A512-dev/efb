@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Identity, Index, Text, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Identity, Index, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -19,7 +19,7 @@ class Message(Base):
         Index("idx_messages_recipient_id", "recipient_id"),
         Index("idx_messages_recipient_created", "recipient_id", "created_at"),
         Index("idx_messages_sender_created", "sender_id", "created_at"),
-        Index("idx_messages_unread", "recipient_id", postgresql_where="read_at IS NULL"),
+        Index("idx_messages_unread", "recipient_id", postgresql_where=text("read_at IS NULL")),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
