@@ -107,6 +107,7 @@ import trainingIssueSvg from '../assets/icons/Electronics-Fuse--Streamline-Ultim
 import checkListSvg from '../assets/icons/Notes-Checklist-Flip--Streamline-Ultimate.svg'
 import iranAirLogo from '../assets/icons/iranair-logo (1).png'
 import chatboxicon from '../assets/icons/chatboxicon.svg'
+import settingIcon from '../assets/icons/settings.svg'
 const SideBar = () =>{
  
    const [theme, setTheme] = useState("light");
@@ -130,6 +131,7 @@ const SideBar = () =>{
       <NavLink className={'nav-item'} to="/dashboard/profile"><img src={crewProfileSvg} alt="" className="navIcon" /> Profile</NavLink>
       <NavLink to="/dashboard/manuals" className={'nav-item'}><img src={documentSvg} alt="" className="navIcon" /> Documents</NavLink>
       <NavLink className={'nav-item'} to="/dashboard/IranAirChat"><img src={chatboxicon} alt="" className="navIcon chatboxicon" /> IranAir chat</NavLink>
+      <NavLink className={'nav-item'} to="/dashboard/setting"><img src={settingIcon} alt="" className="navIcon chatboxicon" /> Settings</NavLink>
       {/* <NavLink to="/dashboard/safetyIssue" className={'nav-item'}><img src={safetyIssueSvg} alt="" className="navIcon" /> Safety Issue</NavLink>
       <NavLink to="/dashboard/trainingIssue" className={'nav-item'}><img src={trainingIssueSvg} alt="" className="navIcon" /> Training Issue</NavLink> */}
       {/* <NavLink to="/dashboard/checkList" className={'nav-item'}><img src={checkListSvg} alt="" className="navIcon" /> Check list</NavLink>   */}
@@ -144,7 +146,7 @@ const SideBar = () =>{
   )}
 
   
-  <ThemeToggle />
+
 </aside>
 
   );
