@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session as DbSession
 
 from app.models.enums import ManualAction
@@ -52,9 +53,51 @@ def get_by_id(db: DbSession, manual_id: int) -> Optional[Manual]:
     return db.query(Manual).filter(Manual.id == manual_id, Manual.deleted_at.is_(None)).first()
 
 
+def get_active_by_title(db: DbSession, *, org_id: int, title: str) -> Optional[Manual]:
+    return (
+        db.query(Manual)
+        .filter(
+            Manual.org_id == org_id,
+            Manual.deleted_at.is_(None),
+            Manual.is_active.is_(True),
+            func.lower(Manual.title) == title.strip().lower(),
+        )
+        .first()
+    )
+
+
 def get_by_sha256(db: DbSession, sha256: str) -> Optional[Manual]:
-    """Look up an active manual by its content hash for deduplication."""
+    """Look up an active manual by its content hash.
+
+    Kept for diagnostics/backwards compatibility. Upload deduplication is now
+    title-based, so identical PDF bytes may be stored under different active
+    titles.
+    """
     return db.query(Manual).filter(Manual.sha256 == sha256, Manual.deleted_at.is_(None)).first()
+
+
+def update_file_metadata(
+    db: DbSession,
+    manual: Manual,
+    *,
+    storage_path: str,
+    original_filename: str,
+    file_size: int,
+    sha256: str,
+    uploaded_by: int,
+    title: Optional[str] = None,
+) -> Manual:
+    if title is not None:
+        manual.title = title
+    manual.storage_path = storage_path
+    manual.original_filename = original_filename
+    manual.mime_type = "application/pdf"
+    manual.file_size = file_size
+    manual.sha256 = sha256
+    manual.uploaded_by = uploaded_by
+    manual.version_number = (manual.version_number or 1) + 1
+    db.flush()
+    return manual
 
 
 def soft_delete(db: DbSession, manual: Manual) -> None:
