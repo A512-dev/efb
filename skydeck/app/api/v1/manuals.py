@@ -1,23 +1,12 @@
-"""Manual Library endpoints with enterprise-grade upload safety.
-
-Addresses all 10 code-review items:
-  1. Transaction safety — DB commits only after file writes succeed
-  2. Orphan cleanup — pending records are recoverable
-  3. Size limits — configurable MAX_UPLOAD_SIZE_MB (default 50 MB)
-  4. Magic-byte validation — reads first 5 bytes for %%PDF- header
-  5. SHA-256 deduplication — rejects hash collisions with 409
-  6. Path-traversal prevention — secure_filename utility
-  7. Granular HTTP status codes — 409, 413, 415, 500
-  8. Audit logging — every upload/delete/download is recorded
-  9. Storage abstraction — LocalStorage via StorageProvider ABC
-"""
+"""Manual Library endpoints with upload/update/delete safety and audit trail."""
 
 from __future__ import annotations
 
 import hashlib
 import logging
+from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session as DbSession
 
@@ -33,9 +22,9 @@ from app.core.errors import (
 from app.db.session import get_db
 from app.models.enums import ManualAction, UserRole
 from app.models.user import User
-from app.repositories import manual_repo
+from app.repositories import manual_repo, manual_update_event_repo
 from app.schemas.auth import ErrorResponse
-from app.schemas.manual import ManualDeleteOut, ManualOut, ManualUploadOut
+from app.schemas.manual import ManualDeleteOut, ManualOut, ManualUpdateOut, ManualUploadOut
 from app.services import audit_service
 from app.services.storage import get_manual_storage, secure_filename
 from app.services.watermark_service import watermark_pdf
@@ -57,6 +46,50 @@ _ALL_ROLES = require_roles(
     UserRole.technical,
 )
 
+
+def _read_and_validate_pdf(file: UploadFile) -> tuple[bytes, str, str]:
+    contents = file.file.read()
+
+    if len(contents) > _MAX_BYTES:
+        raise PayloadTooLargeError(f"File exceeds {settings.MAX_UPLOAD_SIZE_MB} MB limit")
+
+    if len(contents) == 0:
+        raise UnsupportedMediaError("Uploaded file is empty")
+
+    if not contents[:5].startswith(_PDF_MAGIC):
+        raise UnsupportedMediaError("File is not a valid PDF (magic bytes check failed)")
+
+    sha256 = hashlib.sha256(contents).hexdigest()
+    safe_name = secure_filename(file.filename or "manual.pdf")
+    if not safe_name.lower().endswith(".pdf"):
+        safe_name += ".pdf"
+
+    return contents, sha256, safe_name
+
+
+def _ensure_unique_active_title(
+    db: DbSession,
+    *,
+    org_id: int,
+    title: str,
+    current_manual_id: Optional[int] = None,
+) -> None:
+    existing = manual_repo.get_active_by_title(db, org_id=org_id, title=title)
+    if existing and existing.id != current_manual_id:
+        raise ConflictError("An active manual with this title already exists")
+
+
+def _delete_physical_file_or_fail(storage_path: str) -> bool:
+    storage = get_manual_storage()
+    if not storage.exists(storage_path):
+        return False
+
+    storage.delete(storage_path)
+    if storage.exists(storage_path):
+        raise StorageError("Failed to delete manual file from storage")
+    return True
+
+
 # ── POST /upload ──────────────────────────────────────────────
 
 
@@ -75,39 +108,22 @@ _ALL_ROLES = require_roles(
 )
 def upload_manual(
     title: str = Form(..., description="Human-readable document title"),
+    note: Optional[str] = Form(None, description="Manager note shown in the update feed"),
     file: UploadFile = File(..., description="PDF file to upload"),
     request: Request = None,
     current_user: User = Depends(_ADMIN),
     db: DbSession = Depends(get_db),
 ):
-    contents = file.file.read()
+    title = title.strip()
+    if not title:
+        raise ConflictError("Manual title is required")
 
-    # ── 3. Size limit ──────────────────────────────────────────
-    if len(contents) > _MAX_BYTES:
-        raise PayloadTooLargeError(f"File exceeds {settings.MAX_UPLOAD_SIZE_MB} MB limit")
-
-    if len(contents) == 0:
-        raise UnsupportedMediaError("Uploaded file is empty")
-
-    # ── 4. Magic-byte validation ───────────────────────────────
-    if not contents[:5].startswith(_PDF_MAGIC):
-        raise UnsupportedMediaError("File is not a valid PDF (magic bytes check failed)")
-
-    # ── 5. SHA-256 deduplication ───────────────────────────────
-    sha256 = hashlib.sha256(contents).hexdigest()
-    if manual_repo.get_by_sha256(db, sha256):
-        raise ConflictError("An identical file (same SHA-256 hash) already exists")
-
-    # ── 6. Secure filename ─────────────────────────────────────
-    safe_name = secure_filename(file.filename or "manual.pdf")
-    if not safe_name.lower().endswith(".pdf"):
-        safe_name += ".pdf"
+    _ensure_unique_active_title(db, org_id=current_user.org_id, title=title)
+    contents, sha256, safe_name = _read_and_validate_pdf(file)
 
     storage = get_manual_storage()
     client_ip = request.client.host if request and request.client else None
 
-    # ── 1. Transaction safety: DB record created with placeholder,
-    #    committed only AFTER successful disk write ─────────────
     manual = manual_repo.create(
         db,
         org_id=current_user.org_id,
@@ -120,7 +136,7 @@ def upload_manual(
         uploaded_by=current_user.id,
     )
 
-    relative_path = f"{manual.id}_{safe_name}"
+    relative_path = f"{manual.id}_v{manual.version_number}_{safe_name}"
     try:
         disk_path = storage.save(relative_path, contents)
     except StorageError:
@@ -128,7 +144,19 @@ def upload_manual(
         raise
 
     manual.storage_path = disk_path
-    # ── 8. Audit logging ───────────────────────────────────────
+
+    manual_update_event_repo.create(
+        db,
+        org_id=current_user.org_id,
+        manual_id=manual.id,
+        actor_user_id=current_user.id,
+        action="uploaded",
+        title=manual.title,
+        note=note,
+        new_storage_path=disk_path,
+        new_sha256=sha256,
+        new_version_number=manual.version_number,
+    )
     audit_service.record(
         db,
         action="manual.upload",
@@ -137,10 +165,11 @@ def upload_manual(
         user_id=current_user.id,
         org_id=current_user.org_id,
         ip=client_ip,
-        metadata={"sha256": sha256, "file_size": len(contents), "title": title},
+        metadata={"sha256": sha256, "file_size": len(contents), "title": title, "note": note},
     )
 
     db.commit()
+    db.refresh(manual)
 
     return ManualUploadOut(
         id=manual.id,
@@ -148,6 +177,127 @@ def upload_manual(
         original_filename=manual.original_filename,
         file_size=manual.file_size,
         sha256=manual.sha256,
+        version_number=manual.version_number,
+    )
+
+
+# ── POST /{id}/update ─────────────────────────────────────────
+
+
+@router.post(
+    "/{manual_id}/update",
+    response_model=ManualUpdateOut,
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+        413: {"model": ErrorResponse},
+        415: {"model": ErrorResponse},
+    },
+    summary="Replace the PDF for an existing manual (admin only)",
+)
+def update_manual(
+    manual_id: int,
+    file: UploadFile = File(..., description="Replacement PDF file"),
+    title: Optional[str] = Form(None, description="Optional replacement title"),
+    note: Optional[str] = Form(None, description="Manager note shown in the update feed"),
+    request: Request = None,
+    current_user: User = Depends(_ADMIN),
+    db: DbSession = Depends(get_db),
+):
+    manual = manual_repo.get_by_id(db, manual_id)
+    if manual is None or manual.org_id != current_user.org_id:
+        raise NotFoundError("Manual not found")
+
+    new_title = title.strip() if title is not None else manual.title
+    if not new_title:
+        raise ConflictError("Manual title is required")
+    _ensure_unique_active_title(
+        db,
+        org_id=current_user.org_id,
+        title=new_title,
+        current_manual_id=manual.id,
+    )
+
+    contents, sha256, safe_name = _read_and_validate_pdf(file)
+    storage = get_manual_storage()
+    client_ip = request.client.host if request and request.client else None
+
+    old_storage_path = manual.storage_path
+    old_sha256 = manual.sha256
+    old_version_number = manual.version_number
+    next_version = (manual.version_number or 1) + 1
+    relative_path = f"{manual.id}_v{next_version}_{safe_name}"
+
+    try:
+        disk_path = storage.save(relative_path, contents)
+    except StorageError:
+        db.rollback()
+        raise
+
+    manual_repo.update_file_metadata(
+        db,
+        manual,
+        storage_path=disk_path,
+        original_filename=safe_name,
+        file_size=len(contents),
+        sha256=sha256,
+        uploaded_by=current_user.id,
+        title=new_title,
+    )
+
+    old_file_deleted = False
+    try:
+        old_file_deleted = _delete_physical_file_or_fail(old_storage_path)
+    except StorageError:
+        # Keep the update, but expose the storage cleanup failure in audit metadata.
+        logger.exception("Manual updated, but old PDF cleanup failed: manual_id=%s", manual.id)
+
+    manual_update_event_repo.create(
+        db,
+        org_id=current_user.org_id,
+        manual_id=manual.id,
+        actor_user_id=current_user.id,
+        action="updated",
+        title=manual.title,
+        note=note,
+        old_storage_path=old_storage_path,
+        new_storage_path=disk_path,
+        old_sha256=old_sha256,
+        new_sha256=sha256,
+        old_version_number=old_version_number,
+        new_version_number=manual.version_number,
+    )
+    audit_service.record(
+        db,
+        action="manual.update",
+        target_type="manual",
+        target_id=manual.id,
+        user_id=current_user.id,
+        org_id=current_user.org_id,
+        ip=client_ip,
+        metadata={
+            "title": manual.title,
+            "note": note,
+            "old_sha256": old_sha256,
+            "new_sha256": sha256,
+            "old_version_number": old_version_number,
+            "new_version_number": manual.version_number,
+            "old_file_deleted": old_file_deleted,
+        },
+    )
+
+    db.commit()
+    db.refresh(manual)
+
+    return ManualUpdateOut(
+        id=manual.id,
+        title=manual.title,
+        original_filename=manual.original_filename,
+        file_size=manual.file_size,
+        sha256=manual.sha256,
+        version_number=manual.version_number,
     )
 
 
@@ -161,12 +311,14 @@ def upload_manual(
         401: {"model": ErrorResponse},
         403: {"model": ErrorResponse},
         404: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
     },
     summary="Delete a manual (admin only)",
 )
 def delete_manual(
     manual_id: int,
     request: Request,
+    note: Optional[str] = Query(None, description="Manager note shown in the update feed"),
     current_user: User = Depends(_ADMIN),
     db: DbSession = Depends(get_db),
 ):
@@ -174,10 +326,26 @@ def delete_manual(
     if manual is None or manual.org_id != current_user.org_id:
         raise NotFoundError("Manual not found")
 
-    storage = get_manual_storage()
-    storage.delete(manual.storage_path)
+    file_deleted = _delete_physical_file_or_fail(manual.storage_path)
+
+    old_storage_path = manual.storage_path
+    old_sha256 = manual.sha256
+    old_version_number = manual.version_number
+    title = manual.title
 
     manual_repo.soft_delete(db, manual)
+    manual_update_event_repo.create(
+        db,
+        org_id=current_user.org_id,
+        manual_id=manual.id,
+        actor_user_id=current_user.id,
+        action="deleted",
+        title=title,
+        note=note,
+        old_storage_path=old_storage_path,
+        old_sha256=old_sha256,
+        old_version_number=old_version_number,
+    )
     audit_service.record(
         db,
         action="manual.delete",
@@ -186,6 +354,13 @@ def delete_manual(
         user_id=current_user.id,
         org_id=current_user.org_id,
         ip=request.client.host if request.client else None,
+        metadata={
+            "title": title,
+            "note": note,
+            "old_sha256": old_sha256,
+            "old_version_number": old_version_number,
+            "physical_file_deleted": file_deleted,
+        },
     )
     db.commit()
     return ManualDeleteOut()
