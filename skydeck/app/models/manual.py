@@ -46,7 +46,7 @@ class Manual(Base):
     original_filename: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     mime_type: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     file_size: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
-    sha256: Mapped[Optional[str]] = mapped_column(Text, nullable=True, unique=True)
+    sha256: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     version_number: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     uploaded_by: Mapped[Optional[int]] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
