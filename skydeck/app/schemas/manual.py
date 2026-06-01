@@ -32,7 +32,22 @@ class ManualUploadOut(BaseModel):
     original_filename: Optional[str] = None
     file_size: Optional[int] = None
     sha256: Optional[str] = None
+    version_number: int = 1
     message: str = "Manual uploaded successfully"
+
+    model_config = {"from_attributes": True}
+
+
+class ManualUpdateOut(BaseModel):
+    """Response after replacing the PDF for an existing manual."""
+
+    id: int
+    title: str
+    original_filename: Optional[str] = None
+    file_size: Optional[int] = None
+    sha256: Optional[str] = None
+    version_number: int
+    message: str = "Manual updated successfully"
 
     model_config = {"from_attributes": True}
 
