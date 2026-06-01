@@ -13,6 +13,8 @@ import Clipboard from "../pages/Clipboard";
 import AircraftDocuments from "../pages/AircraftDocuments";
 import A300_600 from "../pages/A300_600";
 import IranAirChat from "../pages/IranAirChat";
+import Setting from "../pages/Setting";
+import UpdateManuals from "../pages/UpdateManuals";
 export default function AppRouter() {
   return (
     <BrowserRouter>
@@ -60,6 +62,21 @@ export default function AppRouter() {
               element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
             >
               <Route index element={<Manuals />} />
+              
+            </Route>
+            
+            <Route
+              path="setting"
+              element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
+            >
+              <Route index element={<Setting />} />
+              
+            </Route>
+            <Route
+              path="UpdateManuals"
+              element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
+            >
+              <Route index element={<UpdateManuals />} />
               
             </Route>
             <Route path="allDocuments" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
