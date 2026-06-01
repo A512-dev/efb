@@ -1,5 +1,5 @@
 @import url("./styles.css");
-
+@import url("./iranairchat.css");
 :root {
   --bg: #dddddd;
   --text: #2b2b2b;
@@ -590,111 +590,6 @@ h5 {
   border-radius: 0.375rem;
   margin-bottom: 25px;
 }
-
-.chatbox {
-  width: 70%;
-  box-sizing: border-box;
-}
-
-.chat-role {
-  margin-top: 8px;
-  color: #666;
-  font-size: 12px;
-}
-
-.chat-recipient-box {
-  margin-top: 12px;
-}
-
-.chat-recipient-label {
-  display: block;
-  margin-bottom: 6px;
-}
-
-.chat-recipient-input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  box-sizing: border-box;
-}
-
-.chat-recipient-help {
-  color: #777;
-}
-
-.chat-status {
-  margin-top: 10px;
-}
-
-.chat-toolbar {
-  margin-top: 20px;
-}
-
-.chat-toolbar-label {
-  margin-right: 10px;
-}
-
-.chat-refresh-btn {
-  margin-left: 10px;
-}
-
-.chat-messages {
-  margin-top: 10px;
-  max-height: 400px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 4px;
-}
-
-.chat-message-card {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 10px;
-  width: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
-  background: #fff;
-}
-
-.chat-message-card.unread {
-  background: #f5f9ff;
-  cursor: pointer;
-}
-
-.chat-message-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
-}
-
-.chat-message-title {
-  word-break: break-word;
-}
-
-.chat-message-date {
-  color: #777;
-  word-break: break-word;
-}
-
-.chat-message-meta {
-  margin-bottom: 8px;
-  font-size: 12px;
-  color: #555;
-  word-break: break-word;
-}
-
-.chat-message-body {
-  margin: 8px 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
-
 .manualUploadForm {
   display: flex;
   flex-wrap: wrap;
@@ -770,7 +665,18 @@ h5 {
 .deleteBtn:active {
   transform: scale(0.97);
 }
-
+.chat-unread-badge {
+  position: absolute;
+  right: 10px;
+}
+.imgdangersidebar {
+  margin-bottom: -5px;
+  margin-top: 5px;
+  margin-right: 2px;
+}
+.chat-unread-count {
+  color: #ab0000;
+}
 @media (max-width: 1280px) {
   .manualsAdminContainer {
     margin-right: 0;

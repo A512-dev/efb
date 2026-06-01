@@ -12,15 +12,15 @@ return(
     <>
     <div className="manualsContainerLeft">
       <div className="div-header">
-        <NavLink className="card-header1" to={'/dashboard/allDocuments'}>all documents </NavLink>
+        <NavLink className="card-header1" to={'/dashboard/allDocuments'}>All Documents </NavLink>
       <NavLink className="card-header2" to={ '/dashboard/clipboard'} >Clipboard </NavLink>
       
     </div>
       <NavLink className={'headersForManuals'} to="/dashboard/A300_600">A300/600</NavLink>
-      <NavLink to="/dashboard/manuals" className={'headersForManuals'}>Iran Air</NavLink>
-      <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Training & resources</NavLink>
+      <NavLink to="/dashboard/A300_600" className={'headersForManuals'}>Iranair</NavLink>
+      <NavLink className={'headersForManuals'} to="/dashboard/A300_600"> Training & Resources</NavLink>
       <NavLink className={'headersForManuals'} to="/dashboard/forms"> Forms</NavLink>
-      <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Safety issue </NavLink>
+      <NavLink className={'headersForManuals'} to="/dashboard/A300_600"> Safety Issue </NavLink>
     </div>
     {/* <div className="manualsContainer">
 

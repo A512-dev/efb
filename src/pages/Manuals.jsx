@@ -14,15 +14,15 @@ const Manuals = () =>{
     <>
     <div className="manualsContainerLeft">
       <div className="div-header">
-        <NavLink className="card-header1 active" to={'/dashboard/allDocuments'}>all documents </NavLink>
+        <NavLink className="card-header1 active" to={'/dashboard/allDocuments'}>All documents </NavLink>
       <NavLink className="card-header2"  to={ '/dashboard/clipboard'}>Clipboard </NavLink>
       
     </div>
       <NavLink className={'headersForManuals'} to="/dashboard/a300_600">A300/600</NavLink>
-      <NavLink to="/dashboard/manuals" className={'headersForManuals'}>Iran Air</NavLink>
-      <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Training & resources</NavLink>
+      <NavLink to="/dashboard/manuals" className={'headersForManuals'}>Iranair</NavLink>
+      <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Training & Resources</NavLink>
       <NavLink className={'headersForManuals'} to="/dashboard/forms"> Forms</NavLink>
-      <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Safety issue </NavLink>
+      <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Safety Issue </NavLink>
       
       {/* <NavLink to="/dashboard/safetyIssue" className={'headersForManuals'}><img src={safetyIssueSvg} alt="" className="navIcon" /> Safety Issue</NavLink>
       <NavLink to="/dashboard/trainingIssue" className={'headersForManuals'}><img src={trainingIssueSvg} alt="" className="navIcon" /> Training Issue</NavLink> */}

@@ -89,66 +89,171 @@
 //   );
 // }
 
-import { NavLink } from "react-router-dom";
-import { useState , useEffect } from "react";
+// import { NavLink } from "react-router-dom";
+// import { useState , useEffect } from "react";
 
-import { useAuth } from "../auth/useAuth";
-import ThemeToggle from "./ThemeToggle";
-import darkSkyTechPng from '../assets/icons/skytech-logo-transparent-white.webp'
-// import lightSkyTechPng from '../assets/icons/Skytech-logo-transparent (1).png'
-import documentSvg from '../assets/icons/Common-File-Stack--Streamline-Ultimate copy.svg'
-import crewProfileSvg from '../assets/icons/Following-1--Streamline-Ultimate.svg'
-import formsSvg from '../assets/icons/Kindle-Hold--Streamline-Ultimate.svg'
-import manualsAdminSvg from '../assets/icons/Monitor-Transfer-1--Streamline-Ultimate.svg'
-import addPilotSvg from '../assets/icons/Add-Circle-Bold--Streamline-Ultimate.svg'
+// import { useAuth } from "../auth/useAuth";
+// import ThemeToggle from "./ThemeToggle";
+// import darkSkyTechPng from '../assets/icons/skytech-logo-transparent-white.webp'
+// import riskicon from "../assets/icons/risk-icon.svg";
 
-import safetyIssueSvg from '../assets/icons/Laptop-Warning--Streamline-Ultimate.svg'
-import trainingIssueSvg from '../assets/icons/Electronics-Fuse--Streamline-Ultimate.svg'
-import checkListSvg from '../assets/icons/Notes-Checklist-Flip--Streamline-Ultimate.svg'
-import iranAirLogo from '../assets/icons/iranair-logo (1).png'
-import chatboxicon from '../assets/icons/chatboxicon.svg'
-import settingIcon from '../assets/icons/settings.svg'
-const SideBar = () =>{
+// import documentSvg from '../assets/icons/Common-File-Stack--Streamline-Ultimate copy.svg'
+// import crewProfileSvg from '../assets/icons/Following-1--Streamline-Ultimate.svg'
+// import formsSvg from '../assets/icons/Kindle-Hold--Streamline-Ultimate.svg'
+// import manualsAdminSvg from '../assets/icons/Monitor-Transfer-1--Streamline-Ultimate.svg'
+// import addPilotSvg from '../assets/icons/Add-Circle-Bold--Streamline-Ultimate.svg'
+
+// import safetyIssueSvg from '../assets/icons/Laptop-Warning--Streamline-Ultimate.svg'
+// import trainingIssueSvg from '../assets/icons/Electronics-Fuse--Streamline-Ultimate.svg'
+// import checkListSvg from '../assets/icons/Notes-Checklist-Flip--Streamline-Ultimate.svg'
+// import iranAirLogo from '../assets/icons/iranair-logo (1).png'
+// import chatboxicon from '../assets/icons/download.svg'
+// import settingIcon from '../assets/icons/settings.svg'
+// const SideBar = () =>{
  
-   const [theme, setTheme] = useState("light");
+//    const [theme, setTheme] = useState("light");
 
-    useEffect(() => {
-      setTheme(document.documentElement.getAttribute("data-theme") || "light");
-    }, []);
-    const { user} = useAuth();
+//     useEffect(() => {
+//       setTheme(document.documentElement.getAttribute("data-theme") || "light");
+//     }, []);
+//     const { user} = useAuth();
 
-  if (!user) return null;
+//   if (!user) return null;
 
-  return (
+//   return (
     
 
-<aside className="SideBar">
-  <img src={iranAirLogo} style={{width:'50%', marginLeft:'25%',marginBottom:'-15%'}} alt="" />
-  <h3> IranAir EFB</h3>
+// <aside className="SideBar">
+//   <img src={iranAirLogo} style={{width:'50%', marginLeft:'25%',marginBottom:'-15%'}} alt="" />
+//   <h3> IranAir EFB</h3>
 
-  {(user.role === "pilot" || user.role === "admin") && (
-    <>
-      <NavLink className={'nav-item'} to="/dashboard/profile"><img src={crewProfileSvg} alt="" className="navIcon" /> Profile</NavLink>
-      <NavLink to="/dashboard/manuals" className={'nav-item'}><img src={documentSvg} alt="" className="navIcon" /> Documents</NavLink>
-      <NavLink className={'nav-item'} to="/dashboard/IranAirChat"><img src={chatboxicon} alt="" className="navIcon chatboxicon" /> IranAir chat</NavLink>
-      <NavLink className={'nav-item'} to="/dashboard/setting"><img src={settingIcon} alt="" className="navIcon chatboxicon" /> Settings</NavLink>
-      {/* <NavLink to="/dashboard/safetyIssue" className={'nav-item'}><img src={safetyIssueSvg} alt="" className="navIcon" /> Safety Issue</NavLink>
-      <NavLink to="/dashboard/trainingIssue" className={'nav-item'}><img src={trainingIssueSvg} alt="" className="navIcon" /> Training Issue</NavLink> */}
-      {/* <NavLink to="/dashboard/checkList" className={'nav-item'}><img src={checkListSvg} alt="" className="navIcon" /> Check list</NavLink>   */}
-    </>
-  )}
+//   {(user.role === "pilot" || user.role === "admin") && (
+//     <>
+//       <NavLink className={'nav-item'} to="/dashboard/profile"><img src={crewProfileSvg} alt="" className="navIcon" /> Profile</NavLink>
+//       <NavLink to="/dashboard/manuals" className={'nav-item'}><img src={documentSvg} alt="" className="navIcon" /> Documents</NavLink>
+//       <NavLink className={'nav-item'} to="/dashboard/IranAirChat"><img src={chatboxicon} alt="" className="navIcon chatboxicon" /> IranAir Chat</NavLink>
+//       <NavLink className={'nav-item'} to="/dashboard/setting"><img src={settingIcon} alt="" className="navIcon chatboxicon" /> Settings</NavLink>
+//       {/* <NavLink to="/dashboard/safetyIssue" className={'nav-item'}><img src={safetyIssueSvg} alt="" className="navIcon" /> Safety Issue</NavLink>
+//       <NavLink to="/dashboard/trainingIssue" className={'nav-item'}><img src={trainingIssueSvg} alt="" className="navIcon" /> Training Issue</NavLink> */}
+//       {/* <NavLink to="/dashboard/checkList" className={'nav-item'}><img src={checkListSvg} alt="" className="navIcon" /> Check list</NavLink>   */}
+//     </>
+//   )}
 
-  {user.role === "admin" && (
-    <>
-      <NavLink to="/dashboard/manuals-admin" className={'nav-item'}><img src={manualsAdminSvg} alt="" className="navIcon" /> Manage</NavLink>
-      <NavLink to="/dashboard/add-profile" className={'nav-item'}><img src={addPilotSvg} alt="" className="navIcon" /> Add Pilot</NavLink>
-    </>
-  )}
+//   {user.role === "admin" && (
+//     <>
+//       <NavLink to="/dashboard/manuals-admin" className={'nav-item'}><img src={manualsAdminSvg} alt="" className="navIcon" /> Manage</NavLink>
+//       <NavLink to="/dashboard/add-profile" className={'nav-item'}><img src={addPilotSvg} alt="" className="navIcon" /> Add Pilot</NavLink>
+//     </>
+//   )}
 
   
 
-</aside>
+// </aside>
 
+//   );
+// }
+// export default SideBar
+import { NavLink } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { useAuth } from "../auth/useAuth";
+
+import documentSvg from "../assets/icons/Common-File-Stack--Streamline-Ultimate copy.svg";
+import crewProfileSvg from "../assets/icons/Following-1--Streamline-Ultimate.svg";
+import manualsAdminSvg from "../assets/icons/Monitor-Transfer-1--Streamline-Ultimate.svg";
+import addPilotSvg from "../assets/icons/Add-Circle-Bold--Streamline-Ultimate.svg";
+import iranAirLogo from "../assets/icons/iranair-logo (1).png";
+import chatboxicon from "../assets/icons/download.svg";
+import settingIcon from "../assets/icons/settings.svg";
+import riskicon from "../assets/icons/risk-icon.svg";
+
+
+import { listMessages } from "../services/apiService";
+
+const SideBar = () => {
+  const { user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  if (!user) return null;
+
+  const canSeeChat = user.role === "pilot" || user.role === "admin";
+
+  const fetchUnreadCount = async () => {
+    try {
+      
+      const data = await listMessages({ box: "inbox", page: 1, limit: 50 });
+
+      const items =
+        data?.items || data?.results || data?.data || data?.messages || [];
+
+      const count = items.filter((m) => !(m.is_read || m.read_at)).length;
+      setUnreadCount(count);
+    } catch (e) {
+      
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (!canSeeChat) return;
+
+    fetchUnreadCount(); 
+
+    
+    const t = setInterval(fetchUnreadCount, 2000);
+    return () => clearInterval(t);
+  }, [canSeeChat]);
+
+  return (
+    <aside className="SideBar">
+      <img
+        src={iranAirLogo}
+        style={{ width: "50%", marginLeft: "25%", marginBottom: "-15%" }}
+        alt=""
+      />
+      <h3> IranAir EFB</h3>
+
+      {canSeeChat && (
+        <>
+          <NavLink className="nav-item" to="/dashboard/profile">
+            <img src={crewProfileSvg} alt="" className="navIcon" /> Profile
+          </NavLink>
+
+          <NavLink to="/dashboard/manuals" className="nav-item">
+            <img src={documentSvg} alt="" className="navIcon" /> Documents
+          </NavLink>
+
+          <NavLink className="nav-item" to="/dashboard/IranAirChat">
+            <img src={chatboxicon} alt="" className="navIcon chatboxicon" />
+            <span className="nav-text"> IranAir Chat</span>
+
+            
+            {unreadCount > 0 && (
+              <span className="chat-unread-badge" title={`${unreadCount} unread`}>
+                <img src={riskicon} className="imgdangersidebar" alt="unread" />
+                <span className="chat-unread-count">{unreadCount}</span>
+              </span>
+            )}
+          </NavLink>
+
+          <NavLink className="nav-item" to="/dashboard/setting">
+            <img src={settingIcon} alt="" className="navIcon chatboxicon" />{" "}
+            Settings
+          </NavLink>
+        </>
+      )}
+
+      {user.role === "admin" && (
+        <>
+          <NavLink to="/dashboard/manuals-admin" className="nav-item">
+            <img src={manualsAdminSvg} alt="" className="navIcon" /> Manage
+          </NavLink>
+          <NavLink to="/dashboard/add-profile" className="nav-item">
+            <img src={addPilotSvg} alt="" className="navIcon" /> Add Pilot
+          </NavLink>
+        </>
+      )}
+    </aside>
   );
-}
-export default SideBar
+};
+
+export default SideBar;
