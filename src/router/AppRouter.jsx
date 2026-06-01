@@ -95,7 +95,7 @@ export default function AppRouter() {
             >
             <Route index element={<AircraftDocuments/>} />
             </Route>
-            <Route path="IranAirChat" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
+            <Route path="Chat" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
             >
             <Route index element={<IranAirChat/>} />
             </Route>

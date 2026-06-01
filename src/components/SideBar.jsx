@@ -165,6 +165,7 @@ import iranAirLogo from "../assets/icons/iranair-logo (1).png";
 import chatboxicon from "../assets/icons/download.svg";
 import settingIcon from "../assets/icons/settings.svg";
 import riskicon from "../assets/icons/risk-icon.svg";
+import skyTechLogo from '../assets/icons/skytech-logo-transparent-white.webp'
 
 
 import { listMessages } from "../services/apiService";
@@ -206,11 +207,11 @@ const SideBar = () => {
   return (
     <aside className="SideBar">
       <img
-        src={iranAirLogo}
+        src={skyTechLogo}
         style={{ width: "50%", marginLeft: "25%", marginBottom: "-15%" }}
         alt=""
       />
-      <h3> IranAir EFB</h3>
+      <h3> SkyTechSharif</h3>
 
       {canSeeChat && (
         <>
@@ -222,9 +223,9 @@ const SideBar = () => {
             <img src={documentSvg} alt="" className="navIcon" /> Documents
           </NavLink>
 
-          <NavLink className="nav-item" to="/dashboard/IranAirChat">
+          <NavLink className="nav-item" to="/dashboard/Chat">
             <img src={chatboxicon} alt="" className="navIcon chatboxicon" />
-            <span className="nav-text"> IranAir Chat</span>
+            <span className="nav-text"> Chat</span>
 
             
             {unreadCount > 0 && (

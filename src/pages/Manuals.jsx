@@ -19,7 +19,7 @@ const Manuals = () =>{
       
     </div>
       <NavLink className={'headersForManuals'} to="/dashboard/a300_600">A300/600</NavLink>
-      <NavLink to="/dashboard/manuals" className={'headersForManuals'}>Iranair</NavLink>
+      {/* a */}
       <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Training & Resources</NavLink>
       <NavLink className={'headersForManuals'} to="/dashboard/forms"> Forms</NavLink>
       <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Safety Issue </NavLink>

@@ -17,7 +17,7 @@ return(
       
     </div>
       <NavLink className={'headersForManuals'} to="/dashboard/A300_600">A300/600</NavLink>
-      <NavLink to="/dashboard/A300_600" className={'headersForManuals'}>Iranair</NavLink>
+      {/* <NavLink to="/dashboard/A300_600" className={'headersForManuals'}>Iranair</NavLink> */}
       <NavLink className={'headersForManuals'} to="/dashboard/A300_600"> Training & Resources</NavLink>
       <NavLink className={'headersForManuals'} to="/dashboard/forms"> Forms</NavLink>
       <NavLink className={'headersForManuals'} to="/dashboard/A300_600"> Safety Issue </NavLink>
