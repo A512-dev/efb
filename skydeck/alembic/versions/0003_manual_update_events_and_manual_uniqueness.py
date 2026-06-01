@@ -62,18 +62,18 @@ def upgrade() -> None:
         ["created_at"],
     )
 
-    op.drop_constraint("manuals_sha256_key", "manuals", type_="unique")
-    op.create_index(
-        "uq_manuals_active_org_title",
-        "manuals",
-        ["org_id", sa.text("lower(title)")],
-        unique=True,
-        postgresql_where=sa.text("deleted_at IS NULL"),
+    op.execute("ALTER TABLE manuals DROP CONSTRAINT IF EXISTS manuals_sha256_key")
+    op.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_manuals_active_org_title
+        ON manuals (org_id, lower(title))
+        WHERE deleted_at IS NULL
+        """
     )
 
 
 def downgrade() -> None:
-    op.drop_index("uq_manuals_active_org_title", table_name="manuals")
+    op.execute("DROP INDEX IF EXISTS uq_manuals_active_org_title")
     op.create_unique_constraint("manuals_sha256_key", "manuals", ["sha256"])
 
     op.drop_index("idx_manual_update_events_created_at", table_name="manual_update_events")
