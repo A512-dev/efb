@@ -1,67 +1,5 @@
-/* @import url("./styles.css");
-:root {
-  --bg: #ffffff;
-  --text: #ffffff;
-  --bg_input: black;
-  --border: solid 3px red;
-  --bg-success: rgb(25, 135, 84);
-  --bg-secondary: rgb(108, 117, 125);
-  --bg-danger: rgb(220, 53, 69);
-  --bg-warning: rgb(255, 193, 7);
-  --bg-info: rgb(13, 202, 240);
-  --bg-light: rgb(184, 184, 184);
-  --bg-night: rgb(18, 18, 22);
-  --bg-dark: rgb(30, 32, 36);
-  --bg-body: rgb(255, 255, 255);
-  --bg-white: rgb(255, 255, 255);
-  --h2: rgb(59, 61, 62);
-}
-
-[data-theme="dark"] {
-  --bg: #121212;
-  --text: #ffffff;
-  --border: solid 3px white;
-  --bg_input: purple;
-  --bg-success: rgb(25, 135, 84);
-  --bg-secondary: rgb(108, 117, 125);
-  --bg-danger: rgb(220, 53, 69);
-  --bg-warning: rgb(255, 193, 7);
-  --bg-info: rgb(13, 202, 240);
-  --bg-light: rgb(184, 184, 184);
-  --bg-night: rgb(18, 18, 22);
-  --bg-dark: rgb(30, 32, 36);
-  --bg-body: rgb(255, 255, 255);
-  --bg-white: rgb(255, 255, 255);
-  --h2: #2dc3df;
-}
-h2 {
-  color: var(--h2);
-}
-body {
-}
-h2 body {
-  background: var(--bg);
-  color: var(--text);
-  transition:
-    background 0.2s ease,
-    color 0.2s ease;
-}
-.loginInput {
-  width: 275.33px;
-  max-width: auto;
-  padding: 8px;
-  margin-bottom: 3.5vh;
-  color: var(--text);
-  border: 1px solid #083ba974;
-  border: 0;
-  border-bottom: #d4af37cd 1px solid;
-  background-color: var(--bg_input);
-  box-shadow: 0rem 0.125rem 0.425rem 0.0625rem #10192e54;
-  border-radius: 18px;
-} */
-
 @import url("./styles.css");
-
+@import url("./iranairchat.css");
 :root {
   --bg: #dddddd;
   --text: #2b2b2b;
@@ -187,6 +125,31 @@ body {
 .changethemebutton.active {
   background-color: #333;
   color: white;
+}
+.loginError {
+  color: #ffffff;
+  background-color: #e53e3e;
+  border: 1px solid #c53030;
+  padding: 10px 15px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+  font-size: 0.9em;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 .submitIssueButton {
@@ -504,6 +467,7 @@ h5 {
   border-radius: 0.375rem;
   box-shadow: var(--boxshadow_3d);
 }
+
 .div-header {
   position: relative;
   background-color: #96969672;
@@ -626,7 +590,6 @@ h5 {
   border-radius: 0.375rem;
   margin-bottom: 25px;
 }
-
 .manualUploadForm {
   display: flex;
   flex-wrap: wrap;
@@ -701,6 +664,177 @@ h5 {
 }
 .deleteBtn:active {
   transform: scale(0.97);
+}
+.chat-unread-badge {
+  position: absolute;
+  right: 10px;
+}
+.imgdangersidebar {
+  margin-bottom: -5px;
+  margin-top: 5px;
+  margin-right: 2px;
+}
+.chat-unread-count {
+  color: #ab0000;
+}
+.update-alert-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background-color: #ab0000;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  position: absolute;
+  right: 10px;
+}
+.manual-updates-panel {
+  width: 100%;
+  height: 82vh;
+  overflow: auto;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+  color: var(--text);
+}
+
+.manual-updates-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.manual-updates-title {
+  margin: 0;
+  font-size: 22px;
+  color: var(--text);
+}
+
+.manual-updates-state,
+.manual-updates-error {
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--bg_input);
+  color: var(--text);
+  border: 1px solid var(--card-border);
+}
+
+.manual-updates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.manual-update-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  padding: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.manual-update-card.unseen {
+  border-left: 4px solid var(--bg-danger);
+}
+
+.manual-update-card.seen {
+  opacity: 0.6;
+}
+
+.manual-update-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.manual-update-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.manual-update-action {
+  padding: 4px 10px;
+  border-radius: 999px;
+
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.manual-update-meta,
+.manual-update-files,
+.manual-update-version {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 12px;
+  margin-bottom: 10px;
+  color: var(--text);
+  opacity: 0.8;
+}
+
+.manual-update-note {
+  margin-bottom: 10px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.manual-updates-btn {
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.manual-updates-btn:hover {
+  background: var(--bg_input);
+}
+
+.manual-updates-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.replaceBtn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.replaceBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.update-alert-count {
+  background: #ab0000;
+  color: white;
+  font-size: 12px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  margin-left: 8px;
 }
 
 @media (max-width: 1280px) {
@@ -887,7 +1021,6 @@ h5 {
     margin-top: 100px;
   }
   .loginBox {
-    margin-top: -100px;
   }
   .manualItem {
     flex-direction: column;

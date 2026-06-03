@@ -48,10 +48,13 @@ import { useDownloadManual } from "../hooks/useDownloadManual";
 import { useDeleteManual } from "../hooks/useDeleteManual";
 import { getManuals, uploadManual } from "../services/apiService";
 import downloadSvg from '../assets/icons/Import-File--Streamline-Ultimate.svg'
+import { updateManualPdf } from "../services/apiService";
+
 const ManualsAdmin = () => {
 
   const [title, setTitle] = useState("");
   const [file, setFile] = useState(null);
+const [updatingId, setUpdatingId] = useState(null);
 
 
   const { manuals, setManuals, loading } = useManuals();
@@ -152,6 +155,70 @@ const handleSubmit = async (e) => {
         </div>
 
         <div className="manualActions">
+          <button
+  type="button"
+  className="uploadBtn"
+  disabled={updatingId === manual.id}
+  onClick={() => document.getElementById(`replace-${manual.id}`)?.click()}
+>
+  {updatingId === manual.id ? "Replacing..." : "Replace PDF"}
+</button>
+
+<input
+  id={`replace-${manual.id}`}
+  type="file"
+  accept="application/pdf"
+  style={{ display: "none" }}
+  onChange={async (e) => {
+  const newFile = e.target.files?.[0];
+  if (!newFile) return;
+
+  const confirmed = window.confirm(
+    `Replace PDF for:\n\n"${manual.title}"\n\nwith file:\n${newFile.name} ?`
+  );
+  if (!confirmed) {
+    e.target.value = "";
+    return;
+  }
+
+  const newTitle =
+    window.prompt("Title (optional):", manual.title) ?? manual.title;
+
+  const note =
+    window.prompt("Note (optional):", "") ?? "";
+
+  try {
+    setUpdatingId(manual.id);
+
+    const updated = await updateManualPdf(manual.id, newFile, {
+      title: newTitle,
+      note,
+    });
+
+    
+    setManuals((prev) =>
+      prev.map((m) => (m.id === manual.id ? { ...m, ...updated } : m))
+    );
+
+    alert(`Manual "${newTitle}" updated successfully`);
+  } catch (err) {
+    console.error("Update error:", err);
+
+    const msg =
+      err?.response?.data?.detail ||
+      err?.response?.data?.error ||
+      err.message ||
+      "Replace failed";
+
+    alert(msg);
+  } finally {
+    setUpdatingId(null);
+    e.target.value = "";
+  }
+}}
+
+/>
+
           <button
             onClick={() => handleDownload(manual)}
             className="downloadBtn"

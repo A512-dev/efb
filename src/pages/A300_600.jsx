@@ -18,11 +18,11 @@ return(
       
     </div>
       <NavLink className={'headersForManuals'} to="/dashboard/aircraftdocuments">Aircraft documents</NavLink>
-      <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Aircraft performance</NavLink>
-      <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> fleet memos</NavLink>
-      <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> general</NavLink>
-      <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> MEL CDl </NavLink>
-      <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Training documents </NavLink>
+      <NavLink className={'headersForManuals'} to="/dashboard/aircraftdocuments"> Aircraft performance</NavLink>
+      <NavLink className={'headersForManuals'} to="/dashboard/aircraftdocuments"> Fleet Memos</NavLink>
+      <NavLink className={'headersForManuals'} to="/dashboard/aircraftdocuments"> General</NavLink>
+      <NavLink className={'headersForManuals'} to="/dashboard/aircraftdocuments"> MEL CDl </NavLink>
+      <NavLink className={'headersForManuals'} to="/dashboard/aircraftdocuments"> Training Documents </NavLink>
     </div>
     
     </>

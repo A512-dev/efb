@@ -1,9 +1,9 @@
 import { NavLink } from "react-router-dom";
 import ThemeToggle from "../components/ThemeToggle.jsx";
-import { useState } from "react";
+import { useNotifications } from "../Context/NotificationContext";
 
 const Setting = () => {
-  const [isFull, setIsFull] = useState(false);
+  const { updateCount } = useNotifications();
 
   return (
     <>
@@ -15,13 +15,17 @@ const Setting = () => {
         </div>
 
         <NavLink
-          className={`headersForManuals  ${isFull===false ? "unactive" : ""}`}
-          to={isFull ? "/dashboard/UpdateManuals" : "#"}
+          className={`headersForManuals ${updateCount === 0 ? "unactive" : ""}`}
+          to={updateCount > 0 ? "/dashboard/UpdateManuals" : "#"}
           onClick={(e) => {
-            if (!isFull) e.preventDefault();
+            if (updateCount === 0) e.preventDefault();
           }}
         >
-          Updates
+          <span>Updates</span>
+
+          {updateCount > 0 && (
+            <span className="update-alert-count">{updateCount}</span>
+          )}
         </NavLink>
 
         <NavLink to="/dashboard/manuals" className="headersForManuals">
@@ -31,8 +35,6 @@ const Setting = () => {
         <NavLink className="headersForManuals" to="/dashboard/manuals/chat">
           What's new
         </NavLink>
-
-        
 
         <h5 className="card-header">App theme</h5>
 
