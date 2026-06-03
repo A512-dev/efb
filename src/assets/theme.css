@@ -900,6 +900,7 @@ h5 {
 .chat-unread-count {
   color: #ab0000;
 }
+<<<<<<< HEAD
 .update-alert-count {
   display: inline-flex;
   align-items: center;
@@ -1061,6 +1062,8 @@ h5 {
   margin-left: 8px;
 }
 
+=======
+>>>>>>> origin/main
 @media (max-width: 1280px) {
   .manualsAdminContainer {
     margin-right: 0;

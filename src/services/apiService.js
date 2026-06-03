@@ -248,6 +248,7 @@ export const markMessageAsRead = async (messageId) => {
   const response = await apiClient.post(`/messages/${messageId}/read`);
   return response.data;
 };
+<<<<<<< HEAD
 //updates
 
 export const updateManualPdf = async (manualId, file, { title, note } = {}) => {
@@ -272,3 +273,5 @@ export const getManualUpdates = async () => {
   });
   return response.data;
 };
+=======
+>>>>>>> origin/main
