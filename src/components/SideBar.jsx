@@ -332,7 +332,7 @@ import addPilotSvg from "../assets/icons/Add-Circle-Bold--Streamline-Ultimate.sv
 import chatboxicon from "../assets/icons/download.svg";
 import settingIcon from "../assets/icons/settings.svg";
 import riskicon from "../assets/icons/risk-icon.svg";
-import skyTechLogo from "../assets/icons/skytech-logo-transparent-white.webp";
+import iranAirLogo from '../assets/icons/iranair-logo (1).png'
 
 import { listMessages } from "../services/apiService";
 
@@ -372,12 +372,12 @@ const SideBar = () => {
   return (
     <aside className="SideBar">
       <img
-        src={skyTechLogo}
+        src={iranAirLogo}
         style={{ width: "50%", marginLeft: "25%", marginBottom: "-15%" }}
         alt=""
       />
 
-      <h3>SkyTechSharif</h3>
+      <h3>IranAir EFB</h3>
 
       {canSeeChat && (
         <>

@@ -50,7 +50,7 @@ const UpdateManuals = () => {
       </div>
 
       <div className="manualsContainer">
-        <div className="manual-updates-panel">
+        
           <div className="manual-updates-header">
             <h2 className="manual-updates-title">Manual Updates</h2>
           </div>
@@ -102,7 +102,7 @@ const UpdateManuals = () => {
               );
             })}
           </div>
-        </div>
+        
       </div>
     </>
   );
