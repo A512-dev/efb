@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Identity, Index, Integer, Text, func
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Identity, Index, Integer, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -21,6 +21,21 @@ class ManualCategory(Base):
         Index("idx_manual_categories_org_id", "org_id"),
         Index("idx_manual_categories_parent_id", "parent_id"),
         Index("idx_manual_categories_active", "org_id", "is_active"),
+        Index(
+            "uq_manual_categories_root_slug",
+            "org_id",
+            "slug",
+            unique=True,
+            postgresql_where=text("parent_id IS NULL"),
+        ),
+        Index(
+            "uq_manual_categories_child_slug",
+            "org_id",
+            "parent_id",
+            "slug",
+            unique=True,
+            postgresql_where=text("parent_id IS NOT NULL"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
