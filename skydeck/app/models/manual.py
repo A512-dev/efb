@@ -22,6 +22,7 @@ from app.db.base import Base
 
 if TYPE_CHECKING:
     from app.models.manual_access_log import ManualAccessLog
+    from app.models.manual_category import ManualCategory
     from app.models.org import Org
     from app.models.user import User
 
@@ -32,6 +33,7 @@ class Manual(Base):
         CheckConstraint("file_size >= 0", name="ck_manuals_file_size"),
         CheckConstraint("version_number >= 1", name="ck_manuals_version_number"),
         Index("idx_manuals_org_id", "org_id"),
+        Index("idx_manuals_category_id", "category_id"),
         Index("idx_manuals_uploaded_by", "uploaded_by"),
         Index("idx_manuals_sha256", "sha256"),
         Index("idx_manuals_active", "id", postgresql_where=text("deleted_at IS NULL")),
@@ -40,6 +42,9 @@ class Manual(Base):
     id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     org_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
+    )
+    category_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("manual_categories.id", ondelete="RESTRICT"), nullable=False
     )
     title: Mapped[str] = mapped_column(Text, nullable=False)
     storage_path: Mapped[str] = mapped_column(Text, nullable=False)
@@ -63,5 +68,6 @@ class Manual(Base):
 
     # ── relationships ──────────────────────────────────────
     org: Mapped[Org] = relationship(back_populates="manuals")
+    category: Mapped[ManualCategory] = relationship(back_populates="manuals")
     uploaded_by_user: Mapped[Optional[User]] = relationship(back_populates="uploaded_manuals")
     access_logs: Mapped[list[ManualAccessLog]] = relationship(back_populates="manual")
