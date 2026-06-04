@@ -12,6 +12,7 @@ from app.db.base import Base
 if TYPE_CHECKING:
     from app.models.form_template import FormTemplate
     from app.models.manual import Manual
+    from app.models.manual_category import ManualCategory
     from app.models.submission import Submission
     from app.models.user import User
 
@@ -30,6 +31,9 @@ class Org(Base):
     # ── relationships ──────────────────────────────────────
     users: Mapped[list[User]] = relationship(back_populates="org", cascade="all, delete-orphan")
     manuals: Mapped[list[Manual]] = relationship(back_populates="org", cascade="all, delete-orphan")
+    manual_categories: Mapped[list[ManualCategory]] = relationship(
+        back_populates="org", cascade="all, delete-orphan"
+    )
     form_templates: Mapped[list[FormTemplate]] = relationship(
         back_populates="org", cascade="all, delete-orphan"
     )
