@@ -1,3 +1,5 @@
+"""SQLAlchemy model for hierarchical manual categories."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -42,11 +44,13 @@ class ManualCategory(Base):
     org_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
     )
+    # parent_id creates the tree; null means this category is a root.
     parent_id: Mapped[Optional[int]] = mapped_column(
         BigInteger, ForeignKey("manual_categories.id", ondelete="CASCADE"), nullable=True
     )
     name: Mapped[str] = mapped_column(Text, nullable=False)
     slug: Mapped[str] = mapped_column(Text, nullable=False)
+    # sort_order keeps API responses stable before falling back to alphabetical names.
     sort_order: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

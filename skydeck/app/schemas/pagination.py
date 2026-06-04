@@ -1,3 +1,5 @@
+"""Reusable pagination request and response models."""
+
 from __future__ import annotations
 
 from typing import Generic, TypeVar
@@ -8,6 +10,8 @@ T = TypeVar("T")
 
 
 class PaginationParams(BaseModel):
+    """Validated page/limit inputs with a derived SQL offset."""
+
     page: int = Field(1, ge=1)
     limit: int = Field(20, ge=1, le=100)
 
@@ -17,6 +21,8 @@ class PaginationParams(BaseModel):
 
 
 class PaginatedResponse(BaseModel, Generic[T]):
+    """Generic wrapper for paginated API responses."""
+
     page: int
     limit: int
     total: int

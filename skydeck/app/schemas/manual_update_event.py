@@ -1,3 +1,5 @@
+"""Pydantic schemas for manual update feed responses."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -7,6 +9,8 @@ from pydantic import BaseModel
 
 
 class ManualUpdateEventOut(BaseModel):
+    """User-facing summary of one manual upload/update/delete event."""
+
     id: int
     org_id: int
     manual_id: Optional[int] = None

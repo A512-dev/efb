@@ -1,3 +1,10 @@
+"""Repository helpers for manuals and manual access logging.
+
+Repository modules keep SQLAlchemy query details out of API handlers and
+services. They generally flush pending changes but leave transaction commit or
+rollback decisions to their callers.
+"""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -27,6 +34,11 @@ def create(
     sha256: Optional[str] = None,
     uploaded_by: Optional[int] = None,
 ) -> Manual:
+    """Create the database row for a manual upload.
+
+    File bytes are handled by the storage service. This row stores the metadata
+    needed to locate, version, and audit the uploaded manual.
+    """
     manual = Manual(
         org_id=org_id,
         category_id=category_id,
@@ -44,6 +56,7 @@ def create(
 
 
 def _category_descendant_ids(db: DbSession, *, org_id: int, category_id: int):
+    """Build a recursive query for a category and its active descendants."""
     descendants = (
         select(ManualCategory.id)
         .where(ManualCategory.id == category_id, ManualCategory.org_id == org_id)
@@ -66,6 +79,7 @@ def list_active(
     category_id: Optional[int] = None,
     include_descendants: bool = True,
 ) -> list[Manual]:
+    """List active manuals, optionally scoped to a category subtree."""
     query = (
         db.query(Manual)
         .options(joinedload(Manual.category))
@@ -86,6 +100,7 @@ def list_active(
 
 
 def get_by_id(db: DbSession, manual_id: int) -> Optional[Manual]:
+    """Fetch a non-deleted manual by primary key, including its category."""
     return (
         db.query(Manual)
         .options(joinedload(Manual.category))
@@ -95,6 +110,7 @@ def get_by_id(db: DbSession, manual_id: int) -> Optional[Manual]:
 
 
 def get_active_by_title(db: DbSession, *, org_id: int, title: str) -> Optional[Manual]:
+    """Find an active manual in an organization by normalized title."""
     return (
         db.query(Manual)
         .filter(
@@ -129,6 +145,7 @@ def update_file_metadata(
     title: Optional[str] = None,
     category_id: Optional[int] = None,
 ) -> Manual:
+    """Replace a manual's file metadata and bump its visible version number."""
     if title is not None:
         manual.title = title
     if category_id is not None:
@@ -145,12 +162,14 @@ def update_file_metadata(
 
 
 def soft_delete(db: DbSession, manual: Manual) -> None:
+    """Mark a manual unavailable without removing its historical row."""
     manual.deleted_at = datetime.now(timezone.utc)
     manual.is_active = False
     db.flush()
 
 
 def touch_last_accessed(db: DbSession, manual: Manual) -> None:
+    """Update the manual's last-access timestamp after a successful read."""
     manual.last_accessed_at = datetime.now(timezone.utc)
     db.flush()
 
@@ -175,6 +194,7 @@ def record_access(
     watermark_hash_id: Optional[str] = None,
     ip: Optional[str] = None,
 ) -> ManualAccessLog:
+    """Record a user action against a manual for audit/reporting purposes."""
     log = ManualAccessLog(
         org_id=org_id,
         manual_id=manual_id,

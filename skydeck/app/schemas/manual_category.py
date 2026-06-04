@@ -1,3 +1,5 @@
+"""Pydantic schemas for manual category tree and breadcrumb responses."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -7,6 +9,8 @@ from pydantic import BaseModel, Field
 
 
 class ManualCategoryPathItem(BaseModel):
+    """Single breadcrumb segment for a category path."""
+
     id: int
     name: str
     slug: str
@@ -15,6 +19,8 @@ class ManualCategoryPathItem(BaseModel):
 
 
 class ManualCategoryOut(BaseModel):
+    """Flat category response used for root/children endpoints."""
+
     id: int
     org_id: int
     parent_id: Optional[int] = None
@@ -29,6 +35,8 @@ class ManualCategoryOut(BaseModel):
 
 
 class ManualCategoryTreeOut(BaseModel):
+    """Recursive category response used to render navigation trees."""
+
     id: int
     org_id: int
     parent_id: Optional[int] = None

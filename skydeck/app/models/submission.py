@@ -1,3 +1,5 @@
+"""SQLAlchemy model for submitted form responses."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -18,6 +20,8 @@ if TYPE_CHECKING:
 
 
 class Submission(Base):
+    """A completed or in-progress response to a specific form version."""
+
     __tablename__ = "submissions"
     __table_args__ = (
         Index("idx_submissions_org_id", "org_id"),
@@ -36,11 +40,13 @@ class Submission(Base):
     form_version_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("form_versions.id"), nullable=False
     )
+    # data_json stores field answers keyed by the dynamic form schema.
     data_json: Mapped[dict] = mapped_column(JSONB, nullable=False)
     status: Mapped[SubmissionStatus] = mapped_column(
         Enum(SubmissionStatus, name="submission_status", create_constraint=False, native_enum=True),
         server_default="pending",
     )
+    # hash_id gives external callers a stable public identifier without exposing integer ids.
     hash_id: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     ip: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
     device_info_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)

@@ -1,3 +1,5 @@
+"""SQLAlchemy model for reusable form definitions."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -14,6 +16,8 @@ if TYPE_CHECKING:
 
 
 class FormTemplate(Base):
+    """Named form family; individual revisions live in FormVersion."""
+
     __tablename__ = "form_templates"
     __table_args__ = (Index("idx_form_templates_org_id", "org_id"),)
 

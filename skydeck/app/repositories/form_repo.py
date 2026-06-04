@@ -1,3 +1,5 @@
+"""Repository helpers for reading form templates and versions."""
+
 from __future__ import annotations
 
 from typing import Optional
@@ -39,6 +41,7 @@ def get_active_forms(db: DbSession, *, org_id: int) -> list[dict]:
 
 
 def get_version_by_id(db: DbSession, version_id: int) -> Optional[FormVersion]:
+    """Fetch a concrete form version with its template relationship loaded."""
     return (
         db.query(FormVersion)
         .options(joinedload(FormVersion.template))

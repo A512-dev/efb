@@ -1,3 +1,5 @@
+"""SQLAlchemy model for uploaded operational manuals."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -30,6 +32,8 @@ if TYPE_CHECKING:
 
 
 class Manual(Base):
+    """A versioned PDF/manual file owned by an organization and category."""
+
     __tablename__ = "manuals"
     __table_args__ = (
         CheckConstraint("file_size >= 0", name="ck_manuals_file_size"),
@@ -49,6 +53,7 @@ class Manual(Base):
         BigInteger, ForeignKey("manual_categories.id", ondelete="RESTRICT"), nullable=False
     )
     title: Mapped[str] = mapped_column(Text, nullable=False)
+    # storage_path points to the file backend; the database stores metadata only.
     storage_path: Mapped[str] = mapped_column(Text, nullable=False)
     original_filename: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     mime_type: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -63,6 +68,7 @@ class Manual(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), onupdate=func.now(), nullable=True
     )
+    # deleted_at enables soft deletion so audit logs and historical references stay intact.
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     last_accessed_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True

@@ -1,3 +1,5 @@
+"""Internal user-to-user messaging routes."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
@@ -22,6 +24,7 @@ _PILOT_RECIPIENT_ROLES = {UserRole.pilot, UserRole.chief_pilot}
 
 
 def _normalise_recipient_ids(recipient_ids: list[int] | None) -> list[int]:
+    """Return a deduplicated recipient id list while preserving client order."""
     if not recipient_ids:
         return []
     # Preserve order while removing duplicates.
@@ -29,10 +32,12 @@ def _normalise_recipient_ids(recipient_ids: list[int] | None) -> list[int]:
 
 
 def _get_admin_recipients(db: DbSession, *, org_id: int) -> list[User]:
+    """Resolve the automatic admin recipients for pilot-originated messages."""
     return user_repo.list_by_org_and_roles(db, org_id=org_id, roles=list(_ADMIN_RECIPIENT_ROLES))
 
 
 def _get_users_by_ids(db: DbSession, *, org_id: int, user_ids: list[int]) -> list[User]:
+    """Fetch explicitly selected recipients inside the sender's organization."""
     if not user_ids:
         return []
     return user_repo.list_by_ids(db, org_id=org_id, user_ids=user_ids)
@@ -59,6 +64,7 @@ def send_message(
     recipient_ids = _normalise_recipient_ids(body.recipient_ids)
 
     if current_user.role in {UserRole.pilot, UserRole.chief_pilot}:
+        # Pilots broadcast to admins so they cannot accidentally message the wrong peer.
         if recipient_ids:
             raise AuthorisationError("Pilots cannot choose message recipients")
         recipients = _get_admin_recipients(db, org_id=current_user.org_id)
@@ -66,6 +72,7 @@ def send_message(
             raise AppError("No admin recipients are available in this organisation", code=400)
 
     elif current_user.role in _ADMIN_SENDER_ROLES:
+        # Admins choose recipients, but only pilot roles are valid targets.
         if not recipient_ids:
             raise AppError("Admin messages require at least one recipient_id", code=400)
         recipients = _get_users_by_ids(db, org_id=current_user.org_id, user_ids=recipient_ids)
@@ -123,6 +130,7 @@ def list_messages(
     current_user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ):
+    """List the current user's inbox, sent messages, or combined mailbox."""
     if page < 1:
         page = 1
     if limit < 1 or limit > 100:
@@ -156,6 +164,7 @@ def mark_message_read(
     current_user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ):
+    """Mark a message as read after confirming the caller is its recipient."""
     message = message_repo.get_visible_to_user(db, message_id=message_id, user=current_user)
     if message is None:
         raise NotFoundError("Message not found")

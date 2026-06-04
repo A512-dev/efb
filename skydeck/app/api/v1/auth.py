@@ -1,3 +1,5 @@
+"""Authentication routes: signup, login, refresh, and logout."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
@@ -67,6 +69,7 @@ def login(body: LoginRequest, request: Request, db: DbSession = Depends(get_db))
     summary="Exchange refresh token for a new access token",
 )
 def refresh_token(body: RefreshRequest, db: DbSession = Depends(get_db)):
+    """Validate a refresh token and issue a replacement access token."""
     result = auth_service.refresh(db, raw_refresh_token=body.refresh_token)
     return RefreshResponse(access_token=result["access_token"])
 
@@ -78,5 +81,6 @@ def refresh_token(body: RefreshRequest, db: DbSession = Depends(get_db)):
     summary="Revoke the current session",
 )
 def logout(body: RefreshRequest, db: DbSession = Depends(get_db)):
+    """Revoke the refresh-token session so it cannot be used again."""
     auth_service.logout(db, raw_refresh_token=body.refresh_token)
     return LogoutResponse()

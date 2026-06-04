@@ -1,3 +1,5 @@
+"""Pydantic response schemas for manual library routes."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -58,4 +60,6 @@ class ManualUpdateOut(BaseModel):
 
 
 class ManualDeleteOut(BaseModel):
+    """Response after a manual has been deleted."""
+
     message: str = "Manual deleted successfully"

@@ -1,3 +1,5 @@
+"""Manual category browsing routes."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
@@ -26,6 +28,7 @@ _ALL_ROLES = require_roles(
 
 
 def _path_items(category: ManualCategory) -> list[ManualCategoryPathItem]:
+    """Convert ORM category ancestors into the compact breadcrumb schema."""
     return [
         ManualCategoryPathItem(id=item.id, name=item.name, slug=item.slug)
         for item in manual_category_repo.get_path(category)
@@ -33,6 +36,7 @@ def _path_items(category: ManualCategory) -> list[ManualCategoryPathItem]:
 
 
 def _category_out(db: DbSession, category: ManualCategory) -> ManualCategoryOut:
+    """Build the public category response with path and has_children metadata."""
     return ManualCategoryOut(
         id=category.id,
         org_id=category.org_id,
@@ -49,6 +53,7 @@ def _category_out(db: DbSession, category: ManualCategory) -> ManualCategoryOut:
 
 
 def _tree_node(category: ManualCategory) -> ManualCategoryTreeOut:
+    """Recursively convert an ORM category subtree into an API tree node."""
     active_children = [child for child in category.children if child.is_active]
     active_children.sort(key=lambda item: (item.sort_order, item.name.lower()))
     return ManualCategoryTreeOut(
@@ -73,6 +78,7 @@ def list_root_categories(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
+    """List root categories available to the caller's organization."""
     categories = manual_category_repo.list_roots(db, org_id=current_user.org_id)
     return [_category_out(db, category) for category in categories]
 
@@ -87,6 +93,7 @@ def get_category_tree(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
+    """Return the full active category tree for navigation screens."""
     roots = manual_category_repo.list_roots(db, org_id=current_user.org_id)
     return [_tree_node(root) for root in roots]
 
@@ -102,6 +109,7 @@ def list_category_children(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
+    """List active direct children after checking parent ownership."""
     parent = manual_category_repo.get_for_org(
         db,
         org_id=current_user.org_id,
@@ -129,6 +137,7 @@ def get_category_path(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
+    """Return the breadcrumb path from root to a category."""
     category = manual_category_repo.get_for_org(
         db,
         org_id=current_user.org_id,

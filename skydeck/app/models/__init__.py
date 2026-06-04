@@ -1,3 +1,5 @@
+"""Import all models so Alembic and SQLAlchemy metadata can discover them."""
+
 from app.models.audit_log import AuditLog
 from app.models.enums import ManualAction, SubmissionStatus, UserRole
 from app.models.form_template import FormTemplate

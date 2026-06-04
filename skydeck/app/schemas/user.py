@@ -1,3 +1,5 @@
+"""Pydantic schemas for user profile responses."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -7,6 +9,8 @@ from pydantic import BaseModel
 
 
 class UserMeResponse(BaseModel):
+    """Current authenticated user profile."""
+
     id: int
     org_id: int
     name: str

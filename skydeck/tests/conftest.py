@@ -18,6 +18,7 @@ SEED_PASSWORD = "SkyDeck@2026!"
 
 @pytest.fixture(scope="module")
 def client():
+    """Create one FastAPI test client per test module."""
     with TestClient(app) as c:
         yield c
 

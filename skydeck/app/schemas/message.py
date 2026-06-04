@@ -1,3 +1,5 @@
+"""Pydantic schemas for internal messaging routes."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -19,6 +21,8 @@ class MessageCreateRequest(BaseModel):
 
 
 class MessageUserOut(BaseModel):
+    """Compact sender/recipient user object embedded in message responses."""
+
     id: int
     name: str
     email: str
@@ -28,6 +32,8 @@ class MessageUserOut(BaseModel):
 
 
 class MessageOut(BaseModel):
+    """Public message representation with optional sender/recipient details."""
+
     id: int
     org_id: int
     sender_id: Optional[int] = None
@@ -43,10 +49,14 @@ class MessageOut(BaseModel):
 
 
 class MessageCreateResponse(BaseModel):
+    """Response returned after one request creates one or more messages."""
+
     message: str = "Message sent successfully"
     items: list[MessageOut]
 
 
 class MessageReadResponse(BaseModel):
+    """Response returned after marking a message as read."""
+
     message: str = "Message marked as read"
     item: MessageOut

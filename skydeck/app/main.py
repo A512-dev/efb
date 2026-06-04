@@ -1,3 +1,5 @@
+"""FastAPI application assembly and router registration."""
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -46,6 +48,7 @@ app = FastAPI(
 
 register_error_handlers(app)
 
+# All public API routes currently live under the versioned /api/v1 prefix.
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
 app.include_router(manuals_router, prefix="/api/v1")
@@ -58,4 +61,5 @@ app.include_router(messages_router, prefix="/api/v1")
 
 @app.get("/health", tags=["ops"])
 def health_check() -> dict:
+    """Lightweight liveness endpoint for deployments and smoke tests."""
     return {"status": "ok", "app": settings.APP_NAME}

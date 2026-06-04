@@ -51,6 +51,7 @@ def _build_watermark_page(
     c.setFillColor(_WATERMARK_COLOR)
 
     c.saveState()
+    # Rotate around the center so the watermark crosses the page diagonally.
     c.translate(width / 2, height / 2)
     c.rotate(45)
 
@@ -109,6 +110,7 @@ def watermark_pdf(
 
     try:
         for page in reader.pages:
+            # Use the source page's media box so non-letter PDFs still align.
             box = page.mediabox
             page_width = float(box.width)
             page_height = float(box.height)
@@ -122,6 +124,7 @@ def watermark_pdf(
             overlay_reader = PdfReader(overlay_buf)
             overlay_page = overlay_reader.pages[0]
 
+            # pypdf merges the transparent overlay directly into the page content stream.
             page.merge_page(overlay_page)
             writer.add_page(page)
 

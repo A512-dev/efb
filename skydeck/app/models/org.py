@@ -1,3 +1,5 @@
+"""SQLAlchemy model for tenant organizations."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -18,10 +20,13 @@ if TYPE_CHECKING:
 
 
 class Org(Base):
+    """Top-level tenant boundary for users, manuals, forms, and submissions."""
+
     __tablename__ = "orgs"
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     name: Mapped[str] = mapped_column(Text, nullable=False)
+    # settings_json leaves room for tenant-specific options without schema churn.
     settings_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(
@@ -48,6 +53,7 @@ def _create_default_manual_categories(_mapper, connection, target: Org) -> None:
     from app.models.manual_category import ManualCategory
     from app.services.manual_category_service import DEFAULT_MANUAL_CATEGORY_TREE
 
+    # Insert via the raw connection because ORM sessions are not available inside mapper events.
     for root_order, root_spec in enumerate(DEFAULT_MANUAL_CATEGORY_TREE, start=1):
         root_id = connection.execute(
             insert(ManualCategory.__table__)

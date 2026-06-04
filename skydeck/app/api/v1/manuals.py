@@ -52,6 +52,7 @@ _ALL_ROLES = require_roles(
 
 
 def _read_and_validate_pdf(file: UploadFile) -> tuple[bytes, str, str]:
+    """Read an uploaded file once and validate it is a safe PDF payload."""
     contents = file.file.read()
 
     if len(contents) > _MAX_BYTES:
@@ -78,6 +79,7 @@ def _ensure_unique_active_title(
     title: str,
     current_manual_id: Optional[int] = None,
 ) -> None:
+    """Prevent duplicate active manual titles inside a single organization."""
     existing = manual_repo.get_active_by_title(db, org_id=org_id, title=title)
     if existing and existing.id != current_manual_id:
         raise ConflictError("An active manual with this title already exists")
@@ -89,6 +91,7 @@ def _get_category_for_org(
     org_id: int,
     category_id: int,
 ) -> ManualCategory:
+    """Fetch a category and enforce organization ownership."""
     category = manual_category_repo.get_for_org(db, org_id=org_id, category_id=category_id)
     if category is None:
         raise NotFoundError("Manual category not found")
@@ -101,6 +104,7 @@ def _get_leaf_category_for_org(
     org_id: int,
     category_id: int,
 ) -> ManualCategory:
+    """Fetch a category that can actually contain manuals."""
     category = _get_category_for_org(db, org_id=org_id, category_id=category_id)
     if manual_category_repo.has_children(db, category_id=category.id):
         raise AppError("Manuals must be assigned to a final leaf category", code=400)
@@ -108,6 +112,8 @@ def _get_leaf_category_for_org(
 
 
 def _category_path_items(category: ManualCategory) -> list[ManualCategoryPathItem]:
+    """Return breadcrumb schema items for a manual's category."""
+    
     return [
         ManualCategoryPathItem(id=item.id, name=item.name, slug=item.slug)
         for item in manual_category_repo.get_path(category)
@@ -115,10 +121,13 @@ def _category_path_items(category: ManualCategory) -> list[ManualCategoryPathIte
 
 
 def _category_path_text(category: ManualCategory) -> str:
+    """Return a human-readable category path for audit metadata."""
+    
     return " / ".join(item.name for item in manual_category_repo.get_path(category))
 
 
 def _manual_out(manual: Manual) -> ManualOut:
+    """Map an ORM manual into the list/detail response schema."""
     return ManualOut(
         id=manual.id,
         org_id=manual.org_id,
@@ -138,6 +147,7 @@ def _manual_out(manual: Manual) -> ManualOut:
 
 
 def _manual_upload_out(manual: Manual) -> ManualUploadOut:
+    """Map an uploaded manual into the upload response schema."""
     return ManualUploadOut(
         id=manual.id,
         category_id=manual.category_id,
@@ -152,6 +162,7 @@ def _manual_upload_out(manual: Manual) -> ManualUploadOut:
 
 
 def _manual_update_out(manual: Manual) -> ManualUpdateOut:
+    """Map an updated manual into the update response schema."""
     return ManualUpdateOut(
         id=manual.id,
         category_id=manual.category_id,
@@ -166,6 +177,7 @@ def _manual_update_out(manual: Manual) -> ManualUpdateOut:
 
 
 def _delete_physical_file_or_fail(storage_path: str) -> bool:
+    """Delete a manual file from storage and verify it disappeared."""
     storage = get_manual_storage()
     if not storage.exists(storage_path):
         return False
@@ -203,6 +215,7 @@ def upload_manual(
     current_user: User = Depends(_ADMIN),
     db: DbSession = Depends(get_db),
 ):
+    """Upload a new manual, store the file, and create audit/update feed rows."""
     title = title.strip()
     if not title:
         raise AppError("Manual title is required", code=400)
@@ -231,6 +244,7 @@ def upload_manual(
         uploaded_by=current_user.id,
     )
 
+    # Create the row first so the storage key can include the database id.
     relative_path = f"{manual.id}_v{manual.version_number}_{safe_name}"
     try:
         disk_path = storage.save(relative_path, contents)
@@ -303,6 +317,7 @@ def update_manual(
     current_user: User = Depends(_ADMIN),
     db: DbSession = Depends(get_db),
 ):
+    """Replace an existing manual's PDF and preserve the update trail."""
     manual = manual_repo.get_by_id(db, manual_id)
     if manual is None or manual.org_id != current_user.org_id:
         raise NotFoundError("Manual not found")
@@ -338,6 +353,7 @@ def update_manual(
     relative_path = f"{manual.id}_v{next_version}_{safe_name}"
 
     try:
+        # Save the new file before mutating the database row, so rollback is simple on failure.
         disk_path = storage.save(relative_path, contents)
     except StorageError:
         db.rollback()
@@ -357,6 +373,7 @@ def update_manual(
 
     old_file_deleted = False
     try:
+        # Cleanup failure is logged but does not fail the update; the new manual is already usable.
         old_file_deleted = _delete_physical_file_or_fail(old_storage_path)
     except StorageError:
         logger.exception("Manual updated, but old PDF cleanup failed: manual_id=%s", manual.id)
@@ -426,6 +443,7 @@ def delete_manual(
     current_user: User = Depends(_ADMIN),
     db: DbSession = Depends(get_db),
 ):
+    """Soft-delete the manual row and remove its physical file."""
     manual = manual_repo.get_by_id(db, manual_id)
     if manual is None or manual.org_id != current_user.org_id:
         raise NotFoundError("Manual not found")
@@ -489,6 +507,7 @@ def list_manuals(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
+    """List active manuals, optionally including descendants of a category."""
     if category_id is not None:
         _get_category_for_org(db, org_id=current_user.org_id, category_id=category_id)
 
@@ -520,6 +539,7 @@ def download_manual(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
+    """Read, watermark, audit, and stream a manual PDF to the caller."""
     manual = manual_repo.get_by_id(db, manual_id)
     if manual is None or manual.org_id != current_user.org_id:
         raise NotFoundError("Manual not found")

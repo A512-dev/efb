@@ -64,12 +64,14 @@ class LocalStorage(StorageProvider):
         self._base.mkdir(parents=True, exist_ok=True)
 
     def _resolve(self, relative_path: str) -> Path:
+        """Resolve a storage key while preventing escape from the base directory."""
         resolved = (self._base / relative_path).resolve()
         if not str(resolved).startswith(str(self._base.resolve())):
             raise StorageError("Path traversal detected")
         return resolved
 
     def save(self, relative_path: str, data: bytes) -> str:
+        """Write bytes to disk, creating parent folders as needed."""
         target = self._resolve(relative_path)
         try:
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -80,6 +82,7 @@ class LocalStorage(StorageProvider):
         return str(target)
 
     def read(self, path: str) -> bytes:
+        """Read a stored file from disk."""
         target = Path(path)
         if not target.is_file():
             raise StorageError(f"File not found on disk: {path}")
@@ -90,6 +93,7 @@ class LocalStorage(StorageProvider):
             raise StorageError(f"Failed to read file: {exc}") from exc
 
     def delete(self, path: str) -> None:
+        """Best-effort delete; missing files are treated as already deleted."""
         target = Path(path)
         try:
             if target.is_file():
@@ -98,12 +102,15 @@ class LocalStorage(StorageProvider):
             logger.warning("Failed to delete %s: %s", target, exc)
 
     def exists(self, path: str) -> bool:
+        """Return whether a stored file exists on disk."""
         return Path(path).is_file()
 
 
 def get_manual_storage() -> StorageProvider:
+    """Return the configured storage provider for manuals."""
     return LocalStorage(settings.STORAGE_DIR)
 
 
 def get_submission_storage() -> StorageProvider:
+    """Return the configured storage provider for submission attachments."""
     return LocalStorage(settings.SUBMISSIONS_STORAGE_DIR)

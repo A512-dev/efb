@@ -48,6 +48,8 @@ def signup(
     MVP rule: new accounts default to ``pilot`` role.
     Raises ``ConflictError`` if the email is already registered.
     """
+    
+
     if user_repo.get_by_email(db, email):
         raise ConflictError("Email is already registered")
 
@@ -95,6 +97,7 @@ def login(
     user = user_repo.get_by_email(db, email)
 
     if user is None:
+        # Run bcrypt anyway so unknown-email and bad-password failures take similar time.
         verify_password(password, _DUMMY_HASH)
         _record_failure(db, email=email, user=None, ip=ip, device_info=device_info)
         raise AuthenticationError("Invalid email or password")
@@ -147,6 +150,7 @@ def refresh(db: DbSession, *, raw_refresh_token: str) -> dict:
         raise AuthenticationError("Session not found or revoked")
 
     if sess.expires_at.tzinfo is None:
+        # Some database drivers return naive datetimes even for timezone-aware columns.
         expires_aware = sess.expires_at.replace(tzinfo=timezone.utc)
     else:
         expires_aware = sess.expires_at
@@ -188,9 +192,11 @@ def _create_session(
     ip: Optional[str] = None,
     device_info: Optional[dict] = None,
 ) -> dict:
+    """Create persisted refresh-token state and return raw tokens to the caller."""
     access_token = create_access_token(user.id, user.role.value)
     expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
+    # The session id must exist before it can be embedded into the refresh JWT.
     sess = session_repo.create_session(
         db,
         user_id=user.id,
@@ -206,6 +212,8 @@ def _create_session(
 
 
 def _get_or_create_default_org(db: DbSession):
+    """Return the MVP default org, creating it and its manual categories if needed."""
+    
     from app.models.org import Org
 
     org = db.query(Org).first()
@@ -226,6 +234,7 @@ def _record_failure(
     ip: Optional[str],
     device_info: Optional[dict],
 ) -> None:
+    """Persist a failed login attempt and commit it before raising auth errors."""
     session_repo.record_login_attempt(
         db,
         email=email,

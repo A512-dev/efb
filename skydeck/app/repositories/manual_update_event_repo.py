@@ -1,3 +1,5 @@
+"""Repository helpers for manual update event persistence."""
+
 from __future__ import annotations
 
 from typing import Optional
@@ -23,6 +25,26 @@ def create(
     old_version_number: Optional[int] = None,
     new_version_number: Optional[int] = None,
 ) -> ManualUpdateEvent:
+    """Create and persist a new manual update event.
+
+    Args:
+        db: Database session.
+        org_id: Organization identifier.
+        manual_id: Optional manual identifier associated with the event.
+        actor_user_id: Optional user identifier who performed the action.
+        action: Action name describing the event.
+        title: Event title.
+        note: Optional free-form event note.
+        old_storage_path: Optional previous storage path.
+        new_storage_path: Optional new storage path.
+        old_sha256: Optional previous SHA256 digest.
+        new_sha256: Optional new SHA256 digest.
+        old_version_number: Optional previous version number.
+        new_version_number: Optional new version number.
+
+    Returns:
+        The created ManualUpdateEvent instance.
+    """
     event = ManualUpdateEvent(
         org_id=org_id,
         manual_id=manual_id,
@@ -49,6 +71,17 @@ def list_for_org(
     offset: int = 0,
     limit: int = 20,
 ) -> tuple[list[ManualUpdateEvent], int]:
+    """List manual update events for an organization.
+
+    Args:
+        db: Database session.
+        org_id: Organization identifier.
+        offset: Pagination offset.
+        limit: Maximum number of events to return.
+
+    Returns:
+        A tuple of the event list and the total event count.
+    """
     query = db.query(ManualUpdateEvent).filter(ManualUpdateEvent.org_id == org_id)
     total = query.count()
     items = query.order_by(ManualUpdateEvent.created_at.desc()).offset(offset).limit(limit).all()

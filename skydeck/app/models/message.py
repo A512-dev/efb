@@ -1,3 +1,5 @@
+"""SQLAlchemy model for organization-scoped user messages."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -26,6 +28,7 @@ class Message(Base):
     org_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
     )
+    # Sender/recipient are nullable so deleting a user does not delete the conversation record.
     sender_id: Mapped[Optional[int]] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
@@ -34,6 +37,7 @@ class Message(Base):
     )
     subject: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     body: Mapped[str] = mapped_column(Text, nullable=False)
+    # Null read_at means the recipient has not opened the message yet.
     read_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

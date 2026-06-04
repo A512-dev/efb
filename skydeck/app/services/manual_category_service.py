@@ -1,3 +1,5 @@
+"""Service helpers for ensuring the default manual category tree exists."""
+
 from __future__ import annotations
 
 from sqlalchemy.orm import Session as DbSession
@@ -5,6 +7,7 @@ from sqlalchemy.orm import Session as DbSession
 from app.models.manual_category import ManualCategory
 
 
+# Shared seed structure used when an organization is created or repaired.
 DEFAULT_MANUAL_CATEGORY_TREE: list[dict] = [
     {
         "name": "A300/600",
@@ -75,6 +78,7 @@ def ensure_default_categories(db: DbSession, *, org_id: int) -> dict[str, Manual
     result: dict[str, ManualCategory] = {}
 
     for root_order, root_spec in enumerate(DEFAULT_MANUAL_CATEGORY_TREE, start=1):
+        # Each lookup is idempotent so this helper can safely run during signup and seeding.
         root = (
             db.query(ManualCategory)
             .filter(
@@ -98,6 +102,7 @@ def ensure_default_categories(db: DbSession, *, org_id: int) -> dict[str, Manual
         result[root.slug] = root
 
         for child_order, (child_name, child_slug) in enumerate(root_spec["children"], start=1):
+            # Children are unique within their parent, not globally across the org.
             child = (
                 db.query(ManualCategory)
                 .filter(
