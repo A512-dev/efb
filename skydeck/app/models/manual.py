@@ -13,7 +13,9 @@ from sqlalchemy import (
     Index,
     Integer,
     Text,
+    event,
     func,
+    select,
     text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -71,3 +73,40 @@ class Manual(Base):
     category: Mapped[ManualCategory] = relationship(back_populates="manuals")
     uploaded_by_user: Mapped[Optional[User]] = relationship(back_populates="uploaded_manuals")
     access_logs: Mapped[list[ManualAccessLog]] = relationship(back_populates="manual")
+
+
+@event.listens_for(Manual, "before_insert")
+def _assign_fallback_category(_mapper, connection, target: Manual) -> None:
+    """Assign Iranair / General when legacy/demo code omits category_id.
+
+    API uploads still require an explicit leaf category. This fallback exists
+    only to keep old seed scripts and internal inserts compatible.
+    """
+    if target.category_id is not None:
+        return
+
+    from app.models.manual_category import ManualCategory
+
+    root_id = connection.execute(
+        select(ManualCategory.id).where(
+            ManualCategory.org_id == target.org_id,
+            ManualCategory.parent_id.is_(None),
+            ManualCategory.slug == "iranair",
+        )
+    ).scalar_one_or_none()
+
+    if root_id is None:
+        raise ValueError("Default manual category Iranair was not created for this organisation")
+
+    category_id = connection.execute(
+        select(ManualCategory.id).where(
+            ManualCategory.org_id == target.org_id,
+            ManualCategory.parent_id == root_id,
+            ManualCategory.slug == "general",
+        )
+    ).scalar_one_or_none()
+
+    if category_id is None:
+        raise ValueError("Default manual category Iranair / General was not created")
+
+    target.category_id = category_id
