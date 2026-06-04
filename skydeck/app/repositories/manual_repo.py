@@ -3,12 +3,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import func
-from sqlalchemy.orm import Session as DbSession
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session as DbSession, joinedload
 
 from app.models.enums import ManualAction
 from app.models.manual import Manual
 from app.models.manual_access_log import ManualAccessLog
+from app.models.manual_category import ManualCategory
 
 # ── manuals CRUD ──────────────────────────────────────────────
 
@@ -17,6 +18,7 @@ def create(
     db: DbSession,
     *,
     org_id: int,
+    category_id: int,
     title: str,
     storage_path: str,
     original_filename: Optional[str] = None,
@@ -27,6 +29,7 @@ def create(
 ) -> Manual:
     manual = Manual(
         org_id=org_id,
+        category_id=category_id,
         title=title,
         storage_path=storage_path,
         original_filename=original_filename,
@@ -40,17 +43,55 @@ def create(
     return manual
 
 
-def list_active(db: DbSession, *, org_id: int) -> list[Manual]:
-    return (
-        db.query(Manual)
-        .filter(Manual.org_id == org_id, Manual.deleted_at.is_(None), Manual.is_active.is_(True))
-        .order_by(Manual.created_at.desc())
-        .all()
+def _category_descendant_ids(db: DbSession, *, org_id: int, category_id: int):
+    descendants = (
+        select(ManualCategory.id)
+        .where(ManualCategory.id == category_id, ManualCategory.org_id == org_id)
+        .cte(name="manual_category_descendants", recursive=True)
     )
+    descendants = descendants.union_all(
+        select(ManualCategory.id).where(
+            ManualCategory.parent_id == descendants.c.id,
+            ManualCategory.org_id == org_id,
+            ManualCategory.is_active.is_(True),
+        )
+    )
+    return select(descendants.c.id)
+
+
+def list_active(
+    db: DbSession,
+    *,
+    org_id: int,
+    category_id: Optional[int] = None,
+    include_descendants: bool = True,
+) -> list[Manual]:
+    query = (
+        db.query(Manual)
+        .options(joinedload(Manual.category))
+        .filter(Manual.org_id == org_id, Manual.deleted_at.is_(None), Manual.is_active.is_(True))
+    )
+
+    if category_id is not None:
+        if include_descendants:
+            query = query.filter(
+                Manual.category_id.in_(
+                    _category_descendant_ids(db, org_id=org_id, category_id=category_id)
+                )
+            )
+        else:
+            query = query.filter(Manual.category_id == category_id)
+
+    return query.order_by(Manual.created_at.desc()).all()
 
 
 def get_by_id(db: DbSession, manual_id: int) -> Optional[Manual]:
-    return db.query(Manual).filter(Manual.id == manual_id, Manual.deleted_at.is_(None)).first()
+    return (
+        db.query(Manual)
+        .options(joinedload(Manual.category))
+        .filter(Manual.id == manual_id, Manual.deleted_at.is_(None))
+        .first()
+    )
 
 
 def get_active_by_title(db: DbSession, *, org_id: int, title: str) -> Optional[Manual]:
@@ -86,9 +127,12 @@ def update_file_metadata(
     sha256: str,
     uploaded_by: int,
     title: Optional[str] = None,
+    category_id: Optional[int] = None,
 ) -> Manual:
     if title is not None:
         manual.title = title
+    if category_id is not None:
+        manual.category_id = category_id
     manual.storage_path = storage_path
     manual.original_filename = original_filename
     manual.mime_type = "application/pdf"
