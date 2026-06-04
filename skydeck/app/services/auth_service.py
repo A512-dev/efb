@@ -26,6 +26,7 @@ from app.models.enums import UserRole
 from app.models.user import User
 from app.repositories import session_repo, user_repo
 from app.services import audit_service
+from app.services.manual_category_service import ensure_default_categories
 
 # Pre-computed bcrypt hash so user-not-found login attempts still
 # pay the same CPU cost as real ones (timing-attack mitigation).
@@ -94,7 +95,6 @@ def login(
     user = user_repo.get_by_email(db, email)
 
     if user is None:
-        # Constant-time comparison to prevent user-enumeration timing attacks.
         verify_password(password, _DUMMY_HASH)
         _record_failure(db, email=email, user=None, ip=ip, device_info=device_info)
         raise AuthenticationError("Invalid email or password")
@@ -213,6 +213,8 @@ def _get_or_create_default_org(db: DbSession):
         org = Org(name="Default Organisation")
         db.add(org)
         db.flush()
+
+    ensure_default_categories(db, org_id=org.id)
     return org
 
 
