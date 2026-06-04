@@ -39,7 +39,7 @@ import { useCurrentUser } from "../hooks/useCurrentUser";
 import cardImg from "../assets/icons/2d3ae130-4dab-480a-9f81-1612825326e5.webp";
 import logoutSvg from '../assets/icons/Power-Button--Streamline-Ultimate.svg'
 import { useAuth } from "../auth/useAuth";
-
+import crewProfileSvg from "../assets/icons/Following-1--Streamline-Ultimate.svg";
 const Profile = () => {
   const { user, loading } = useCurrentUser();  
 
@@ -159,6 +159,7 @@ const Profile = () => {
 
       </div>
            <button onClick={logout} className="logOutButton"><img src={logoutSvg} alt="" /> Logout</button>
+           <button className="CreateProfileButton"><img src={crewProfileSvg} alt="" /> Create / edit profile</button>
     </div>
   );
 };

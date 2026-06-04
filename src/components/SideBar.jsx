@@ -153,7 +153,7 @@
 //   );
 // }
 // export default SideBar
-<<<<<<< HEAD
+
 // import { NavLink } from "react-router-dom";
 // import { useState, useEffect, useMemo } from "react";
 // import { useAuth } from "../auth/useAuth";
@@ -325,39 +325,27 @@ import { NavLink } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "../auth/useAuth";
 import { useNotifications } from "../Context/NotificationContext";
-=======
-import { NavLink } from "react-router-dom";
-import { useState, useEffect, useMemo } from "react";
-import { useAuth } from "../auth/useAuth";
->>>>>>> origin/main
+
 
 import documentSvg from "../assets/icons/Common-File-Stack--Streamline-Ultimate copy.svg";
 import crewProfileSvg from "../assets/icons/Following-1--Streamline-Ultimate.svg";
 import manualsAdminSvg from "../assets/icons/Monitor-Transfer-1--Streamline-Ultimate.svg";
 import addPilotSvg from "../assets/icons/Add-Circle-Bold--Streamline-Ultimate.svg";
-<<<<<<< HEAD
+
 import chatboxicon from "../assets/icons/download.svg";
 import settingIcon from "../assets/icons/settings.svg";
 import riskicon from "../assets/icons/risk-icon.svg";
 import iranAirLogo from '../assets/icons/iranair-logo (1).png'
-=======
-import iranAirLogo from "../assets/icons/iranair-logo (1).png";
-import chatboxicon from "../assets/icons/download.svg";
-import settingIcon from "../assets/icons/settings.svg";
-import riskicon from "../assets/icons/risk-icon.svg";
-import skyTechLogo from '../assets/icons/skytech-logo-transparent-white.webp'
 
->>>>>>> origin/main
 
 import { listMessages } from "../services/apiService";
 
 const SideBar = () => {
   const { user } = useAuth();
-<<<<<<< HEAD
+
   const { updateCount } = useNotifications();
 
-=======
->>>>>>> origin/main
+
   const [unreadCount, setUnreadCount] = useState(0);
 
   if (!user) return null;
@@ -366,10 +354,7 @@ const SideBar = () => {
 
   const fetchUnreadCount = async () => {
     try {
-<<<<<<< HEAD
-=======
-      
->>>>>>> origin/main
+
       const data = await listMessages({ box: "inbox", page: 1, limit: 50 });
 
       const items =
@@ -378,10 +363,7 @@ const SideBar = () => {
       const count = items.filter((m) => !(m.is_read || m.read_at)).length;
       setUnreadCount(count);
     } catch (e) {
-<<<<<<< HEAD
-=======
-      
->>>>>>> origin/main
+
       console.error(e);
     }
   };
@@ -389,36 +371,24 @@ const SideBar = () => {
   useEffect(() => {
     if (!canSeeChat) return;
 
-<<<<<<< HEAD
+
     fetchUnreadCount();
     const t = setInterval(fetchUnreadCount, 5000);
 
-=======
-    fetchUnreadCount(); 
 
-    
-    const t = setInterval(fetchUnreadCount, 2000);
->>>>>>> origin/main
     return () => clearInterval(t);
   }, [canSeeChat]);
 
   return (
     <aside className="SideBar">
       <img
-<<<<<<< HEAD
+
         src={iranAirLogo}
         style={{ width: "50%", marginLeft: "25%", marginBottom: "-15%" }}
         alt=""
       />
-
-      <h3>IranAir EFB</h3>
-=======
-        src={skyTechLogo}
-        style={{ width: "50%", marginLeft: "25%", marginBottom: "-15%" }}
-        alt=""
-      />
       <h3> SkyTechSharif</h3>
->>>>>>> origin/main
+
 
       {canSeeChat && (
         <>
@@ -432,18 +402,12 @@ const SideBar = () => {
 
           <NavLink className="nav-item" to="/dashboard/Chat">
             <img src={chatboxicon} alt="" className="navIcon chatboxicon" />
-<<<<<<< HEAD
+
             <span className="nav-text">Chat</span>
 
             {unreadCount > 0 && (
               <span className="chat-unread-badge">
-=======
-            <span className="nav-text"> Chat</span>
 
-            
-            {unreadCount > 0 && (
-              <span className="chat-unread-badge" title={`${unreadCount} unread`}>
->>>>>>> origin/main
                 <img src={riskicon} className="imgdangersidebar" alt="unread" />
                 <span className="chat-unread-count">{unreadCount}</span>
               </span>
@@ -451,17 +415,14 @@ const SideBar = () => {
           </NavLink>
 
           <NavLink className="nav-item" to="/dashboard/setting">
-<<<<<<< HEAD
+
             <img src={settingIcon} alt="" className="navIcon chatboxicon" />
             Settings
 
             {updateCount > 0 && (
               <span className="update-alert-count">{updateCount}</span>
             )}
-=======
-            <img src={settingIcon} alt="" className="navIcon chatboxicon" />{" "}
-            Settings
->>>>>>> origin/main
+
           </NavLink>
         </>
       )}
@@ -471,10 +432,7 @@ const SideBar = () => {
           <NavLink to="/dashboard/manuals-admin" className="nav-item">
             <img src={manualsAdminSvg} alt="" className="navIcon" /> Manage
           </NavLink>
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/main
           <NavLink to="/dashboard/add-profile" className="nav-item">
             <img src={addPilotSvg} alt="" className="navIcon" /> Add Pilot
           </NavLink>

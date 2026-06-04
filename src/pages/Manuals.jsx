@@ -19,16 +19,13 @@ const Manuals = () =>{
       
     </div>
       <NavLink className={'headersForManuals'} to="/dashboard/a300_600">A300/600</NavLink>
-      {/* a */}
-<<<<<<< HEAD
-      <NavLink className={'headersForManuals'} to="/dashboard/a300_600"> Training & Resources</NavLink>
-      <NavLink className={'headersForManuals'} to="/dashboard/forms"> Forms</NavLink>
-      <NavLink className={'headersForManuals'} to="/dashboard/a300_600"> Safety Issue </NavLink>
-=======
+
+
+
       <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Training & Resources</NavLink>
       <NavLink className={'headersForManuals'} to="/dashboard/forms"> Forms</NavLink>
       <NavLink className={'headersForManuals'} to="/dashboard/manuals/chat"> Safety Issue </NavLink>
->>>>>>> origin/main
+
       
       {/* <NavLink to="/dashboard/safetyIssue" className={'headersForManuals'}><img src={safetyIssueSvg} alt="" className="navIcon" /> Safety Issue</NavLink>
       <NavLink to="/dashboard/trainingIssue" className={'headersForManuals'}><img src={trainingIssueSvg} alt="" className="navIcon" /> Training Issue</NavLink> */}
