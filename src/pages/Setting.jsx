@@ -1,12 +1,15 @@
 import { NavLink } from "react-router-dom";
 import ThemeToggle from "../components/ThemeToggle.jsx";
 import { useNotifications } from "../Context/NotificationContext";
-
+import { useAuth } from "../auth/useAuth.js";
+import logoutSvg from '../assets/icons/Power-Button--Streamline-Ultimate.svg'
+import PageWrapper from "../components/PageWrapper.jsx";
 const Setting = () => {
   const { updateCount } = useNotifications();
-
+const { logout } = useAuth();
   return (
     <>
+    <PageWrapper>
       <div className="manualsContainerLeft">
         <div className="div-header">
           <NavLink className="card-header" to="/dashboard/setting">
@@ -35,13 +38,18 @@ const Setting = () => {
         <NavLink className="headersForManuals" to="/dashboard/manuals/chat">
           What's new
         </NavLink>
+        <NavLink className={`headersForManuals`} to="/dashboard/manuals/chat">
+          Change Password
+        </NavLink>
 
         <h5 className="card-header">App theme</h5>
 
         <div className="divDarkLight">
           <ThemeToggle />
+          <button onClick={logout} className="logOutButton"><img src={logoutSvg} alt="" /> Logout</button>
         </div>
       </div>
+      </PageWrapper>
     </>
   );
 };

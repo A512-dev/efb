@@ -37,14 +37,14 @@
 // export default Profile
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import cardImg from "../assets/icons/2d3ae130-4dab-480a-9f81-1612825326e5.webp";
-import logoutSvg from '../assets/icons/Power-Button--Streamline-Ultimate.svg'
+import PageWrapper from "../components/PageWrapper";
 import { useAuth } from "../auth/useAuth";
 import crewProfileSvg from "../assets/icons/Following-1--Streamline-Ultimate.svg";
 const Profile = () => {
   const { user, loading } = useCurrentUser();  
 
 
-    const { logout } = useAuth();
+    
      if (loading) return <div>Loading...</div>;
 
   
@@ -54,6 +54,7 @@ const Profile = () => {
   
   if (!user) return  <div>Not authenticated</div>;
   return (
+    <PageWrapper>
     <div className="crew-page-wrapper">
       <div className="crew-main-card">
 
@@ -71,30 +72,6 @@ const Profile = () => {
                 />
               </div>
 
-
-              <div className="flip-card-back">
-                <div className="back-content">
-                  <h3>Quick Stats</h3>
-
-                  <div className="back-stat">
-                    <span>Flights This Month</span>
-                    <strong>12</strong>
-                  </div>
-
-                  <div className="back-stat">
-                    <span>Total Hours</span>
-                    <strong>4,250</strong>
-                  </div>
-
-                  <div className="back-stat">
-                    <span>Status</span>
-                    <strong className="status-active">
-                      Active Duty
-                    </strong>
-                  </div>
-                </div>
-              </div>
-
             </div>
           </div>
         </div>
@@ -104,21 +81,14 @@ const Profile = () => {
 
           <div className="crew-header">
             <h2>{user.name}</h2>
-            <span className="crew-role">
-              First Officer • A310 Fleet
-            </span>
+            
           </div>
 
           <div className="crew-info-grid">
 
             <div className="crew-field">
-              <label>EMPLOYEE ID</label>
+              <label>EMP no</label>
               <p>{user.id}</p>
-            </div>
-
-            <div className="crew-field">
-              <label>BASE</label>
-              <p>IKA</p>
             </div>
 
             <div className="crew-field">
@@ -126,9 +96,9 @@ const Profile = () => {
               <p>P2</p>
             </div>
 
-            <div className="crew-field">
-              <label>AIRCRAFT</label>
-              <p>Airbus A310</p>
+            <div className="crew-field-last">
+              <label>Type</label>
+              <p>A310</p>
             </div>
 
           </div>
@@ -158,9 +128,10 @@ const Profile = () => {
         </div>
 
       </div>
-           <button onClick={logout} className="logOutButton"><img src={logoutSvg} alt="" /> Logout</button>
-           <button className="CreateProfileButton"><img src={crewProfileSvg} alt="" /> Create / edit profile</button>
+           
+           <button className="CreateProfileButton"><img src={crewProfileSvg} alt="" /> Edit Profile</button>
     </div>
+    </PageWrapper>
   );
 };
 

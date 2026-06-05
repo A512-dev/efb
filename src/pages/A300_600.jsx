@@ -4,6 +4,7 @@ import { useDownloadManual } from "../hooks/useDownloadManual";
 import downloadSvg from '../assets/icons/Import-File--Streamline-Ultimate.svg'
 import folderSvg from '../assets/icons/Office-Folder--Streamline-Ultimate.svg'
 import backIcon from '../assets/icons/arrowback .svg'
+import PageWrapper from "../components/PageWrapper";
 const A300_600 =( ) =>{
     const { manuals, loading } = useManuals();
   const { handleDownload } = useDownloadManual();
@@ -11,6 +12,7 @@ const A300_600 =( ) =>{
   if (loading) return <p>Loading manuals...</p>;
 return(
     <>
+    <PageWrapper>
     <div className="manualsContainerLeft">
       <div className="div-header">
         <NavLink className="card-header1" to={'/dashboard/allDocuments'}> <img src={backIcon} style={{width:'25px'}} alt="" /> </NavLink>
@@ -24,7 +26,7 @@ return(
       <NavLink className={'headersForManuals'} to="/dashboard/aircraftdocuments"> MEL CDl </NavLink>
       <NavLink className={'headersForManuals'} to="/dashboard/aircraftdocuments"> Training Documents </NavLink>
     </div>
-    
+    </PageWrapper>
     </>
 )
 }

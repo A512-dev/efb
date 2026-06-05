@@ -53,7 +53,7 @@ const ThemeToggle = () => {
   };
 
   return (
-    <div className="theme-switch">
+    <div>
       <button
         type="button"
         onClick={() => setThemeMode("light")}

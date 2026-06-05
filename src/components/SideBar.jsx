@@ -387,7 +387,7 @@ const SideBar = () => {
         style={{ width: "50%", marginLeft: "25%", marginBottom: "-15%" }}
         alt=""
       />
-      <h3> SkyTechSharif</h3>
+      <h3> IranAir E-library</h3>
 
 
       {canSeeChat && (

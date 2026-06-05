@@ -1576,6 +1576,7 @@ import {
 } from "../services/apiService";
 import refreshIcon from "../assets/icons/icons8-refresh-500.svg";
 import riskicon from "../assets/icons/risk-icon.svg";
+import PageWrapper from "../components/PageWrapper";
 
 const IranAirChat = () => {
   const [activeTab, setActiveTab] = useState("submit");
@@ -1697,8 +1698,7 @@ const IranAirChat = () => {
         body: trimmedMessage,
       };
 
-      // اگر بک‌اند پشتیبانی کرد:
-      // if (replyTo?.id) payload.reply_to_message_id = replyTo.id;
+      
 
       if (isAdmin) {
         const ids = recipientIds
@@ -1758,6 +1758,7 @@ const IranAirChat = () => {
   };
 
   return (
+    <PageWrapper>
     <div className="manualsContainer chatbox">
       <h4 className="testReport">Report your issue</h4>
       <label>Write the issue for manager and get answer ASAP</label>
@@ -1948,6 +1949,7 @@ const IranAirChat = () => {
         </div>
       )}
     </div>
+    </PageWrapper>
   );
 };
 

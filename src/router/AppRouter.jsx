@@ -15,8 +15,10 @@ import A300_600 from "../pages/A300_600";
 import IranAirChat from "../pages/IranAirChat";
 import Setting from "../pages/Setting";
 import UpdateManuals from "../pages/UpdateManuals";
+import { AnimatePresence } from "framer-motion";
 export default function AppRouter() {
   return (
+      <AnimatePresence mode="wait">
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Loginpage />} />
@@ -119,5 +121,6 @@ export default function AppRouter() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </AnimatePresence>
   );
 }

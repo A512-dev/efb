@@ -3,6 +3,7 @@ import { useDownloadManual } from "../hooks/useDownloadManual";
 import downloadSvg from '../assets/icons/Import-File--Streamline-Ultimate.svg'
 import folderSvg from '../assets/icons/Office-Folder--Streamline-Ultimate.svg'
 import { NavLink } from "react-router-dom";
+import PageWrapper from "../components/PageWrapper";
 const Manuals = () =>{
 
   const { manuals, loading } = useManuals();
@@ -12,6 +13,7 @@ const Manuals = () =>{
 
   return (
     <>
+    <PageWrapper>
     <div className="manualsContainerLeft">
       <div className="div-header">
         <NavLink className="card-header1 active" to={'/dashboard/allDocuments'}>All documents </NavLink>
@@ -68,6 +70,7 @@ const Manuals = () =>{
   ))}
 
 </div> */}
+</PageWrapper>
 </>
   );
 }

@@ -160,21 +160,14 @@ export const logoutUser = async (refreshToken) => {
   });
 };
 
-export const createPilotUser = async () => {
-  const randomId = Math.floor(1000 + Math.random() * 9000);
-  const email = `pilot${randomId}@skywest-air.com`;
+export const createPilotUser = async (userData) => {
   const payload = {
-    name: `Pilot ${randomId}`,
-    email: email,
+    ...userData,
     password: "SkyDeck@2026!",
-    role: "pilot",
   };
 
   const response = await apiClient.post("/auth/signup", payload);
-  return {
-    ...response.data,
-    email: email,
-  };
+  return response.data;
 };
 
 // Users
@@ -194,10 +187,11 @@ export const getManuals = async () => {
   return response.data;
 };
 
-export const uploadManual = async (file, title) => {
+export const uploadManual = async (file, title, note) => {
   const formData = new FormData();
   formData.append("title", title);
   formData.append("file", file);
+  formData.append("note", note);
 
   const response = await apiClient.post("/manuals/upload", formData);
   return response.data;
@@ -211,8 +205,11 @@ export const downloadManual = async (manualId) => {
   return response.data;
 };
 
-export const deleteManual = async (manualId) => {
-  const response = await apiClient.delete(`/manuals/${manualId}`);
+export const deleteManual = async (manualId, note) => {
+  const response = await apiClient.delete(`/manuals/${manualId}`, {
+    data: { note },
+  });
+
   return response.data;
 };
 

@@ -55,7 +55,7 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     refreshUpdates();
 
-    const interval = setInterval(refreshUpdates, 30000);
+    const interval = setInterval(refreshUpdates, 2000);
 
     return () => clearInterval(interval);
   }, [user]);
@@ -72,7 +72,15 @@ export const NotificationProvider = ({ children }) => {
 
     setUpdateCount(calculateUnread(updates, newSeen));
   };
+const markAllAsSeen = () => {
+  if (!updates.length) return;
 
+  const allIds = updates.map((u) => String(u.id));
+
+  setSeenIds(allIds);
+  saveSeen(allIds);
+  setUpdateCount(0);
+};
   return (
     <NotificationContext.Provider
       value={{
@@ -81,6 +89,8 @@ export const NotificationProvider = ({ children }) => {
         updateCount,
         loading,
         markAsSeen,
+        markAllAsSeen,
+        refreshUpdates
       }}
     >
       {children}

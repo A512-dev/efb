@@ -1,114 +1,68 @@
-// import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useContext, useState, useEffect } from "react";
 
-// export const BookmarkContext = createContext();
-
-
-// export const BookmarkProvider = ({ children }) => {
-//   const [showBookmarkText, setShowBookmarkText] = useState(false);
-//   const [showSOPInClipboard, setShowSOPInClipboard] = useState(false);
-
-  
-//   const toggleBookmarkText = () => {
-//     setShowBookmarkText(prev => !prev);
-//   };
-
-  
-//   const toggleSOPInClipboard = () => {
-//     setShowSOPInClipboard(prev => !prev);
-//   };
-
-//   return (
-//     <BookmarkContext.Provider value={{ showBookmarkText, toggleBookmarkText, showSOPInClipboard, toggleSOPInClipboard }}>
-//       {children}
-//     </BookmarkContext.Provider>
-//   );
-// };
-
-
-// export const useBookmark = () => {
-//   const context = useContext(BookmarkContext);
-//   if (context === undefined) {
-//     throw new Error('useBookmark must be used within a BookmarkProvider');
-//   }
-//   return context;
-// };
-
-import React, { createContext, useState, useContext } from 'react';
-
-
-const bookmarkAddIcon = '/assets/icons/bookmarkadd.svg';
-const bookmarkRemoveIcon = '/assets/icons/bookmark-remove.svg';
+const bookmarkAddIcon = "/assets/icons/bookmarkadd.svg";
+const bookmarkRemoveIcon = "/assets/icons/bookmark-remove.svg";
 
 export const BookmarkContext = createContext();
 
 export const BookmarkProvider = ({ children }) => {
-  
-  const [showBookmarkText, setShowBookmarkText] = useState(false); 
-  const [showSOPInClipboard, setShowSOPInClipboard] = useState(false);
 
-  const toggleBookmarkText = () => {
-    setShowBookmarkText(prev => !prev);
-  };
+  const [clipboardItems, setClipboardItems] = useState(() => {
+    const saved = localStorage.getItem("clipboardItems");
+    return saved ? JSON.parse(saved) : [];
+  });
 
-  const toggleSOPInClipboard = () => {
-    setShowSOPInClipboard(prev => !prev);
-  };
-  
-
-  
-  const [showASRInClipboard, setShowASRInClipboard] = useState(false); 
-
-  
-  const toggleASRInClipboard = () => {
-    setShowASRInClipboard(prev => !prev);
-  };
-  
-
-  
   const [isBookmarkActive, setIsBookmarkActive] = useState(false);
   const [currentBookmarkIcon, setCurrentBookmarkIcon] = useState(bookmarkAddIcon);
 
-  
-  const handleBookmarkIconToggle = () => {
-    setIsBookmarkActive(prev => {
-      const newState = !prev;
-      
-      setCurrentBookmarkIcon(newState ? bookmarkRemoveIcon : bookmarkAddIcon);
-      return newState;
+  const [showDoc, setShowDoc] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem("clipboardItems", JSON.stringify(clipboardItems));
+  }, [clipboardItems]);
+
+  const toggleClipboardItem = (doc) => {
+    setClipboardItems((prev) => {
+      const exists = prev.find((item) => item.title === doc.title);
+
+      if (exists) {
+        return prev.filter((item) => item.title !== doc.title);
+      }
+
+      return [...prev, doc];
     });
   };
-  
 
-  
-  const manageASRAndBookmarkState = () => {
-    toggleASRInClipboard();
-    handleBookmarkIconToggle();
+  const isDocumentBookmarked = (title) => {
+    return clipboardItems.some((item) => item.title === title);
+  };
+
+  const handleBookmarkIconToggle = (doc) => {
+    toggleClipboardItem(doc);
+
+    const active = !isDocumentBookmarked(doc.title);
+
+    setIsBookmarkActive(active);
+    setCurrentBookmarkIcon(active ? bookmarkRemoveIcon : bookmarkAddIcon);
   };
 
   return (
-    <BookmarkContext.Provider value={{
-      
-      showBookmarkText,
-      toggleBookmarkText,
-      showSOPInClipboard,
-      toggleSOPInClipboard,
-      
-      showASRInClipboard,
-      toggleASRInClipboard,
-      isBookmarkActive,    
-      currentBookmarkIcon, 
-      handleBookmarkIconToggle,
-      manageASRAndBookmarkState
-    }}>
+    <BookmarkContext.Provider
+      value={{
+        clipboardItems,
+        toggleClipboardItem,
+        isDocumentBookmarked,
+        handleBookmarkIconToggle,
+        currentBookmarkIcon,
+        showDoc,
+        setShowDoc
+      }}
+    >
       {children}
     </BookmarkContext.Provider>
   );
 };
 
 export const useBookmark = () => {
-  const context = useContext(BookmarkContext);
-  if (context === undefined) {
-    throw new Error('useBookmark must be used within a BookmarkProvider');
-  }
-  return context;
+  return useContext(BookmarkContext);
 };

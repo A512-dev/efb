@@ -49,6 +49,7 @@ import { useDeleteManual } from "../hooks/useDeleteManual";
 import { getManuals, uploadManual } from "../services/apiService";
 import downloadSvg from '../assets/icons/Import-File--Streamline-Ultimate.svg'
 import { updateManualPdf } from "../services/apiService";
+import PageWrapper from "../components/PageWrapper";
 
 const ManualsAdmin = () => {
 
@@ -80,8 +81,10 @@ const handleSubmit = async (e) => {
     return;
   }
 
+  const note = window.prompt("Note for this upload (optional):", "") ?? "";
+
   try {
-    const newManual = await uploadManual(file, title);
+    const newManual = await uploadManual(file, title, note);
 
     setManuals((prev) => [...prev, newManual]);
 
@@ -113,7 +116,9 @@ const handleSubmit = async (e) => {
   }
 };
 
+
   return (
+    <PageWrapper>
     <div className="manualsAdminContainer">
 
   
@@ -228,27 +233,34 @@ const handleSubmit = async (e) => {
           </button>
 
           <button
-            onClick={() => {
-              const confirmed = window.confirm(
-                `Are you sure you want to delete this manual?\n\n"${manual.title}"`
-              );
-              if (!confirmed) return;
+  onClick={async () => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete this manual?\n\n"${manual.title}"`
+    );
+    if (!confirmed) return;
 
-              handleDelete(manual.id)
-                .then(() => alert(`Manual "${manual.title}" deleted successfully`))
-                .catch(() => alert("Delete failed"));
-            }}
-            disabled={deleteLoading}
-            className="deleteBtn"
-          >
-            {deleteLoading ? "Deleting..." : "Delete"}
-          </button>
+    const note =
+      window.prompt("Reason / note for deleting (optional):", "") ?? "";
+
+    try {
+      await handleDelete(manual.id, note);
+      alert(`Manual "${manual.title}" deleted successfully`);
+    } catch {
+      alert("Delete failed");
+    }
+  }}
+  disabled={deleteLoading}
+  className="deleteBtn"
+>
+  {deleteLoading ? "Deleting..." : "Delete"}
+</button>
+
         </div>
       </div>
     ))
   )}
 </div>
-
+</PageWrapper>
   );
 };
 

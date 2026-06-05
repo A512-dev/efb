@@ -1,6 +1,11 @@
 import { NavLink } from "react-router-dom";
 import ThemeToggle from "../components/ThemeToggle";
 import { useNotifications } from "../Context/NotificationContext";
+import { useAuth } from "../auth/useAuth";
+import logoutSvg from '../assets/icons/Power-Button--Streamline-Ultimate.svg'
+import PageWrapper from "../components/PageWrapper";
+import { style } from "framer-motion/client";
+
 
 const UpdateManuals = () => {
   const {
@@ -8,15 +13,25 @@ const UpdateManuals = () => {
     updateCount = 0,
     loading = false,
     markAsSeen,
-    seenIds = []
-  } = useNotifications();
+    markAllAsSeen,
+    seenIds = [],
 
+  } = useNotifications();
+const { logout } = useAuth();
   const handleUpdateClick = (item) => {
     markAsSeen(item.id);
   };
 
+    
+const handleMarkAllAsRead = () => {
+  markAllAsSeen();
+};
+
+  console.log(updates);
+
   return (
     <>
+    <PageWrapper>
       <div className="manualsContainerLeft">
         <div className="div-header">
           <NavLink className="card-header" to="/dashboard/setting">
@@ -28,7 +43,7 @@ const UpdateManuals = () => {
           className="headersForManuals active"
           to="/dashboard/UpdateManuals"
         >
-          <span>Updates</span>
+          <span className="spanUpdate">Updates</span>
           {updateCount > 0 && (
             <span className="update-alert-count">{updateCount}</span>
           )}
@@ -41,11 +56,15 @@ const UpdateManuals = () => {
         <NavLink className="headersForManuals" to="/dashboard/manuals/chat">
           What's new
         </NavLink>
+        <NavLink className={`headersForManuals`} to="/dashboard/manuals/chat">
+          Change Password
+        </NavLink>
 
         <h5 className="card-header">App theme</h5>
 
         <div className="divDarkLight">
           <ThemeToggle />
+          <button onClick={logout} className="logOutButton"><img src={logoutSvg} alt="" /> Logout</button>
         </div>
       </div>
 
@@ -53,6 +72,12 @@ const UpdateManuals = () => {
         <div className="manual-updates-panel">
           <div className="manual-updates-header">
             <h2 className="manual-updates-title">Manual Updates</h2>
+            <button
+              className="manual-update-readall-btn"
+              onClick={handleMarkAllAsRead}
+            >
+              Update All Documents
+            </button>
           </div>
 
           {loading && updates.length === 0 && (
@@ -79,9 +104,12 @@ const UpdateManuals = () => {
                     <div className="manual-update-title">
                       {item.title || "Untitled manual"}
                     </div>
-                    <div className="manual-update-action">
-                      {item.action || "updated"}
-                    </div>
+                    <div
+  className={`manual-update-action action-${(item.action || "updated").toLowerCase()}`}
+>
+  {item.action || "updated"}
+</div>
+
                   </div>
 
                   <div className="manual-update-meta">
@@ -91,7 +119,7 @@ const UpdateManuals = () => {
                     </div>
                     <div>
                       <strong>Date:</strong>{" "}
-                      {item.created_at ?? "-"}
+                      {item.created_at?? "-"}
                     </div>
                   </div>
 
@@ -104,6 +132,7 @@ const UpdateManuals = () => {
           </div>
         </div>
       </div>
+      </PageWrapper>
     </>
   );
 };
