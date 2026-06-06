@@ -217,9 +217,9 @@ const Clipboard = () => {
 
   const handleToggleDoc = (file) => {
     if (openDoc === file) {
-      setOpenDoc(null);   // بستن
+      setOpenDoc(null);
     } else {
-      setOpenDoc(file);   // باز کردن
+      setOpenDoc(file);
     }
   };
 
@@ -231,7 +231,7 @@ const Clipboard = () => {
 
           <div className="div-header">
             <NavLink className="card-header1" to={'/dashboard/allDocuments'}>
-              all documents
+              All Documents
             </NavLink>
 
             <NavLink className="card-header2 active" to={'/dashboard/clipboard'}>

@@ -27,7 +27,19 @@ const handleMarkAllAsRead = () => {
   markAllAsSeen();
 };
 
-  console.log(updates);
+  const formatDate = (dateString) => {
+  const date = new Date(dateString);
+
+  return date.toLocaleString("fa-IR-u-nu-latn", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+};
+
 
   return (
     <>
@@ -119,7 +131,7 @@ const handleMarkAllAsRead = () => {
                     </div>
                     <div>
                       <strong>Date:</strong>{" "}
-                      {item.created_at?? "-"}
+                      {item.created_at ? formatDate(item.created_at) : "-"}
                     </div>
                   </div>
 
