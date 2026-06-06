@@ -59,8 +59,11 @@ class PDFProcessingError(AppError):
 
 
 def register_error_handlers(app: FastAPI) -> None:
+    """Attach custom exception handlers to a FastAPI application instance."""
+
     @app.exception_handler(AppError)
     async def _app_error_handler(_request: Request, exc: AppError) -> JSONResponse:
+        """Convert AppError exceptions into the API's standard JSON envelope."""
         return JSONResponse(
             status_code=exc.code,
             content={"error": exc.message, "code": exc.code},

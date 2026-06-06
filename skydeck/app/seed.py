@@ -25,14 +25,17 @@ from app.models.user import User
 
 
 def _hash_password(plain: str) -> str:
+    """Hash the shared demo password before inserting seed users."""
     return bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
 
 
 def _hash_id() -> str:
+    """Generate a stable-looking public id for seeded submissions."""
     return hashlib.sha256(uuid.uuid4().bytes).hexdigest()[:32]
 
 
 def seed() -> None:
+    """Populate an empty development database with demo aviation data."""
     db = SessionLocal()
 
     try:

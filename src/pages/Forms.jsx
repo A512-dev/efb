@@ -172,37 +172,35 @@ import { NavLink } from "react-router-dom";
 import { useManuals } from "../hooks/useManuals";
 import { useDownloadManual } from "../hooks/useDownloadManual";
 import backIcon from '../assets/icons/arrowback.svg';
-import { useBookmark } from '../auth/BookmarkContext';
+import { useBookmark } from '../Context/BookmarkContext';
+import PageWrapper from '../components/PageWrapper';
 
 const Forms = () => {
   const { manuals, loading } = useManuals();
   const { handleDownload } = useDownloadManual();
 
-  const {
-    showSOPInClipboard,
-    showASRInClipboard,
-    manageASRAndBookmarkState, // تابع صحیح برای مدیریت ASR و بوکمارک
-    toggleSOPInClipboard,      // تابع برای toggle کردن SOP
-    currentBookmarkIcon        // آیکون بوکمارک فعلی (برای نمایش)
-  } = useBookmark();
+  const { showDoc, setShowDoc } = useBookmark();
+
 
   if (loading) return <p>Loading manuals...</p>;
 
-  const handleASRClick = () => {
-    manageASRAndBookmarkState();
-    console.log("ASR clicked! Toggling ASR and bookmark icon state.");
-  };
 
-  const handleSOPClick = () => {
-    toggleSOPInClipboard();
-    console.log("SOP clicked! Toggling SOP state.");
-  };
+const handleASRClick = () => {
+  setShowDoc((prev) => (prev === "ASR" ? null : "ASR"));
+};
+
+
+const handleSubmitForm = () => {
+
+  console.log("Submitting ASR form to backend...");
+};
 
   return (
     <>
+    <PageWrapper>
       <div className="manualsContainerLeft">
         <div className="div-header">
-          <NavLink className="card-header1" to={'/dashboard/a300_600'}>
+          <NavLink className="card-header1" to={'/dashboard/allDocuments'}>
             <img src={backIcon} style={{ width: '25px' }} alt="" />
           </NavLink>
           <NavLink className="card-header2 active">
@@ -210,16 +208,28 @@ const Forms = () => {
           </NavLink>
         </div>
 
-        <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-          <p className="headersForManuals" onClick={handleASRClick} style={{ cursor: 'pointer' }}>
-            ASR
-          </p>
-          
-        </div>
+        <div style={{ display: 'inline-flex', alignItems:'center' ,width:'100%', gap: '10px' }}>
+  <p
+    className="headersForManuals forms"
+    onClick={handleASRClick}
+    style={{ cursor: 'pointer'}}
+  >
+    ASR
+  </p>
+
+  <button
+    className="submit-form-button"
+    onClick={handleSubmitForm}
+  >
+    Submit
+  </button>
+</div>
+
       </div>
 
       <div style={{ width: "60%", height: "100vh", position: "absolute", right: '20px', top: '20px' }}>
-        {showASRInClipboard && (
+        {showDoc === "ASR" && (
+
           <object
             data="/Air Safety Report.pdf"
             type="application/pdf"
@@ -232,6 +242,7 @@ const Forms = () => {
 
         
       </div>
+      </PageWrapper>
     </>
   )
 }

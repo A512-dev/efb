@@ -1,3 +1,5 @@
+"""SQLAlchemy model for general application audit events."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -11,6 +13,8 @@ from app.db.base import Base
 
 
 class AuditLog(Base):
+    """Generic audit event for actions that are not covered by specialized logs."""
+
     __tablename__ = "audit_logs"
     __table_args__ = (
         Index("idx_audit_logs_org_id", "org_id"),

@@ -153,25 +153,199 @@
 //   );
 // }
 // export default SideBar
+
+// import { NavLink } from "react-router-dom";
+// import { useState, useEffect, useMemo } from "react";
+// import { useAuth } from "../auth/useAuth";
+
+// import documentSvg from "../assets/icons/Common-File-Stack--Streamline-Ultimate copy.svg";
+// import crewProfileSvg from "../assets/icons/Following-1--Streamline-Ultimate.svg";
+// import manualsAdminSvg from "../assets/icons/Monitor-Transfer-1--Streamline-Ultimate.svg";
+// import addPilotSvg from "../assets/icons/Add-Circle-Bold--Streamline-Ultimate.svg";
+// import iranAirLogo from "../assets/icons/iranair-logo (1).png";
+// import chatboxicon from "../assets/icons/download.svg";
+// import settingIcon from "../assets/icons/settings.svg";
+// import riskicon from "../assets/icons/risk-icon.svg";
+// import skyTechLogo from '../assets/icons/skytech-logo-transparent-white.webp'
+// import { getManualUpdates } from "../services/apiService";
+
+// import { listMessages } from "../services/apiService";
+
+// const SideBar = () => {
+//   const { user } = useAuth();
+//   const [unreadCount, setUnreadCount] = useState(0);
+// const [updateCount, setUpdateCount] = useState(0);
+// const [isFull, setIsFull] = useState(false);
+//   if (!user) return null;
+
+//   const canSeeChat = user.role === "pilot" || user.role === "admin";
+
+//   const fetchUnreadCount = async () => {
+//     try {
+      
+//       const data = await listMessages({ box: "inbox", page: 1, limit: 50 });
+
+//       const items =
+//         data?.items || data?.results || data?.data || data?.messages || [];
+
+//       const count = items.filter((m) => !(m.is_read || m.read_at)).length;
+//       setUnreadCount(count);
+//     } catch (e) {
+      
+//       console.error(e);
+//     }
+//   };
+
+//   useEffect(() => {
+//     if (!canSeeChat) return;
+
+//     fetchUnreadCount(); 
+
+    
+//     const t = setInterval(fetchUnreadCount, 2000);
+//     return () => clearInterval(t);
+//   }, [canSeeChat]);
+// useEffect(() => {
+//     let intervalId;
+
+//     const checkManualUpdates = async () => {
+//       try {
+//         const data = await getManualUpdates();
+//         const items = data?.items || data?.results || data?.data || [];
+
+//         if (!items.length) {
+//           setIsFull(false);
+//           setUpdateCount(0);
+//           return;
+//         }
+
+//         setIsFull(true);
+
+//         const lastSeenId = localStorage.getItem("manualUpdatesLastSeenId");
+
+//         if (!lastSeenId) {
+//           setUpdateCount(items.length);
+//           return;
+//         }
+
+//         const unseenItems = items.filter(
+//           (item) => Number(item.id) > Number(lastSeenId)
+//         );
+
+//         setUpdateCount(unseenItems.length);
+//       } catch (error) {
+//         console.error("Failed to fetch manual updates:", error);
+//       }
+//     };
+
+//     checkManualUpdates();
+//     intervalId = setInterval(checkManualUpdates, 2000);
+
+//     return () => clearInterval(intervalId);
+//   }, []);
+
+  
+//   useEffect(() => {
+//     const handleSeen = () => {
+//       setUpdateCount((prev) => (prev > 0 ? prev - 1 : 0));
+//     };
+
+//     window.addEventListener("manualUpdateSeen", handleSeen);
+
+//     return () => {
+//       window.removeEventListener("manualUpdateSeen", handleSeen);
+//     };
+//   }, []);
+
+//   const handleUpdatesClick = () => {
+//     setUpdateCount((prev) => (prev > 0 ? prev - 1 : 0));
+//   };
+
+//   return (
+//     <aside className="SideBar">
+//       <img
+//         src={skyTechLogo}
+//         style={{ width: "50%", marginLeft: "25%", marginBottom: "-15%" }}
+//         alt=""
+//       />
+//       <h3> SkyTechSharif</h3>
+
+//       {canSeeChat && (
+//         <>
+//           <NavLink className="nav-item" to="/dashboard/profile">
+//             <img src={crewProfileSvg} alt="" className="navIcon" /> Profile
+//           </NavLink>
+
+//           <NavLink to="/dashboard/manuals" className="nav-item">
+//             <img src={documentSvg} alt="" className="navIcon" /> Documents
+//           </NavLink>
+
+//           <NavLink className="nav-item" to="/dashboard/Chat">
+//             <img src={chatboxicon} alt="" className="navIcon chatboxicon" />
+//             <span className="nav-text"> Chat</span>
+
+            
+//             {unreadCount > 0 && (
+//               <span className="chat-unread-badge" title={`${unreadCount} unread`}>
+//                 <img src={riskicon} className="imgdangersidebar" alt="unread" />
+//                 <span className="chat-unread-count">{unreadCount}</span>
+//               </span>
+//             )}
+//           </NavLink>
+
+//           <NavLink className="nav-item" to="/dashboard/setting">
+//             <img src={settingIcon} alt="" className="navIcon chatboxicon" />{" "}
+//             Settings
+//             {updateCount > 0 && (
+//             <span className="update-alert-count">
+//               {updateCount}
+//             </span>
+//           )}
+//           </NavLink>
+//         </>
+//       )}
+
+//       {user.role === "admin" && (
+//         <>
+//           <NavLink to="/dashboard/manuals-admin" className="nav-item">
+//             <img src={manualsAdminSvg} alt="" className="navIcon" /> Manage
+//           </NavLink>
+//           <NavLink to="/dashboard/add-profile" className="nav-item">
+//             <img src={addPilotSvg} alt="" className="navIcon" /> Add Pilot
+//           </NavLink>
+//         </>
+//       )}
+//     </aside>
+//   );
+// };
+
+// export default SideBar;
+
 import { NavLink } from "react-router-dom";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../auth/useAuth";
+import { useNotifications } from "../Context/NotificationContext";
+
 
 import documentSvg from "../assets/icons/Common-File-Stack--Streamline-Ultimate copy.svg";
 import crewProfileSvg from "../assets/icons/Following-1--Streamline-Ultimate.svg";
 import manualsAdminSvg from "../assets/icons/Monitor-Transfer-1--Streamline-Ultimate.svg";
 import addPilotSvg from "../assets/icons/Add-Circle-Bold--Streamline-Ultimate.svg";
-import iranAirLogo from "../assets/icons/iranair-logo (1).png";
+
 import chatboxicon from "../assets/icons/download.svg";
 import settingIcon from "../assets/icons/settings.svg";
 import riskicon from "../assets/icons/risk-icon.svg";
-import skyTechLogo from '../assets/icons/skytech-logo-transparent-white.webp'
+import iranAirLogo from '../assets/icons/iranair-logo (1).png'
 
 
 import { listMessages } from "../services/apiService";
 
 const SideBar = () => {
   const { user } = useAuth();
+
+  const { updateCount } = useNotifications();
+
+
   const [unreadCount, setUnreadCount] = useState(0);
 
   if (!user) return null;
@@ -180,7 +354,7 @@ const SideBar = () => {
 
   const fetchUnreadCount = async () => {
     try {
-      
+
       const data = await listMessages({ box: "inbox", page: 1, limit: 50 });
 
       const items =
@@ -189,7 +363,7 @@ const SideBar = () => {
       const count = items.filter((m) => !(m.is_read || m.read_at)).length;
       setUnreadCount(count);
     } catch (e) {
-      
+
       console.error(e);
     }
   };
@@ -197,21 +371,24 @@ const SideBar = () => {
   useEffect(() => {
     if (!canSeeChat) return;
 
-    fetchUnreadCount(); 
 
-    
-    const t = setInterval(fetchUnreadCount, 2000);
+    fetchUnreadCount();
+    const t = setInterval(fetchUnreadCount, 5000);
+
+
     return () => clearInterval(t);
   }, [canSeeChat]);
 
   return (
     <aside className="SideBar">
       <img
-        src={skyTechLogo}
+
+        src={iranAirLogo}
         style={{ width: "50%", marginLeft: "25%", marginBottom: "-15%" }}
         alt=""
       />
-      <h3> SkyTechSharif</h3>
+      <h3> IranAir E-library</h3>
+
 
       {canSeeChat && (
         <>
@@ -225,11 +402,12 @@ const SideBar = () => {
 
           <NavLink className="nav-item" to="/dashboard/Chat">
             <img src={chatboxicon} alt="" className="navIcon chatboxicon" />
+
             <span className="nav-text"> Chat</span>
 
-            
             {unreadCount > 0 && (
-              <span className="chat-unread-badge" title={`${unreadCount} unread`}>
+              <span className="chat-unread-badge">
+
                 <img src={riskicon} className="imgdangersidebar" alt="unread" />
                 <span className="chat-unread-count">{unreadCount}</span>
               </span>
@@ -237,8 +415,13 @@ const SideBar = () => {
           </NavLink>
 
           <NavLink className="nav-item" to="/dashboard/setting">
-            <img src={settingIcon} alt="" className="navIcon chatboxicon" />{" "}
-            Settings
+
+            <img src={settingIcon} alt="" className="navIcon chatboxicon" /> Settings
+
+            {updateCount > 0 && (
+              <span className="update-alert-count">{updateCount}</span>
+            )}
+
           </NavLink>
         </>
       )}
@@ -248,6 +431,7 @@ const SideBar = () => {
           <NavLink to="/dashboard/manuals-admin" className="nav-item">
             <img src={manualsAdminSvg} alt="" className="navIcon" /> Manage
           </NavLink>
+
           <NavLink to="/dashboard/add-profile" className="nav-item">
             <img src={addPilotSvg} alt="" className="navIcon" /> Add Pilot
           </NavLink>

@@ -928,8 +928,14 @@
 
 // export default IranAirChat;
 
+<<<<<<< HEAD
 // import React, { useEffect, useMemo, useState } from "react";
 
+=======
+
+// import React, { useEffect, useMemo, useState } from "react";
+
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
 // import {
 //   listMessages,
 //   sendMessage,
@@ -1576,6 +1582,10 @@ import {
 } from "../services/apiService";
 import refreshIcon from "../assets/icons/icons8-refresh-500.svg";
 import riskicon from "../assets/icons/risk-icon.svg";
+<<<<<<< HEAD
+=======
+import PageWrapper from "../components/PageWrapper";
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
 
 const IranAirChat = () => {
   const [activeTab, setActiveTab] = useState("submit");
@@ -1586,14 +1596,25 @@ const IranAirChat = () => {
   const [subject, setSubject] = useState("");
   const [replyTo, setReplyTo] = useState(null);
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [recipientIds, setRecipientIds] = useState("");
 
+<<<<<<< HEAD
   const formRef = useRef(null);
 
+=======
+
+  const formRef = useRef(null);
+
+
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
   const role = currentUser?.role;
   const isAdmin = useMemo(() => role === "admin", [role]);
 
@@ -1644,6 +1665,10 @@ const IranAirChat = () => {
   }, []);
 
   useEffect(() => {
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
     if (activeTab === "messages") {
       fetchMessages();
     }
@@ -1676,6 +1701,10 @@ const IranAirChat = () => {
   const clearReply = () => {
     setReplyTo(null);
   };
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1693,12 +1722,21 @@ const IranAirChat = () => {
 
     try {
       const payload = {
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
         subject: subject.trim(),
         body: trimmedMessage,
       };
 
+<<<<<<< HEAD
       // اگر بک‌اند پشتیبانی کرد:
       // if (replyTo?.id) payload.reply_to_message_id = replyTo.id;
+=======
+      
+
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
 
       if (isAdmin) {
         const ids = recipientIds
@@ -1708,7 +1746,13 @@ const IranAirChat = () => {
 
         if (!ids.length) {
           setStatus("For admin users, at least one recipient_id is required.");
+<<<<<<< HEAD
           setSending(false);
+=======
+
+          setSending(false);
+
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
           return;
         }
 
@@ -1719,6 +1763,10 @@ const IranAirChat = () => {
 
       setStatus("Your message submitted successfully. Wait for the response.");
       setMessageText("");
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
       setSubject("");
       if (isAdmin) setRecipientIds("");
       setReplyTo(null);
@@ -1758,6 +1806,8 @@ const IranAirChat = () => {
   };
 
   return (
+
+    <PageWrapper>
     <div className="manualsContainer chatbox">
       <h4 className="testReport">Report your issue</h4>
       <label>Write the issue for manager and get answer ASAP</label>
@@ -1768,6 +1818,10 @@ const IranAirChat = () => {
         </p>
       )}
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
       <div className="chat-tabs">
         <button
           type="button"
@@ -1775,7 +1829,13 @@ const IranAirChat = () => {
           onClick={() => setActiveTab("submit")}
         >
           Submit
+<<<<<<< HEAD
         </button>
+=======
+
+        </button>
+
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
 
         <button
           type="button"
@@ -1948,6 +2008,8 @@ const IranAirChat = () => {
         </div>
       )}
     </div>
+    </PageWrapper>
+
   );
 };
 

@@ -28,12 +28,14 @@ def _make_pdf(text: str = "test") -> bytes:
 
 
 def _login(client: TestClient, email: str, password: str) -> str:
+    """Return a bearer access token for a seeded test user."""
     resp = client.post("/api/v1/auth/login", json={"email": email, "password": password})
     assert resp.status_code == 200, resp.text
     return resp.json()["access_token"]
 
 
 def _auth_header(token: str) -> dict:
+    """Build the Authorization header expected by protected endpoints."""
     return {"Authorization": f"Bearer {token}"}
 
 

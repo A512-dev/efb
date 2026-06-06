@@ -1,29 +1,19 @@
-"""Manual Library endpoints with enterprise-grade upload safety.
-
-Addresses all 10 code-review items:
-  1. Transaction safety — DB commits only after file writes succeed
-  2. Orphan cleanup — pending records are recoverable
-  3. Size limits — configurable MAX_UPLOAD_SIZE_MB (default 50 MB)
-  4. Magic-byte validation — reads first 5 bytes for %%PDF- header
-  5. SHA-256 deduplication — rejects hash collisions with 409
-  6. Path-traversal prevention — secure_filename utility
-  7. Granular HTTP status codes — 409, 413, 415, 500
-  8. Audit logging — every upload/delete/download is recorded
-  9. Storage abstraction — LocalStorage via StorageProvider ABC
-"""
+"""Manual Library endpoints with categories, upload/update/delete safety, and audit trail."""
 
 from __future__ import annotations
 
 import hashlib
 import logging
+from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session as DbSession
 
 from app.core.config import settings
 from app.core.deps import require_roles
 from app.core.errors import (
+    AppError,
     ConflictError,
     NotFoundError,
     PayloadTooLargeError,
@@ -32,10 +22,13 @@ from app.core.errors import (
 )
 from app.db.session import get_db
 from app.models.enums import ManualAction, UserRole
+from app.models.manual import Manual
+from app.models.manual_category import ManualCategory
 from app.models.user import User
-from app.repositories import manual_repo
+from app.repositories import manual_category_repo, manual_repo, manual_update_event_repo
 from app.schemas.auth import ErrorResponse
-from app.schemas.manual import ManualDeleteOut, ManualOut, ManualUploadOut
+from app.schemas.manual import ManualDeleteOut, ManualOut, ManualUpdateOut, ManualUploadOut
+from app.schemas.manual_category import ManualCategoryPathItem
 from app.services import audit_service
 from app.services.storage import get_manual_storage, secure_filename
 from app.services.watermark_service import watermark_pdf
@@ -57,6 +50,144 @@ _ALL_ROLES = require_roles(
     UserRole.technical,
 )
 
+
+def _read_and_validate_pdf(file: UploadFile) -> tuple[bytes, str, str]:
+    """Read an uploaded file once and validate it is a safe PDF payload."""
+    contents = file.file.read()
+
+    if len(contents) > _MAX_BYTES:
+        raise PayloadTooLargeError(f"File exceeds {settings.MAX_UPLOAD_SIZE_MB} MB limit")
+
+    if len(contents) == 0:
+        raise UnsupportedMediaError("Uploaded file is empty")
+
+    if not contents[:5].startswith(_PDF_MAGIC):
+        raise UnsupportedMediaError("File is not a valid PDF (magic bytes check failed)")
+
+    sha256 = hashlib.sha256(contents).hexdigest()
+    safe_name = secure_filename(file.filename or "manual.pdf")
+    if not safe_name.lower().endswith(".pdf"):
+        safe_name += ".pdf"
+
+    return contents, sha256, safe_name
+
+
+def _ensure_unique_active_title(
+    db: DbSession,
+    *,
+    org_id: int,
+    title: str,
+    current_manual_id: Optional[int] = None,
+) -> None:
+    """Prevent duplicate active manual titles inside a single organization."""
+    existing = manual_repo.get_active_by_title(db, org_id=org_id, title=title)
+    if existing and existing.id != current_manual_id:
+        raise ConflictError("An active manual with this title already exists")
+
+
+def _get_category_for_org(
+    db: DbSession,
+    *,
+    org_id: int,
+    category_id: int,
+) -> ManualCategory:
+    """Fetch a category and enforce organization ownership."""
+    category = manual_category_repo.get_for_org(db, org_id=org_id, category_id=category_id)
+    if category is None:
+        raise NotFoundError("Manual category not found")
+    return category
+
+
+def _get_leaf_category_for_org(
+    db: DbSession,
+    *,
+    org_id: int,
+    category_id: int,
+) -> ManualCategory:
+    """Fetch a category that can actually contain manuals."""
+    category = _get_category_for_org(db, org_id=org_id, category_id=category_id)
+    if manual_category_repo.has_children(db, category_id=category.id):
+        raise AppError("Manuals must be assigned to a final leaf category", code=400)
+    return category
+
+
+def _category_path_items(category: ManualCategory) -> list[ManualCategoryPathItem]:
+    """Return breadcrumb schema items for a manual's category."""
+    
+    return [
+        ManualCategoryPathItem(id=item.id, name=item.name, slug=item.slug)
+        for item in manual_category_repo.get_path(category)
+    ]
+
+
+def _category_path_text(category: ManualCategory) -> str:
+    """Return a human-readable category path for audit metadata."""
+    
+    return " / ".join(item.name for item in manual_category_repo.get_path(category))
+
+
+def _manual_out(manual: Manual) -> ManualOut:
+    """Map an ORM manual into the list/detail response schema."""
+    return ManualOut(
+        id=manual.id,
+        org_id=manual.org_id,
+        category_id=manual.category_id,
+        category_path=_category_path_items(manual.category),
+        category_path_text=_category_path_text(manual.category),
+        title=manual.title,
+        original_filename=manual.original_filename,
+        mime_type=manual.mime_type,
+        file_size=manual.file_size,
+        version_number=manual.version_number,
+        is_active=manual.is_active,
+        uploaded_by=manual.uploaded_by,
+        created_at=manual.created_at,
+        updated_at=manual.updated_at,
+    )
+
+
+def _manual_upload_out(manual: Manual) -> ManualUploadOut:
+    """Map an uploaded manual into the upload response schema."""
+    return ManualUploadOut(
+        id=manual.id,
+        category_id=manual.category_id,
+        category_path=_category_path_items(manual.category),
+        category_path_text=_category_path_text(manual.category),
+        title=manual.title,
+        original_filename=manual.original_filename,
+        file_size=manual.file_size,
+        sha256=manual.sha256,
+        version_number=manual.version_number,
+    )
+
+
+def _manual_update_out(manual: Manual) -> ManualUpdateOut:
+    """Map an updated manual into the update response schema."""
+    return ManualUpdateOut(
+        id=manual.id,
+        category_id=manual.category_id,
+        category_path=_category_path_items(manual.category),
+        category_path_text=_category_path_text(manual.category),
+        title=manual.title,
+        original_filename=manual.original_filename,
+        file_size=manual.file_size,
+        sha256=manual.sha256,
+        version_number=manual.version_number,
+    )
+
+
+def _delete_physical_file_or_fail(storage_path: str) -> bool:
+    """Delete a manual file from storage and verify it disappeared."""
+    storage = get_manual_storage()
+    if not storage.exists(storage_path):
+        return False
+
+    storage.delete(storage_path)
+    if storage.exists(storage_path):
+        raise StorageError("Failed to delete manual file from storage")
+    return True
+
+
 # ── POST /upload ──────────────────────────────────────────────
 
 
@@ -65,8 +196,10 @@ _ALL_ROLES = require_roles(
     response_model=ManualUploadOut,
     status_code=201,
     responses={
+        400: {"model": ErrorResponse},
         401: {"model": ErrorResponse},
         403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
         409: {"model": ErrorResponse},
         413: {"model": ErrorResponse},
         415: {"model": ErrorResponse},
@@ -75,42 +208,33 @@ _ALL_ROLES = require_roles(
 )
 def upload_manual(
     title: str = Form(..., description="Human-readable document title"),
+    category_id: int = Form(..., description="Final leaf category selected from the category path"),
+    note: Optional[str] = Form(None, description="Manager note shown in the update feed"),
     file: UploadFile = File(..., description="PDF file to upload"),
     request: Request = None,
     current_user: User = Depends(_ADMIN),
     db: DbSession = Depends(get_db),
 ):
-    contents = file.file.read()
+    """Upload a new manual, store the file, and create audit/update feed rows."""
+    title = title.strip()
+    if not title:
+        raise AppError("Manual title is required", code=400)
 
-    # ── 3. Size limit ──────────────────────────────────────────
-    if len(contents) > _MAX_BYTES:
-        raise PayloadTooLargeError(f"File exceeds {settings.MAX_UPLOAD_SIZE_MB} MB limit")
-
-    if len(contents) == 0:
-        raise UnsupportedMediaError("Uploaded file is empty")
-
-    # ── 4. Magic-byte validation ───────────────────────────────
-    if not contents[:5].startswith(_PDF_MAGIC):
-        raise UnsupportedMediaError("File is not a valid PDF (magic bytes check failed)")
-
-    # ── 5. SHA-256 deduplication ───────────────────────────────
-    sha256 = hashlib.sha256(contents).hexdigest()
-    if manual_repo.get_by_sha256(db, sha256):
-        raise ConflictError("An identical file (same SHA-256 hash) already exists")
-
-    # ── 6. Secure filename ─────────────────────────────────────
-    safe_name = secure_filename(file.filename or "manual.pdf")
-    if not safe_name.lower().endswith(".pdf"):
-        safe_name += ".pdf"
+    category = _get_leaf_category_for_org(
+        db,
+        org_id=current_user.org_id,
+        category_id=category_id,
+    )
+    _ensure_unique_active_title(db, org_id=current_user.org_id, title=title)
+    contents, sha256, safe_name = _read_and_validate_pdf(file)
 
     storage = get_manual_storage()
     client_ip = request.client.host if request and request.client else None
 
-    # ── 1. Transaction safety: DB record created with placeholder,
-    #    committed only AFTER successful disk write ─────────────
     manual = manual_repo.create(
         db,
         org_id=current_user.org_id,
+        category_id=category.id,
         title=title,
         storage_path="pending",
         original_filename=safe_name,
@@ -120,7 +244,8 @@ def upload_manual(
         uploaded_by=current_user.id,
     )
 
-    relative_path = f"{manual.id}_{safe_name}"
+    # Create the row first so the storage key can include the database id.
+    relative_path = f"{manual.id}_v{manual.version_number}_{safe_name}"
     try:
         disk_path = storage.save(relative_path, contents)
     except StorageError:
@@ -128,7 +253,20 @@ def upload_manual(
         raise
 
     manual.storage_path = disk_path
-    # ── 8. Audit logging ───────────────────────────────────────
+
+    path_text = _category_path_text(category)
+    manual_update_event_repo.create(
+        db,
+        org_id=current_user.org_id,
+        manual_id=manual.id,
+        actor_user_id=current_user.id,
+        action="uploaded",
+        title=manual.title,
+        note=note,
+        new_storage_path=disk_path,
+        new_sha256=sha256,
+        new_version_number=manual.version_number,
+    )
     audit_service.record(
         db,
         action="manual.upload",
@@ -137,18 +275,151 @@ def upload_manual(
         user_id=current_user.id,
         org_id=current_user.org_id,
         ip=client_ip,
-        metadata={"sha256": sha256, "file_size": len(contents), "title": title},
+        metadata={
+            "sha256": sha256,
+            "file_size": len(contents),
+            "title": title,
+            "category_id": category.id,
+            "category_path": path_text,
+            "note": note,
+        },
     )
 
     db.commit()
+    manual = manual_repo.get_by_id(db, manual.id)
+    return _manual_upload_out(manual)
 
-    return ManualUploadOut(
-        id=manual.id,
-        title=manual.title,
-        original_filename=manual.original_filename,
-        file_size=manual.file_size,
-        sha256=manual.sha256,
+
+# ── POST /{id}/update ─────────────────────────────────────────
+
+
+@router.post(
+    "/{manual_id}/update",
+    response_model=ManualUpdateOut,
+    responses={
+        400: {"model": ErrorResponse},
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+        413: {"model": ErrorResponse},
+        415: {"model": ErrorResponse},
+    },
+    summary="Replace the PDF for an existing manual (admin only)",
+)
+def update_manual(
+    manual_id: int,
+    file: UploadFile = File(..., description="Replacement PDF file"),
+    title: Optional[str] = Form(None, description="Optional replacement title"),
+    category_id: Optional[int] = Form(None, description="Optional replacement leaf category"),
+    note: Optional[str] = Form(None, description="Manager note shown in the update feed"),
+    request: Request = None,
+    current_user: User = Depends(_ADMIN),
+    db: DbSession = Depends(get_db),
+):
+    """Replace an existing manual's PDF and preserve the update trail."""
+    manual = manual_repo.get_by_id(db, manual_id)
+    if manual is None or manual.org_id != current_user.org_id:
+        raise NotFoundError("Manual not found")
+
+    new_title = title.strip() if title is not None else manual.title
+    if not new_title:
+        raise AppError("Manual title is required", code=400)
+    _ensure_unique_active_title(
+        db,
+        org_id=current_user.org_id,
+        title=new_title,
+        current_manual_id=manual.id,
     )
+
+    new_category = manual.category
+    if category_id is not None:
+        new_category = _get_leaf_category_for_org(
+            db,
+            org_id=current_user.org_id,
+            category_id=category_id,
+        )
+
+    contents, sha256, safe_name = _read_and_validate_pdf(file)
+    storage = get_manual_storage()
+    client_ip = request.client.host if request and request.client else None
+
+    old_storage_path = manual.storage_path
+    old_sha256 = manual.sha256
+    old_version_number = manual.version_number
+    old_category_id = manual.category_id
+    old_category_path = _category_path_text(manual.category)
+    next_version = (manual.version_number or 1) + 1
+    relative_path = f"{manual.id}_v{next_version}_{safe_name}"
+
+    try:
+        # Save the new file before mutating the database row, so rollback is simple on failure.
+        disk_path = storage.save(relative_path, contents)
+    except StorageError:
+        db.rollback()
+        raise
+
+    manual_repo.update_file_metadata(
+        db,
+        manual,
+        storage_path=disk_path,
+        original_filename=safe_name,
+        file_size=len(contents),
+        sha256=sha256,
+        uploaded_by=current_user.id,
+        title=new_title,
+        category_id=new_category.id,
+    )
+
+    old_file_deleted = False
+    try:
+        # Cleanup failure is logged but does not fail the update; the new manual is already usable.
+        old_file_deleted = _delete_physical_file_or_fail(old_storage_path)
+    except StorageError:
+        logger.exception("Manual updated, but old PDF cleanup failed: manual_id=%s", manual.id)
+
+    new_category_path = _category_path_text(new_category)
+    manual_update_event_repo.create(
+        db,
+        org_id=current_user.org_id,
+        manual_id=manual.id,
+        actor_user_id=current_user.id,
+        action="updated",
+        title=manual.title,
+        note=note,
+        old_storage_path=old_storage_path,
+        new_storage_path=disk_path,
+        old_sha256=old_sha256,
+        new_sha256=sha256,
+        old_version_number=old_version_number,
+        new_version_number=manual.version_number,
+    )
+    audit_service.record(
+        db,
+        action="manual.update",
+        target_type="manual",
+        target_id=manual.id,
+        user_id=current_user.id,
+        org_id=current_user.org_id,
+        ip=client_ip,
+        metadata={
+            "title": manual.title,
+            "note": note,
+            "old_sha256": old_sha256,
+            "new_sha256": sha256,
+            "old_version_number": old_version_number,
+            "new_version_number": manual.version_number,
+            "old_category_id": old_category_id,
+            "new_category_id": new_category.id,
+            "old_category_path": old_category_path,
+            "new_category_path": new_category_path,
+            "old_file_deleted": old_file_deleted,
+        },
+    )
+
+    db.commit()
+    manual = manual_repo.get_by_id(db, manual.id)
+    return _manual_update_out(manual)
 
 
 # ── DELETE /{id} ──────────────────────────────────────────────
@@ -161,23 +432,44 @@ def upload_manual(
         401: {"model": ErrorResponse},
         403: {"model": ErrorResponse},
         404: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
     },
     summary="Delete a manual (admin only)",
 )
 def delete_manual(
     manual_id: int,
     request: Request,
+    note: Optional[str] = Query(None, description="Manager note shown in the update feed"),
     current_user: User = Depends(_ADMIN),
     db: DbSession = Depends(get_db),
 ):
+    """Soft-delete the manual row and remove its physical file."""
     manual = manual_repo.get_by_id(db, manual_id)
     if manual is None or manual.org_id != current_user.org_id:
         raise NotFoundError("Manual not found")
 
-    storage = get_manual_storage()
-    storage.delete(manual.storage_path)
+    file_deleted = _delete_physical_file_or_fail(manual.storage_path)
+
+    old_storage_path = manual.storage_path
+    old_sha256 = manual.sha256
+    old_version_number = manual.version_number
+    category_id = manual.category_id
+    category_path = _category_path_text(manual.category)
+    title = manual.title
 
     manual_repo.soft_delete(db, manual)
+    manual_update_event_repo.create(
+        db,
+        org_id=current_user.org_id,
+        manual_id=manual.id,
+        actor_user_id=current_user.id,
+        action="deleted",
+        title=title,
+        note=note,
+        old_storage_path=old_storage_path,
+        old_sha256=old_sha256,
+        old_version_number=old_version_number,
+    )
     audit_service.record(
         db,
         action="manual.delete",
@@ -186,6 +478,15 @@ def delete_manual(
         user_id=current_user.id,
         org_id=current_user.org_id,
         ip=request.client.host if request.client else None,
+        metadata={
+            "title": title,
+            "category_id": category_id,
+            "category_path": category_path,
+            "note": note,
+            "old_sha256": old_sha256,
+            "old_version_number": old_version_number,
+            "physical_file_deleted": file_deleted,
+        },
     )
     db.commit()
     return ManualDeleteOut()
@@ -197,14 +498,26 @@ def delete_manual(
 @router.get(
     "",
     response_model=list[ManualOut],
-    responses={401: {"model": ErrorResponse}},
-    summary="List available manuals",
+    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    summary="List available manuals, optionally filtered by category path",
 )
 def list_manuals(
+    category_id: Optional[int] = Query(None, description="Category to filter by"),
+    include_descendants: bool = Query(True, description="Include manuals in child categories"),
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
-    return manual_repo.list_active(db, org_id=current_user.org_id)
+    """List active manuals, optionally including descendants of a category."""
+    if category_id is not None:
+        _get_category_for_org(db, org_id=current_user.org_id, category_id=category_id)
+
+    manuals = manual_repo.list_active(
+        db,
+        org_id=current_user.org_id,
+        category_id=category_id,
+        include_descendants=include_descendants,
+    )
+    return [_manual_out(manual) for manual in manuals]
 
 
 # ── GET /{id}/download ───────────────────────────────────────
@@ -226,6 +539,7 @@ def download_manual(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
+    """Read, watermark, audit, and stream a manual PDF to the caller."""
     manual = manual_repo.get_by_id(db, manual_id)
     if manual is None or manual.org_id != current_user.org_id:
         raise NotFoundError("Manual not found")

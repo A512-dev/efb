@@ -1,3 +1,5 @@
+"""User profile routes."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
@@ -17,4 +19,5 @@ router = APIRouter(prefix="/users", tags=["users"])
     summary="Current authenticated user profile",
 )
 def me(current_user: User = Depends(get_current_user)):
+    """Return the authenticated user's profile payload."""
     return UserMeResponse.model_validate(current_user)

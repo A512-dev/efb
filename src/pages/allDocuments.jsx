@@ -3,6 +3,7 @@ import { useManuals } from "../hooks/useManuals";
 import { useDownloadManual } from "../hooks/useDownloadManual";
 import downloadSvg from '../assets/icons/Import-File--Streamline-Ultimate.svg'
 import folderSvg from '../assets/icons/Office-Folder--Streamline-Ultimate.svg'
+import PageWrapper from "../components/PageWrapper";
 const AllDocuments =( ) =>{
     const { manuals, loading } = useManuals();
   const { handleDownload } = useDownloadManual();
@@ -10,9 +11,10 @@ const AllDocuments =( ) =>{
   if (loading) return <p>Loading manuals...</p>;
 return(
     <>
+    <PageWrapper>
     <div className="manualsContainerLeft">
       <div className="div-header">
-        <NavLink className="card-header1" to={'/dashboard/allDocuments'}>All Documents </NavLink>
+        <NavLink className="card-header1" to={'/dashboard/manuals'}>All Documents </NavLink>
       <NavLink className="card-header2" to={ '/dashboard/clipboard'} >Clipboard </NavLink>
       
     </div>
@@ -51,6 +53,7 @@ return(
   ))}
 
 </div> */}
+</PageWrapper>
     </>
 )
 }

@@ -1,3 +1,5 @@
+"""SQLAlchemy model for login attempt audit records."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -22,6 +24,8 @@ from app.db.types import CIText
 
 
 class LoginAttempt(Base):
+    """Security record of successful and failed authentication attempts."""
+
     __tablename__ = "login_attempts"
     __table_args__ = (
         Index("idx_login_attempts_org_id", "org_id"),

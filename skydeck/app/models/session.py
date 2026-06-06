@@ -1,3 +1,5 @@
+"""SQLAlchemy model for refresh-token sessions."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -15,6 +17,8 @@ if TYPE_CHECKING:
 
 
 class Session(Base):
+    """A revocable login session backed by a hashed refresh token."""
+
     __tablename__ = "sessions"
     __table_args__ = (
         Index("idx_sessions_user_id", "user_id"),
@@ -26,6 +30,7 @@ class Session(Base):
         BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     device_info_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    # Store only the hash so a database leak does not expose usable refresh tokens.
     refresh_token_hash: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

@@ -199,56 +199,79 @@
 
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useBookmark } from '../auth/BookmarkContext'; 
+import { useBookmark } from '../Context/BookmarkContext'; 
 import { useManuals } from "../hooks/useManuals";
 import { useDownloadManual } from "../hooks/useDownloadManual";
-
+import PageWrapper from '../components/PageWrapper';
 
 const Clipboard = () => {
-  
-  const { showBookmarkText, showSOPInClipboard } = useBookmark();
+
+  const { clipboardItems } = useBookmark();
+
   const { manuals, loading } = useManuals();
   const { handleDownload } = useDownloadManual();
-  const[showDoc,setShowDoc]= useState('');
+
+  const [openDoc, setOpenDoc] = useState(null);
+
   if (loading) return <p>Loading manuals...</p>;
+
+  const handleToggleDoc = (file) => {
+    if (openDoc === file) {
+      setOpenDoc(null);
+    } else {
+      setOpenDoc(file);
+    }
+  };
 
   return (
     <>
-      <div className="manualsContainerLeft">
-        <div className="div-header">
-          <NavLink className="card-header1" to={'/dashboard/allDocuments'}>all documents </NavLink>
-          <NavLink className="card-header2 active" to={'/dashboard/clipboard'}>
-            Clipboard
-          </NavLink>
-        </div>
+      <PageWrapper>
 
-        
-        {showSOPInClipboard && (
-          <p className="headersForManuals" onClick={()=>{ setShowDoc(!showDoc)}}> 
-            A30e6-310-SOP
-          </p>
-        )}
-      </div>
+        <div className="manualsContainerLeft">
 
-      <div className="manualsContainer">
-        
-        
+          <div className="div-header">
+            <NavLink className="card-header1" to={'/dashboard/manuals'}>
+              All Documents
+            </NavLink>
 
-        <div style={{ width: '100%', height: '100vh' }}>
-          
-          {showDoc && (
-            <object
-              data="/A306-310-SOP.pdf"
-              type="application/pdf"
-              width="100%"
-              height="100%"
+            <NavLink className="card-header2 active" to={'/dashboard/clipboard'}>
+              Clipboard
+            </NavLink>
+          </div>
+
+          {clipboardItems.map((doc, index) => (
+            <p
+              key={index}
+              className="headersForManuals"
+              onClick={() => handleToggleDoc(doc.file)}
+              style={{ cursor: "pointer" }}
             >
-          
-              This browser does not support PDFs. Please download the PDF to view it: <a href="/A306-310-SOP.pdf">Download PDF</a>
-            </object>
-          )}
+              {doc.title}
+            </p>
+          ))}
+
         </div>
-      </div>
+
+        <div className="manualsContainer">
+
+          <div style={{ width: '100%', height: '100vh' }}>
+
+            {openDoc && (
+              <object
+                data={openDoc}
+                type="application/pdf"
+                width="100%"
+                height="100%"
+              >
+                PDF cannot be displayed
+              </object>
+            )}
+
+          </div>
+
+        </div>
+
+      </PageWrapper>
     </>
   );
 };

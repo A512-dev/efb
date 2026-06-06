@@ -1,3 +1,5 @@
+"""Repository helpers for creating, reading, and updating messages."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -22,6 +24,7 @@ def create(
     body: str,
     subject: Optional[str] = None,
 ) -> Message:
+    """Create and persist a message within an organization."""
     message = Message(
         org_id=org_id,
         sender_id=sender_id,
@@ -42,6 +45,7 @@ def list_for_user(
     offset: int = 0,
     limit: int = 20,
 ) -> tuple[list[Message], int]:
+    """Return a paginated message list and total count for a user's mailbox."""
     query = (
         db.query(Message)
         .options(joinedload(Message.sender), joinedload(Message.recipient))
@@ -61,6 +65,7 @@ def list_for_user(
 
 
 def get_visible_to_user(db: DbSession, *, message_id: int, user: User) -> Optional[Message]:
+    """Fetch a message if the user belongs to its organization and can view it."""
     return (
         db.query(Message)
         .options(joinedload(Message.sender), joinedload(Message.recipient))
@@ -74,6 +79,7 @@ def get_visible_to_user(db: DbSession, *, message_id: int, user: User) -> Option
 
 
 def mark_read(db: DbSession, message: Message) -> Message:
+    """Set a message's read timestamp if it has not already been read."""
     if message.read_at is None:
         message.read_at = datetime.now(timezone.utc)
         db.flush()

@@ -1,22 +1,24 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Loginpage from "../pages/Loginpage";
 import DashboardLayout from "../layouts/DashboardLayout";
-import Dashboard from "../pages/Dashboard";
+
 import Manuals from "../pages/Manuals";
 import ManualsAdmin from "../pages/ManualsAdmin";
-import Forms from "../pages/Forms";
+
 import RequireAuth from "../auth/RequireAuth";
 import Profile from "../pages/Profile";
 import SignUp from "../pages/SignUp";
-import AllDocuments from "../pages/allDocuments";
+
 import Clipboard from "../pages/Clipboard";
-import AircraftDocuments from "../pages/AircraftDocuments";
-import A300_600 from "../pages/A300_600";
+
+
 import IranAirChat from "../pages/IranAirChat";
 import Setting from "../pages/Setting";
 import UpdateManuals from "../pages/UpdateManuals";
+import { AnimatePresence } from "framer-motion";
 export default function AppRouter() {
   return (
+      <AnimatePresence mode="wait">
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Loginpage />} />
@@ -32,30 +34,7 @@ export default function AppRouter() {
             >
               <Route index element={<Profile />} />
             </Route>
-            <Route
-              path="safetyIssue"
-              element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
-            >
-              <Route index element={<Profile />} />
-            </Route>
-            <Route
-              path="trainingIssue"
-              element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
-            >
-              <Route index element={<Profile />} />
-            </Route>
-            <Route
-              path="checkList"
-              element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
-            >
-              <Route index element={<Profile />} />
-            </Route>
-            <Route
-              path="forms"
-              element={<RequireAuth allowedRoles={["pilot", "admin"]} />}
-            >
-              <Route index element={<Forms />} />
-            </Route>
+            
 
             <Route
               path="manuals"
@@ -64,6 +43,12 @@ export default function AppRouter() {
               <Route index element={<Manuals />} />
               
             </Route>
+            <Route
+  path="category/:categoryId"
+  element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
+>
+  <Route index element={<Manuals />} />
+</Route>
             
             <Route
               path="setting"
@@ -79,14 +64,12 @@ export default function AppRouter() {
               <Route index element={<UpdateManuals />} />
               
             </Route>
-            <Route path="allDocuments" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
-            >
-            <Route index element={<AllDocuments/>} />
-            </Route>
+            
             <Route path="clipboard" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
             >
             <Route index element={<Clipboard/>} />
             </Route>
+<<<<<<< HEAD
             <Route path="A300_600" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
             >
             <Route index element={<A300_600/>} />
@@ -95,6 +78,10 @@ export default function AppRouter() {
             >
             <Route index element={<AircraftDocuments/>} />
             </Route>
+=======
+            
+            
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
             <Route path="Chat" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
             >
             <Route index element={<IranAirChat/>} />
@@ -119,5 +106,6 @@ export default function AppRouter() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </AnimatePresence>
   );
 }
