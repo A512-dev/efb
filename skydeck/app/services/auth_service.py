@@ -54,6 +54,7 @@ def signup(
         raise ConflictError("Email is already registered")
 
     org = _get_or_create_default_org(db)
+    now = datetime.now(timezone.utc)
 
     user = User(
         org_id=org.id,
@@ -61,8 +62,16 @@ def signup(
         email=email,
         password_hash=hash_password(password),
         role=UserRole.pilot,
+        employee_no="pending",
+        position=_default_position(name=name, role=UserRole.pilot),
+        aircraft_type="A310",
+        medical_expires_at=_add_years(now, 1),
+        passport_expires_at=_add_years(now, 5),
+        license_expires_at=_add_years(now, 1),
     )
     db.add(user)
+    db.flush()
+    user.employee_no = str(user.id)
     db.flush()
 
     tokens = _create_session(db, user=user, ip=ip)
@@ -209,6 +218,27 @@ def _create_session(
     db.flush()
 
     return {"access_token": access_token, "refresh_token": refresh_token}
+
+
+def _default_position(*, name: str, role: UserRole) -> str:
+    """Infer a display position from the role and available name."""
+    if role == UserRole.admin:
+        return "Admin"
+    if role == UserRole.chief_pilot:
+        return "Chief Pilot"
+    if role == UserRole.pilot and name.strip().lower().startswith("captain"):
+        return "Captain"
+    if role == UserRole.pilot:
+        return "P2"
+    return role.value.replace("_", " ").title()
+
+
+def _add_years(value: datetime, years: int) -> datetime:
+    """Add whole years while keeping leap-day dates valid."""
+    try:
+        return value.replace(year=value.year + years)
+    except ValueError:
+        return value.replace(month=2, day=28, year=value.year + years)
 
 
 def _get_or_create_default_org(db: DbSession):

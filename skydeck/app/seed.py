@@ -34,6 +34,27 @@ def _hash_id() -> str:
     return hashlib.sha256(uuid.uuid4().bytes).hexdigest()[:32]
 
 
+def _add_years(value: datetime, years: int) -> datetime:
+    """Add whole years while keeping leap-day dates valid."""
+    try:
+        return value.replace(year=value.year + years)
+    except ValueError:
+        return value.replace(month=2, day=28, year=value.year + years)
+
+
+def _default_position(name: str, role: UserRole) -> str:
+    """Infer a display position for seeded demo users."""
+    if role == UserRole.admin:
+        return "Admin"
+    if role == UserRole.chief_pilot:
+        return "Chief Pilot"
+    if role == UserRole.pilot and name.strip().lower().startswith("captain"):
+        return "Captain"
+    if role == UserRole.pilot:
+        return "P2"
+    return role.value.replace("_", " ").title()
+
+
 def seed() -> None:
     """Populate an empty development database with demo aviation data."""
     db = SessionLocal()
@@ -104,10 +125,21 @@ def seed() -> None:
                 email=u["email"],
                 password_hash=password_hash,
                 role=u["role"],
+                employee_no="pending",
+                position=_default_position(u["name"], u["role"]),
+                aircraft_type=(
+                    "A310" if u["role"] in {UserRole.pilot, UserRole.chief_pilot} else "N/A"
+                ),
+                medical_expires_at=_add_years(now, 1),
+                passport_expires_at=_add_years(now, 5),
+                license_expires_at=_add_years(now, 1),
             )
             db.add(user)
             users.append(user)
 
+        db.flush()
+        for u in users:
+            u.employee_no = str(u.id)
         db.flush()
         for u in users:
             print(f"[seed] Created user: {u.name} ({u.role.value}) id={u.id}")

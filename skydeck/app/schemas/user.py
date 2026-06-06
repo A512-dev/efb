@@ -16,6 +16,12 @@ class UserMeResponse(BaseModel):
     name: str
     email: str
     role: str
+    employee_no: str
+    position: str
+    aircraft_type: str
+    medical_expires_at: datetime
+    passport_expires_at: datetime
+    license_expires_at: datetime
     created_at: datetime
     updated_at: Optional[datetime] = None
 

@@ -40,6 +40,12 @@ class User(Base):
         Enum(UserRole, name="user_role", create_constraint=False, native_enum=True),
         nullable=False,
     )
+    employee_no: Mapped[str] = mapped_column(Text, nullable=False)
+    position: Mapped[str] = mapped_column(Text, nullable=False)
+    aircraft_type: Mapped[str] = mapped_column(Text, nullable=False)
+    medical_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    passport_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    license_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), onupdate=func.now(), nullable=True
