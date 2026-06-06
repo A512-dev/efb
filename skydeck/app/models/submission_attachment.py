@@ -1,3 +1,5 @@
+"""SQLAlchemy model for files attached to submissions."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -22,6 +24,8 @@ if TYPE_CHECKING:
 
 
 class SubmissionAttachment(Base):
+    """Metadata for a file uploaded along with a form submission."""
+
     __tablename__ = "submission_attachments"
     __table_args__ = (
         CheckConstraint("file_size >= 0", name="ck_attachments_file_size"),

@@ -1,3 +1,5 @@
+"""SQLAlchemy model for manual view/download audit entries."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -16,6 +18,8 @@ if TYPE_CHECKING:
 
 
 class ManualAccessLog(Base):
+    """Append-only access event for manual viewing and downloading."""
+
     __tablename__ = "manual_access_logs"
     __table_args__ = (
         Index("idx_access_logs_org_id", "org_id"),
@@ -42,6 +46,7 @@ class ManualAccessLog(Base):
         Enum(ManualAction, name="manual_action", create_constraint=False, native_enum=True),
         nullable=False,
     )
+    # watermark_hash_id connects a served PDF copy back to this access event.
     watermark_hash_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     ip: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
     device_info_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)

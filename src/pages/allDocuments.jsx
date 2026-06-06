@@ -14,7 +14,7 @@ return(
     <PageWrapper>
     <div className="manualsContainerLeft">
       <div className="div-header">
-        <NavLink className="card-header1" to={'/dashboard/allDocuments'}>All Documents </NavLink>
+        <NavLink className="card-header1" to={'/dashboard/manuals'}>All Documents </NavLink>
       <NavLink className="card-header2" to={ '/dashboard/clipboard'} >Clipboard </NavLink>
       
     </div>

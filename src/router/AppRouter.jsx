@@ -66,6 +66,12 @@ export default function AppRouter() {
               <Route index element={<Manuals />} />
               
             </Route>
+            <Route
+  path="category/:categoryId"
+  element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
+>
+  <Route index element={<Manuals />} />
+</Route>
             
             <Route
               path="setting"

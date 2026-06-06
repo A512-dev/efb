@@ -230,7 +230,7 @@ const Clipboard = () => {
         <div className="manualsContainerLeft">
 
           <div className="div-header">
-            <NavLink className="card-header1" to={'/dashboard/allDocuments'}>
+            <NavLink className="card-header1" to={'/dashboard/manuals'}>
               All Documents
             </NavLink>
 

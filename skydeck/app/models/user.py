@@ -1,3 +1,5 @@
+"""SQLAlchemy model for application users."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -18,6 +20,8 @@ if TYPE_CHECKING:
 
 
 class User(Base):
+    """A person who can authenticate and act within a single organization."""
+
     __tablename__ = "users"
     __table_args__ = (
         Index("idx_users_org_id", "org_id"),
@@ -29,6 +33,7 @@ class User(Base):
         BigInteger, ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
     )
     name: Mapped[str] = mapped_column(Text, nullable=False)
+    # CIText keeps email lookup case-insensitive at the database layer.
     email: Mapped[str] = mapped_column(CIText(), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
     role: Mapped[UserRole] = mapped_column(
@@ -39,6 +44,7 @@ class User(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), onupdate=func.now(), nullable=True
     )
+    # Users are soft-deleted so old sessions, submissions, and audit rows can still reference them.
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # ── relationships ──────────────────────────────────────

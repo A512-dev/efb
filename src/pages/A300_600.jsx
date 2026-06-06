@@ -15,7 +15,7 @@ return(
     <PageWrapper>
     <div className="manualsContainerLeft">
       <div className="div-header">
-        <NavLink className="card-header1" to={'/dashboard/allDocuments'}> <img src={backIcon} style={{width:'25px'}} alt="" /> </NavLink>
+        <NavLink className="card-header1" to={'/dashboard/manuals'}> <img src={backIcon} style={{width:'25px'}} alt="" /> </NavLink>
       <NavLink className="card-header2 active" > A300_600 </NavLink>
       
     </div>

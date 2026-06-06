@@ -1,3 +1,5 @@
+"""Form discovery routes."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends

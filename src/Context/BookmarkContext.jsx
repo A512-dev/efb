@@ -1,8 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-const bookmarkAddIcon = "/assets/icons/bookmarkadd.svg";
-const bookmarkRemoveIcon = "/assets/icons/bookmark-remove.svg";
-
 export const BookmarkContext = createContext();
 
 export const BookmarkProvider = ({ children }) => {
@@ -12,38 +9,24 @@ export const BookmarkProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [isBookmarkActive, setIsBookmarkActive] = useState(false);
-  const [currentBookmarkIcon, setCurrentBookmarkIcon] = useState(bookmarkAddIcon);
-
-  const [showDoc, setShowDoc] = useState(null);
-
   useEffect(() => {
     localStorage.setItem("clipboardItems", JSON.stringify(clipboardItems));
   }, [clipboardItems]);
 
   const toggleClipboardItem = (doc) => {
     setClipboardItems((prev) => {
-      const exists = prev.find((item) => item.title === doc.title);
+      const exists = prev.find((item) => item.id === doc.id);
 
       if (exists) {
-        return prev.filter((item) => item.title !== doc.title);
+        return prev.filter((item) => item.id !== doc.id);
       }
 
       return [...prev, doc];
     });
   };
 
-  const isDocumentBookmarked = (title) => {
-    return clipboardItems.some((item) => item.title === title);
-  };
-
-  const handleBookmarkIconToggle = (doc) => {
-    toggleClipboardItem(doc);
-
-    const active = !isDocumentBookmarked(doc.title);
-
-    setIsBookmarkActive(active);
-    setCurrentBookmarkIcon(active ? bookmarkRemoveIcon : bookmarkAddIcon);
+  const isDocumentBookmarked = (id) => {
+    return clipboardItems.some((item) => item.id === id);
   };
 
   return (
@@ -51,11 +34,7 @@ export const BookmarkProvider = ({ children }) => {
       value={{
         clipboardItems,
         toggleClipboardItem,
-        isDocumentBookmarked,
-        handleBookmarkIconToggle,
-        currentBookmarkIcon,
-        showDoc,
-        setShowDoc
+        isDocumentBookmarked
       }}
     >
       {children}

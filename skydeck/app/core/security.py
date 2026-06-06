@@ -30,6 +30,7 @@ def create_access_token(
     role: str,
     expires_delta: Optional[timedelta] = None,
 ) -> str:
+    """Create the short-lived JWT sent on authenticated API requests."""
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
@@ -78,10 +79,12 @@ def decode_refresh_token(token: str) -> dict[str, Any]:
 
 
 def verify_password(plain: str, hashed: str) -> bool:
+    """Check a plaintext password against a bcrypt hash."""
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
 def hash_password(plain: str) -> str:
+    """Hash a plaintext password with bcrypt for persistent storage."""
     return bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
 
 

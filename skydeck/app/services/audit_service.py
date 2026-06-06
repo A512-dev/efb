@@ -31,6 +31,7 @@ def record(
 ) -> None:
     """Append an immutable audit row. Never raises — logs and continues."""
     try:
+        # Audit failures should not break the user action that triggered them.
         db.add(
             AuditLog(
                 org_id=org_id,

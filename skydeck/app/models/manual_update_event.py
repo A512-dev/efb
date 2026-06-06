@@ -1,3 +1,5 @@
+"""SQLAlchemy model for the user-facing manual update feed."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -33,6 +35,7 @@ class ManualUpdateEvent(Base):
     action: Mapped[str] = mapped_column(Text, nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Old/new fields let clients show exactly what changed during a manual update.
     old_storage_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     new_storage_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     old_sha256: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

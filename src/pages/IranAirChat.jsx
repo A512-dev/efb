@@ -928,6 +928,7 @@
 
 // export default IranAirChat;
 
+
 // import React, { useEffect, useMemo, useState } from "react";
 
 // import {
@@ -1587,13 +1588,16 @@ const IranAirChat = () => {
   const [subject, setSubject] = useState("");
   const [replyTo, setReplyTo] = useState(null);
 
+
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [recipientIds, setRecipientIds] = useState("");
 
+
   const formRef = useRef(null);
+
 
   const role = currentUser?.role;
   const isAdmin = useMemo(() => role === "admin", [role]);
@@ -1645,6 +1649,7 @@ const IranAirChat = () => {
   }, []);
 
   useEffect(() => {
+
     if (activeTab === "messages") {
       fetchMessages();
     }
@@ -1678,6 +1683,7 @@ const IranAirChat = () => {
     setReplyTo(null);
   };
 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -1694,11 +1700,13 @@ const IranAirChat = () => {
 
     try {
       const payload = {
+
         subject: subject.trim(),
         body: trimmedMessage,
       };
 
       
+
 
       if (isAdmin) {
         const ids = recipientIds
@@ -1708,7 +1716,9 @@ const IranAirChat = () => {
 
         if (!ids.length) {
           setStatus("For admin users, at least one recipient_id is required.");
+
           setSending(false);
+
           return;
         }
 
@@ -1719,6 +1729,7 @@ const IranAirChat = () => {
 
       setStatus("Your message submitted successfully. Wait for the response.");
       setMessageText("");
+
       setSubject("");
       if (isAdmin) setRecipientIds("");
       setReplyTo(null);
@@ -1758,9 +1769,11 @@ const IranAirChat = () => {
   };
 
   return (
+
     <PageWrapper>
     <div className="manualsContainer chatbox">
       <h4 className="testReport">Report your issue</h4>
+
       <label>Write the issue for manager and get answer ASAP</label>
 
       {currentUser && (
@@ -1769,6 +1782,7 @@ const IranAirChat = () => {
         </p>
       )}
 
+
       <div className="chat-tabs">
         <button
           type="button"
@@ -1776,7 +1790,9 @@ const IranAirChat = () => {
           onClick={() => setActiveTab("submit")}
         >
           Submit
+
         </button>
+
 
         <button
           type="button"
@@ -1950,6 +1966,7 @@ const IranAirChat = () => {
       )}
     </div>
     </PageWrapper>
+
   );
 };
 

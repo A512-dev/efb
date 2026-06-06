@@ -177,23 +177,32 @@ export const getCurrentUser = async () => {
 };
 
 // Manuals
+
 export const fetchManuals = async () => {
   const response = await apiClient.get("/manuals");
   return response.data;
 };
 
-export const getManuals = async () => {
-  const response = await apiClient.get("/manuals");
+export const getManuals = async (params = {}) => {
+  const response = await apiClient.get("/manuals", {
+    params,
+  });
+
   return response.data;
 };
+
 //categorized uploading
+
 export const uploadManual = async (file, title, note, categoryId) => {
   const formData = new FormData();
+
   formData.append("title", title);
   formData.append("file", file);
-  formData.append("note", note);
-  if (categoryId) {
-    formData.append("category_id", categoryId);
+
+  formData.append("category_id", Number(categoryId));
+
+  if (note && note.trim() !== "") {
+    formData.append("note", note.trim());
   }
 
   const response = await apiClient.post("/manuals/upload", formData);

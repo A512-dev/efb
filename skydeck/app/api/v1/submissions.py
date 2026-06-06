@@ -45,6 +45,7 @@ _VIEWER_ROLES = require_roles(
 
 
 def _generate_hash_id() -> str:
+    """Create a non-sequential public id for a submission."""
     raw = f"{secrets.token_hex(16)}:{datetime.now(timezone.utc).isoformat()}"
     return hashlib.sha256(raw.encode()).hexdigest()[:32]
 
@@ -71,6 +72,7 @@ def create_submission(
     current_user: User = Depends(_PILOT_ROLES),
     db: DbSession = Depends(get_db),
 ):
+    """Create a submission and optional attachment from multipart form data."""
     import json as _json
 
     version = form_repo.get_version_by_id(db, form_version_id)
@@ -78,6 +80,7 @@ def create_submission(
         raise NotFoundError("Form version not found")
 
     if version.template.org_id != current_user.org_id:
+        # Hide cross-organization form versions behind the same 404 as missing ids.
         raise NotFoundError("Form version not found")
 
     try:
@@ -106,6 +109,7 @@ def create_submission(
 
     _max_attach = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
     if file is not None and file.filename:
+        # UploadFile streams from Starlette; read once, then validate size before saving.
         contents = file.file.read()
         if len(contents) > _max_attach:
             raise PayloadTooLargeError(f"Attachment exceeds {settings.MAX_UPLOAD_SIZE_MB} MB limit")
@@ -161,6 +165,7 @@ def list_submissions(
     current_user: User = Depends(_VIEWER_ROLES),
     db: DbSession = Depends(get_db),
 ):
+    """List submissions visible to administrative/reviewer roles."""
     if page < 1:
         page = 1
     if limit < 1 or limit > 100:
@@ -198,6 +203,7 @@ def get_submission(
     current_user: User = Depends(_VIEWER_ROLES),
     db: DbSession = Depends(get_db),
 ):
+    """Return one submission detail record after enforcing organization scope."""
     sub = submission_repo.get_by_id(db, submission_id)
     if sub is None or sub.org_id != current_user.org_id:
         raise NotFoundError("Submission not found")

@@ -1,3 +1,5 @@
+"""Pydantic schemas for form discovery responses."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -7,6 +9,8 @@ from pydantic import BaseModel
 
 
 class FormFieldOut(BaseModel):
+    """Field descriptor inside a dynamic form schema."""
+
     name: str
     type: str
     required: bool = False
@@ -16,6 +20,8 @@ class FormFieldOut(BaseModel):
 
 
 class ActiveFormOut(BaseModel):
+    """Latest active version of a form template returned to clients."""
+
     form_id: int
     template_name: str
     version: int

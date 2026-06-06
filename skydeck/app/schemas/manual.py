@@ -1,9 +1,13 @@
+"""Pydantic response schemas for manual library routes."""
+
 from __future__ import annotations
 
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from app.schemas.manual_category import ManualCategoryPathItem
 
 
 class ManualOut(BaseModel):
@@ -11,6 +15,9 @@ class ManualOut(BaseModel):
 
     id: int
     org_id: int
+    category_id: int
+    category_path: list[ManualCategoryPathItem] = Field(default_factory=list)
+    category_path_text: str
     title: str
     original_filename: Optional[str] = None
     mime_type: Optional[str] = None
@@ -21,13 +28,14 @@ class ManualOut(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    model_config = {"from_attributes": True}
-
 
 class ManualUploadOut(BaseModel):
     """Response after a successful upload."""
 
     id: int
+    category_id: int
+    category_path: list[ManualCategoryPathItem] = Field(default_factory=list)
+    category_path_text: str
     title: str
     original_filename: Optional[str] = None
     file_size: Optional[int] = None
@@ -35,13 +43,14 @@ class ManualUploadOut(BaseModel):
     version_number: int = 1
     message: str = "Manual uploaded successfully"
 
-    model_config = {"from_attributes": True}
-
 
 class ManualUpdateOut(BaseModel):
     """Response after replacing the PDF for an existing manual."""
 
     id: int
+    category_id: int
+    category_path: list[ManualCategoryPathItem] = Field(default_factory=list)
+    category_path_text: str
     title: str
     original_filename: Optional[str] = None
     file_size: Optional[int] = None
@@ -49,8 +58,8 @@ class ManualUpdateOut(BaseModel):
     version_number: int
     message: str = "Manual updated successfully"
 
-    model_config = {"from_attributes": True}
-
 
 class ManualDeleteOut(BaseModel):
+    """Response after a manual has been deleted."""
+
     message: str = "Manual deleted successfully"

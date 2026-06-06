@@ -1,3 +1,5 @@
+"""Repository helpers for refresh-token sessions and login attempts."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -17,6 +19,7 @@ def create_session(
     expires_at: datetime,
     device_info: Optional[dict] = None,
 ) -> Session:
+    """Create a refresh-token session for a successful login."""
     sess = Session(
         user_id=user_id,
         refresh_token_hash=refresh_token_hash,
@@ -29,6 +32,7 @@ def create_session(
 
 
 def get_by_token_hash(db: DbSession, token_hash: str) -> Optional[Session]:
+    """Find a non-revoked session by hashed refresh token."""
     return (
         db.query(Session)
         .filter(
@@ -40,11 +44,13 @@ def get_by_token_hash(db: DbSession, token_hash: str) -> Optional[Session]:
 
 
 def revoke_session(db: DbSession, session: Session) -> None:
+    """Invalidate a refresh-token session without deleting its audit history."""
     session.revoked_at = datetime.now(timezone.utc)
     db.flush()
 
 
 def touch_session(db: DbSession, session: Session) -> None:
+    """Update the session heartbeat after token refresh or authenticated use."""
     session.last_seen_at = datetime.now(timezone.utc)
     db.flush()
 
@@ -60,6 +66,7 @@ def record_login_attempt(
     device_info: Optional[dict] = None,
     failure_reason: Optional[str] = None,
 ) -> None:
+    """Store the outcome of a login attempt for audit and security review."""
     db.add(
         LoginAttempt(
             email=email,

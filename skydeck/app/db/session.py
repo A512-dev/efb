@@ -1,3 +1,5 @@
+"""Database engine and FastAPI session dependency."""
+
 from collections.abc import Generator
 
 from sqlalchemy import create_engine
@@ -17,6 +19,7 @@ SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 
 def get_db() -> Generator[Session, None, None]:
+    """Yield one SQLAlchemy session per request and close it afterwards."""
     db = SessionLocal()
     try:
         yield db

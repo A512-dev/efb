@@ -1,3 +1,5 @@
+"""Manual update feed routes."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
@@ -36,6 +38,7 @@ def list_manual_updates(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
+    """Return update-feed entries scoped to the current user's organization."""
     if page < 1:
         page = 1
     if limit < 1 or limit > 100:
