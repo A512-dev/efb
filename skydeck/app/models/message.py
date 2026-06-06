@@ -43,3 +43,13 @@ class Message(Base):
 
     sender = relationship("User", foreign_keys=[sender_id])
     recipient = relationship("User", foreign_keys=[recipient_id])
+
+    @property
+    def is_read(self) -> bool:
+        """Return whether the recipient has opened the message."""
+        return self.read_at is not None
+
+    @property
+    def read_by_recipient(self) -> bool:
+        """Sender-facing read receipt flag derived from read_at."""
+        return self.read_at is not None

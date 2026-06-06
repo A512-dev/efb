@@ -40,10 +40,26 @@ class MessageOut(BaseModel):
     recipient_id: Optional[int] = None
     subject: Optional[str] = None
     body: str
+    is_read: bool
+    read_by_recipient: bool
     read_at: Optional[datetime] = None
     created_at: datetime
     sender: Optional[MessageUserOut] = None
     recipient: Optional[MessageUserOut] = None
+
+    model_config = {"from_attributes": True}
+
+
+class MessageRecipientOut(BaseModel):
+    """Admin-selectable recipient summary."""
+
+    id: int
+    name: str
+    email: str
+    role: str
+    employee_no: str
+    position: str
+    aircraft_type: str
 
     model_config = {"from_attributes": True}
 

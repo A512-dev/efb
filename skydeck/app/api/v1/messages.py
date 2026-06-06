@@ -12,7 +12,13 @@ from app.models.enums import UserRole
 from app.models.user import User
 from app.repositories import message_repo, user_repo
 from app.schemas.auth import ErrorResponse
-from app.schemas.message import MessageCreateRequest, MessageCreateResponse, MessageOut, MessageReadResponse
+from app.schemas.message import (
+    MessageCreateRequest,
+    MessageCreateResponse,
+    MessageOut,
+    MessageReadResponse,
+    MessageRecipientOut,
+)
 from app.schemas.pagination import PaginatedResponse
 from app.services import audit_service
 
@@ -47,7 +53,11 @@ def _get_users_by_ids(db: DbSession, *, org_id: int, user_ids: list[int]) -> lis
     "",
     response_model=MessageCreateResponse,
     status_code=201,
-    responses={400: {"model": ErrorResponse}, 401: {"model": ErrorResponse}, 403: {"model": ErrorResponse}},
+    responses={
+        400: {"model": ErrorResponse},
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+    },
     summary="Send an internal message",
 )
 def send_message(
@@ -80,7 +90,9 @@ def send_message(
         missing_ids = [user_id for user_id in recipient_ids if user_id not in found_ids]
         if missing_ids:
             raise NotFoundError(f"Recipient(s) not found: {missing_ids}")
-        invalid = [recipient for recipient in recipients if recipient.role not in _PILOT_RECIPIENT_ROLES]
+        invalid = [
+            recipient for recipient in recipients if recipient.role not in _PILOT_RECIPIENT_ROLES
+        ]
         if invalid:
             raise AuthorisationError("Admins can only send messages to pilot/chief_pilot users")
 
@@ -153,10 +165,36 @@ def list_messages(
     )
 
 
+@router.get(
+    "/recipients",
+    response_model=list[MessageRecipientOut],
+    responses={401: {"model": ErrorResponse}, 403: {"model": ErrorResponse}},
+    summary="List admin-selectable pilot message recipients",
+)
+def list_message_recipients(
+    current_user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+):
+    """Return same-organization pilots/chief pilots an admin can message."""
+    if current_user.role not in _ADMIN_SENDER_ROLES:
+        raise AuthorisationError("Only admins can list message recipients")
+
+    recipients = user_repo.list_by_org_and_roles(
+        db,
+        org_id=current_user.org_id,
+        roles=list(_PILOT_RECIPIENT_ROLES),
+    )
+    return [MessageRecipientOut.model_validate(user) for user in recipients]
+
+
 @router.post(
     "/{message_id}/read",
     response_model=MessageReadResponse,
-    responses={401: {"model": ErrorResponse}, 403: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+    },
     summary="Mark a received message as read",
 )
 def mark_message_read(
