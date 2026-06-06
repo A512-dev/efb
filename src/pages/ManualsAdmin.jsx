@@ -42,225 +42,176 @@
 // }
 // export default ManualsAdmin
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useManuals } from "../hooks/useManuals";
 import { useDownloadManual } from "../hooks/useDownloadManual";
 import { useDeleteManual } from "../hooks/useDeleteManual";
-import { getManuals, uploadManual } from "../services/apiService";
-import downloadSvg from '../assets/icons/Import-File--Streamline-Ultimate.svg'
-import { updateManualPdf } from "../services/apiService";
+import { getManuals, uploadManual, getManualCategories, updateManualPdf } from "../services/apiService";
+import downloadSvg from '../assets/icons/Import-File--Streamline-Ultimate.svg';
 import PageWrapper from "../components/PageWrapper";
 
 const ManualsAdmin = () => {
-
   const [title, setTitle] = useState("");
   const [file, setFile] = useState(null);
-const [updatingId, setUpdatingId] = useState(null);
-
+  const [categoryId, setCategoryId] = useState(""); // استیت برای ذخیره دسته انتخاب شده
+  const [categories, setCategories] = useState([]); // لیست دسته‌ها از دیتابیس
+  const [updatingId, setUpdatingId] = useState(null);
 
   const { manuals, setManuals, loading } = useManuals();
   const { handleDownload } = useDownloadManual();
   const { handleDelete, loading: deleteLoading } = useDeleteManual((manualId) => {
-  
     setManuals(prev => prev.filter(m => m.id !== manualId));
   });
 
-  
- 
+  // لود کردن دسته‌بندی‌ها در بدو ورود
+  useEffect(() => {
+    getManualCategories()
+      .then(data => setCategories(data))
+      .catch(err => console.error("Failed to load categories", err));
+  }, []);
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (!title.trim()) {
-    alert("Title is required");
-    return;
-  }
+    if (!title.trim()) { alert("Title is required"); return; }
+    if (!file) { alert("Please select a file"); return; }
+    if (!categoryId) { alert("Please select a category"); return; }
 
-  if (!file) {
-    alert("Please select a file");
-    return;
-  }
+    const note = window.prompt("Note for this upload (optional):", "") ?? "";
 
-  const note = window.prompt("Note for this upload (optional):", "") ?? "";
+    try {
+      // ارسال categoryId به متد آپلود
+      const newManual = await uploadManual(file, title, note, categoryId);
 
-  try {
-    const newManual = await uploadManual(file, title, note);
+      setManuals((prev) => [...prev, newManual]);
+      alert(`Manual "${title}" uploaded successfully`);
 
-    setManuals((prev) => [...prev, newManual]);
-
-    alert(`Manual "${title}" uploaded successfully`);
-
-    setTitle("");
-    setFile(null);
-  } catch (err) {
-    if (err.response?.status === 500) {
-      alert(`Manual with file "${file.name}" already exists`);
-
-      try {
-        const manuals = await getManuals();
-
-        const exists = manuals.some(
-          (m) => m.original_filename === file.name
-        );
-
-        if (exists) {
-          setManuals(manuals);
-        }
-      } catch (fetchErr) {
-        console.error("Failed to refresh manuals", fetchErr);
+      setTitle("");
+      setFile(null);
+      setCategoryId(""); // ریست کردن فرم
+    } catch (err) {
+      if (err.response?.status === 500) {
+        alert(`Manual with file "${file.name}" already exists`);
+        const data = await getManuals();
+        setManuals(data);
+      } else {
+        console.error("Upload error:", err);
+        alert("Upload failed");
       }
-    } else {
-      console.error("Upload error:", err);
-      alert("Upload failed");
     }
-  }
-};
-
+  };
 
   return (
     <PageWrapper>
-    <div className="manualsAdminContainer">
+      <div className="manualsAdminContainer">
+        <form onSubmit={handleSubmit} className="manualUploadForm">
+          <input
+            type="text"
+            placeholder="Manual title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="uploadInput"
+          />
 
-  
-
-  <form onSubmit={handleSubmit} className="manualUploadForm">
-    <input
-      type="text"
-      placeholder="Manual title"
-      value={title}
-      onChange={(e) => setTitle(e.target.value)}
-      className="uploadInput"
-    />
-
-    <input
-      type="file"
-      accept="application/pdf"
-      onChange={(e) => setFile(e.target.files[0])}
-      className="uploadInput"
-    />
-
-    <button type="submit" className="uploadBtn">
-      Upload
-    </button>
-  </form>
-
-  <h3 className="sectionTitle">All Documents</h3>
-
-  {loading ? (
-    <p className="loadingText">Loading manuals...</p>
-  ) : (
-    manuals.map((manual) => (
-      <div key={manual.id} className="manualItem">
-        <div className="manualLeft">
           
-          <div>
-            <h4>{manual.title}</h4>
-            <p>{manual.original_filename}</p>
-          </div>
-        </div>
-
-        <div className="manualActions">
-          <button
-  type="button"
-  className="uploadBtn"
-  disabled={updatingId === manual.id}
-  onClick={() => document.getElementById(`replace-${manual.id}`)?.click()}
->
-  {updatingId === manual.id ? "Replacing..." : "Replace PDF"}
-</button>
-
-<input
-  id={`replace-${manual.id}`}
-  type="file"
-  accept="application/pdf"
-  style={{ display: "none" }}
-  onChange={async (e) => {
-  const newFile = e.target.files?.[0];
-  if (!newFile) return;
-
-  const confirmed = window.confirm(
-    `Replace PDF for:\n\n"${manual.title}"\n\nwith file:\n${newFile.name} ?`
-  );
-  if (!confirmed) {
-    e.target.value = "";
-    return;
-  }
-
-  const newTitle =
-    window.prompt("Title (optional):", manual.title) ?? manual.title;
-
-  const note =
-    window.prompt("Note (optional):", "") ?? "";
-
-  try {
-    setUpdatingId(manual.id);
-
-    const updated = await updateManualPdf(manual.id, newFile, {
-      title: newTitle,
-      note,
-    });
-
-    
-    setManuals((prev) =>
-      prev.map((m) => (m.id === manual.id ? { ...m, ...updated } : m))
-    );
-
-    alert(`Manual "${newTitle}" updated successfully`);
-  } catch (err) {
-    console.error("Update error:", err);
-
-    const msg =
-      err?.response?.data?.detail ||
-      err?.response?.data?.error ||
-      err.message ||
-      "Replace failed";
-
-    alert(msg);
-  } finally {
-    setUpdatingId(null);
-    e.target.value = "";
-  }
-}}
-
-/>
-
-          <button
-            onClick={() => handleDownload(manual)}
-            className="downloadBtn"
+          <select 
+            value={categoryId} 
+            onChange={(e) => setCategoryId(e.target.value)}
+            className="uploadInput"
+            style={{ padding: '8px' }}
           >
-            <img src={downloadSvg} alt="" className="downloadIcon" />
-            Download
-          </button>
+            <option value="">Select Category...</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
 
-          <button
-  onClick={async () => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete this manual?\n\n"${manual.title}"`
-    );
-    if (!confirmed) return;
+          <input
+            type="file"
+            accept="application/pdf"
+            onChange={(e) => setFile(e.target.files[0])}
+            className="uploadInput"
+          />
 
-    const note =
-      window.prompt("Reason / note for deleting (optional):", "") ?? "";
+          <button type="submit" className="uploadBtn">Upload</button>
+        </form>
 
-    try {
-      await handleDelete(manual.id, note);
-      alert(`Manual "${manual.title}" deleted successfully`);
-    } catch {
-      alert("Delete failed");
-    }
-  }}
-  disabled={deleteLoading}
-  className="deleteBtn"
->
-  {deleteLoading ? "Deleting..." : "Delete"}
-</button>
+        <h3 className="sectionTitle">All Documents</h3>
 
-        </div>
+        {loading ? (
+          <p className="loadingText">Loading manuals...</p>
+        ) : (
+          manuals.map((manual) => (
+            <div key={manual.id} className="manualItem">
+              <div className="manualLeft">
+                <div>
+                  <h4>{manual.title}</h4>
+                  <p style={{ fontSize: '12px', color: '#666' }}>
+                    {manual.original_filename} | <b>Category: {manual.category_name || 'Uncategorized'}</b>
+                  </p>
+                </div>
+              </div>
+
+              <div className="manualActions">
+                <button
+                  type="button"
+                  className="uploadBtn"
+                  disabled={updatingId === manual.id}
+                  onClick={() => document.getElementById(`replace-${manual.id}`)?.click()}
+                >
+                  {updatingId === manual.id ? "Replacing..." : "Replace PDF"}
+                </button>
+
+                <input
+                  id={`replace-${manual.id}`}
+                  type="file"
+                  accept="application/pdf"
+                  style={{ display: "none" }}
+                  onChange={async (e) => {
+                    const newFile = e.target.files?.[0];
+                    if (!newFile) return;
+                    const confirmed = window.confirm(`Replace PDF for "${manual.title}"?`);
+                    if (!confirmed) return;
+
+                    try {
+                      setUpdatingId(manual.id);
+                      const updated = await updateManualPdf(manual.id, newFile, { title: manual.title });
+                      setManuals((prev) => prev.map((m) => (m.id === manual.id ? { ...m, ...updated } : m)));
+                      alert("Updated successfully");
+                    } catch (err) {
+                      alert("Update failed");
+                    } finally {
+                      setUpdatingId(null);
+                    }
+                  }}
+                />
+
+                <button onClick={() => handleDownload(manual)} className="downloadBtn">
+                  <img src={downloadSvg} alt="" className="downloadIcon" />
+                  Download
+                </button>
+
+                <button
+                  onClick={async () => {
+                    if (window.confirm(`Delete "${manual.title}"?`)) {
+                      const note = window.prompt("Reason:", "") ?? "";
+                      try {
+                        await handleDelete(manual.id, note);
+                        alert("Deleted");
+                      } catch { alert("Delete failed"); }
+                    }
+                  }}
+                  disabled={deleteLoading}
+                  className="deleteBtn"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
-    ))
-  )}
-</div>
-</PageWrapper>
+    </PageWrapper>
   );
 };
 

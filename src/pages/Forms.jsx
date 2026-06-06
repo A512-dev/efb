@@ -179,25 +179,17 @@ const Forms = () => {
   const { manuals, loading } = useManuals();
   const { handleDownload } = useDownloadManual();
 
-  const {
-    showSOPInClipboard,
-    showASRInClipboard,
-    manageASRAndBookmarkState, 
-    toggleSOPInClipboard,      
-    currentBookmarkIcon        
-  } = useBookmark();
+  const { showDoc, setShowDoc } = useBookmark();
+
 
   if (loading) return <p>Loading manuals...</p>;
 
-  const handleASRClick = () => {
-    manageASRAndBookmarkState();
-    console.log("ASR clicked! Toggling ASR and bookmark icon state.");
-  };
 
-  const handleSOPClick = () => {
-    toggleSOPInClipboard();
-    console.log("SOP clicked! Toggling SOP state.");
-  };
+const handleASRClick = () => {
+  setShowDoc((prev) => (prev === "ASR" ? null : "ASR"));
+};
+
+
 const handleSubmitForm = () => {
 
   console.log("Submitting ASR form to backend...");
@@ -236,7 +228,8 @@ const handleSubmitForm = () => {
       </div>
 
       <div style={{ width: "60%", height: "100vh", position: "absolute", right: '20px', top: '20px' }}>
-        {showASRInClipboard && (
+        {showDoc === "ASR" && (
+
           <object
             data="/Air Safety Report.pdf"
             type="application/pdf"

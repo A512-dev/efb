@@ -186,12 +186,15 @@ export const getManuals = async () => {
   const response = await apiClient.get("/manuals");
   return response.data;
 };
-
-export const uploadManual = async (file, title, note) => {
+//categorized uploading
+export const uploadManual = async (file, title, note, categoryId) => {
   const formData = new FormData();
   formData.append("title", title);
   formData.append("file", file);
   formData.append("note", note);
+  if (categoryId) {
+    formData.append("category_id", categoryId);
+  }
 
   const response = await apiClient.post("/manuals/upload", formData);
   return response.data;
@@ -268,5 +271,28 @@ export const getManualUpdates = async () => {
   const response = await apiClient.get("/manual-updates", {
     params: { pag: 1, limit: 1000 },
   });
+  return response.data;
+};
+// Manual Categories
+
+export const getManualCategories = async () => {
+  const response = await apiClient.get("/manual-categories/roots");
+  return response.data;
+};
+
+export const getManualCategoryTree = async () => {
+  const response = await apiClient.get("/manual-categories/tree");
+  return response.data;
+};
+
+export const getCategoryChildren = async (categoryId) => {
+  const response = await apiClient.get(
+    `/manual-categories/${categoryId}/children`,
+  );
+  return response.data;
+};
+
+export const getCategoryPath = async (categoryId) => {
+  const response = await apiClient.get(`/manual-categories/${categoryId}/path`);
   return response.data;
 };
