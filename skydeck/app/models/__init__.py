@@ -9,6 +9,7 @@ from app.models.manual import Manual
 from app.models.manual_access_log import ManualAccessLog
 from app.models.manual_category import ManualCategory
 from app.models.manual_update_event import ManualUpdateEvent
+from app.models.manual_update_read import ManualUpdateRead
 from app.models.message import Message
 from app.models.org import Org
 from app.models.session import Session
@@ -26,6 +27,7 @@ __all__ = [
     "ManualAction",
     "ManualCategory",
     "ManualUpdateEvent",
+    "ManualUpdateRead",
     "Message",
     "Org",
     "Session",

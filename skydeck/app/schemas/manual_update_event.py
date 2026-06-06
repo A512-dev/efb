@@ -18,6 +18,22 @@ class ManualUpdateEventOut(BaseModel):
     action: str
     title: str
     note: Optional[str] = None
+    is_read: bool = False
+    read_at: Optional[datetime] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class ManualUpdateReadResponse(BaseModel):
+    """Response returned after marking one manual update as read."""
+
+    message: str = "Manual update marked as read"
+    item: ManualUpdateEventOut
+
+
+class ManualUpdateReadAllResponse(BaseModel):
+    """Response returned after marking all current manual updates as read."""
+
+    message: str = "Manual updates marked as read"
+    marked_count: int

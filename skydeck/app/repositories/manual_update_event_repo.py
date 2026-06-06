@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Optional
 
 from sqlalchemy.orm import Session as DbSession
 
 from app.models.manual_update_event import ManualUpdateEvent
+from app.models.manual_update_read import ManualUpdateRead
 
 
 def create(
@@ -86,3 +88,93 @@ def list_for_org(
     total = query.count()
     items = query.order_by(ManualUpdateEvent.created_at.desc()).offset(offset).limit(limit).all()
     return items, total
+
+
+def get_for_org(
+    db: DbSession,
+    *,
+    org_id: int,
+    event_id: int,
+) -> Optional[ManualUpdateEvent]:
+    """Fetch one manual update event inside an organization."""
+    return (
+        db.query(ManualUpdateEvent)
+        .filter(ManualUpdateEvent.org_id == org_id, ManualUpdateEvent.id == event_id)
+        .first()
+    )
+
+
+def get_read_map(
+    db: DbSession,
+    *,
+    org_id: int,
+    user_id: int,
+    event_ids: list[int],
+) -> dict[int, datetime]:
+    """Return read timestamps keyed by manual update event id."""
+    if not event_ids:
+        return {}
+
+    reads = (
+        db.query(ManualUpdateRead)
+        .filter(
+            ManualUpdateRead.org_id == org_id,
+            ManualUpdateRead.user_id == user_id,
+            ManualUpdateRead.manual_update_event_id.in_(event_ids),
+        )
+        .all()
+    )
+    return {read.manual_update_event_id: read.read_at for read in reads}
+
+
+def mark_read(
+    db: DbSession,
+    *,
+    org_id: int,
+    user_id: int,
+    event_id: int,
+) -> ManualUpdateRead:
+    """Create or return an existing read marker for one manual update event."""
+    existing = (
+        db.query(ManualUpdateRead)
+        .filter(
+            ManualUpdateRead.org_id == org_id,
+            ManualUpdateRead.user_id == user_id,
+            ManualUpdateRead.manual_update_event_id == event_id,
+        )
+        .first()
+    )
+    if existing is not None:
+        return existing
+
+    read = ManualUpdateRead(org_id=org_id, user_id=user_id, manual_update_event_id=event_id)
+    db.add(read)
+    db.flush()
+    return read
+
+
+def mark_all_read(
+    db: DbSession,
+    *,
+    org_id: int,
+    user_id: int,
+) -> int:
+    """Mark every current manual update event in an organization as read by a user."""
+    event_ids = [
+        row[0]
+        for row in db.query(ManualUpdateEvent.id)
+        .filter(ManualUpdateEvent.org_id == org_id)
+        .all()
+    ]
+    read_map = get_read_map(db, org_id=org_id, user_id=user_id, event_ids=event_ids)
+
+    created_count = 0
+    for event_id in event_ids:
+        if event_id in read_map:
+            continue
+        db.add(ManualUpdateRead(org_id=org_id, user_id=user_id, manual_update_event_id=event_id))
+        created_count += 1
+
+    if created_count:
+        db.flush()
+    return created_count
