@@ -403,7 +403,7 @@ const SideBar = () => {
           <NavLink className="nav-item" to="/dashboard/Chat">
             <img src={chatboxicon} alt="" className="navIcon chatboxicon" />
 
-            <span className="nav-text">Chat</span>
+            <span className="nav-text"> Chat</span>
 
             {unreadCount > 0 && (
               <span className="chat-unread-badge">
@@ -416,8 +416,7 @@ const SideBar = () => {
 
           <NavLink className="nav-item" to="/dashboard/setting">
 
-            <img src={settingIcon} alt="" className="navIcon chatboxicon" />
-            Settings
+            <img src={settingIcon} alt="" className="navIcon chatboxicon" /> Settings
 
             {updateCount > 0 && (
               <span className="update-alert-count">{updateCount}</span>

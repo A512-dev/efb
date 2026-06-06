@@ -1,17 +1,17 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Loginpage from "../pages/Loginpage";
 import DashboardLayout from "../layouts/DashboardLayout";
-import Dashboard from "../pages/Dashboard";
+
 import Manuals from "../pages/Manuals";
 import ManualsAdmin from "../pages/ManualsAdmin";
-import Forms from "../pages/Forms";
+
 import RequireAuth from "../auth/RequireAuth";
 import Profile from "../pages/Profile";
 import SignUp from "../pages/SignUp";
-import AllDocuments from "../pages/allDocuments";
+
 import Clipboard from "../pages/Clipboard";
-import AircraftDocuments from "../pages/AircraftDocuments";
-import A300_600 from "../pages/A300_600";
+
+
 import IranAirChat from "../pages/IranAirChat";
 import Setting from "../pages/Setting";
 import UpdateManuals from "../pages/UpdateManuals";
@@ -34,30 +34,7 @@ export default function AppRouter() {
             >
               <Route index element={<Profile />} />
             </Route>
-            <Route
-              path="safetyIssue"
-              element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
-            >
-              <Route index element={<Profile />} />
-            </Route>
-            <Route
-              path="trainingIssue"
-              element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
-            >
-              <Route index element={<Profile />} />
-            </Route>
-            <Route
-              path="checkList"
-              element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
-            >
-              <Route index element={<Profile />} />
-            </Route>
-            <Route
-              path="forms"
-              element={<RequireAuth allowedRoles={["pilot", "admin"]} />}
-            >
-              <Route index element={<Forms />} />
-            </Route>
+            
 
             <Route
               path="manuals"
@@ -87,22 +64,13 @@ export default function AppRouter() {
               <Route index element={<UpdateManuals />} />
               
             </Route>
-            <Route path="allDocuments" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
-            >
-            <Route index element={<AllDocuments/>} />
-            </Route>
+            
             <Route path="clipboard" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
             >
             <Route index element={<Clipboard/>} />
             </Route>
-            <Route path="A300_600" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
-            >
-            <Route index element={<A300_600/>} />
-            </Route>
-            <Route path="aircraftdocuments" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
-            >
-            <Route index element={<AircraftDocuments/>} />
-            </Route>
+            
+            
             <Route path="Chat" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
             >
             <Route index element={<IranAirChat/>} />
