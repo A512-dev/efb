@@ -6,6 +6,7 @@ import { NavLink } from "react-router-dom";
 const Manuals = () =>{
 
   const { manuals, loading } = useManuals();
+
   const { handleDownload } = useDownloadManual();
 
   if (loading) return <p>Loading manuals...</p>;

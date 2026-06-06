@@ -184,13 +184,12 @@ export const getCurrentUser = async () => {
 };
 
 // Manuals
-export const fetchManuals = async () => {
-  const response = await apiClient.get("/manuals");
-  return response.data;
-};
 
-export const getManuals = async () => {
-  const response = await apiClient.get("/manuals");
+export const getManuals = async (params = {}) => {
+  const response = await apiClient.get("/manuals", {
+    params,
+  });
+
   return response.data;
 };
 

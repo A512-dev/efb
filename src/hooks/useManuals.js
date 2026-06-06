@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
 import { getManuals } from "../services/apiService";
 
-export const useManuals = () => {
+export const useManuals = (categoryId = null) => {
   const [manuals, setManuals] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchManuals = async () => {
+      setLoading(true);
       try {
-        const data = await getManuals();
+        const data = await getManuals({
+          category_id: categoryId,
+          include_descendants: true,
+        });
+
         setManuals(data);
       } catch (error) {
         console.error(error);
@@ -18,7 +23,7 @@ export const useManuals = () => {
     };
 
     fetchManuals();
-  }, []);
+  }, [categoryId]);
 
-  return { manuals, loading, setManuals };
+  return { manuals, loading };
 };
