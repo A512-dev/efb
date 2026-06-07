@@ -4,9 +4,12 @@ import { useNotifications } from "../Context/NotificationContext";
 import { useAuth } from "../auth/useAuth.js";
 import logoutSvg from '../assets/icons/Power-Button--Streamline-Ultimate.svg'
 import PageWrapper from "../components/PageWrapper.jsx";
+import { div } from "framer-motion/client";
+import { useState } from "react";
 const Setting = () => {
   const { updateCount } = useNotifications();
 const { logout } = useAuth();
+const [isHelpClicked,setIsHelpClicked]= useState(false)
   return (
     <>
     <PageWrapper>
@@ -31,7 +34,7 @@ const { logout } = useAuth();
           )}
         </NavLink>
 
-        <NavLink to="/dashboard/manuals" className="headersForManuals">
+        <NavLink to="#" className="headersForManuals" onClick={()=>{setIsHelpClicked(!isHelpClicked)}}>
           Help
         </NavLink>
 
@@ -49,6 +52,15 @@ const { logout } = useAuth();
           <button onClick={logout} className="logOutButton"><img src={logoutSvg} alt="" /> Logout</button>
         </div>
       </div>
+      {isHelpClicked && <div className="manualsContainer" style={{height:'88vh'}}>
+        <iframe
+                src={'/EFB_Help_V2_050316.pdf#toolbar=0&navpanes=0&scrollbar=0'}
+                width="100%"
+                height="100%"
+                style={{ border: "none" ,borderRadius:'8px'}}
+                title="PDF preview"
+              />
+        </div>}
       </PageWrapper>
     </>
   );
