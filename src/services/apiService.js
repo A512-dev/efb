@@ -126,7 +126,7 @@ export const sendMessageWithAttachments = async (payload, files = []) => {
   }
 
   files.forEach((file) => {
-    formData.append("attachments", file, file.name);
+    formData.append("files", file, file.name);
   });
   for (let pair of formData.entries()) {
     console.log(pair[0], pair[1]);

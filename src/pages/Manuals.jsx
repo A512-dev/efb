@@ -158,7 +158,7 @@ const Manuals = () => {
   const { categories, loading: categoriesLoading } =
     useManualCategories(categoryId || null);
 
-  // --- منطق جدید برای سینک کردن با بخش ادمین ---
+  
   const getProcessedCategories = () => {
     if (!categories) return [];
     
@@ -166,7 +166,7 @@ const Manuals = () => {
     const finalCategories = [];
 
     categories.forEach((category) => {
-      // لیست اسامی که باید در هم ادغام شوند
+      
       const specialNames = ["REPORTS", "sms", "training"];
       
       if (specialNames.includes(category.name)) {
@@ -183,7 +183,7 @@ const Manuals = () => {
   };
 
   const displayCategories = getProcessedCategories();
-  // --------------------------------------------
+  
 
   const isLeafCategory = !categories || categories.length === 0;
 

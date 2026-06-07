@@ -315,35 +315,55 @@ const ManualsAdmin = () => {
       .catch((err) => console.error("Failed to load categories", err));
   }, []);
 
-  // پردازش دسته‌بندی‌ها برای فیلتر کردن و یکسان‌سازی نام‌ها
+  
   const getProcessedCategories = () => {
-    const flat = flattenCategories(categories);
-    const seenForms = new Set();
-    const finalOptions = [];
+  const flat = flattenCategories(categories).filter((cat) => {
+    if (cat.label.includes("MEL ")) return false;
 
-    flat.forEach((cat) => {
-      const isSpecialForm = 
-        cat.label === "Forms > REPORTS" || 
-        cat.label === "Forms > sms" || 
-        cat.label === "Forms > training";
+    if (cat.label.startsWith("Training and Resources")) {
+      return (
+        cat.label.includes("DGR") ||
+        cat.label.includes("ICAO") ||
+        cat.label === "Training and Resources"
+      );
+    }
 
-      if (isSpecialForm) {
-        // فقط اولین مورد "Forms" را نگه می‌داریم تا تکراری نشود
-        if (!seenForms.has("Forms")) {
-          finalOptions.push({ ...cat, label: "Forms" });
-          seenForms.add("Forms");
-        }
-      } else {
-        finalOptions.push(cat);
+    if (cat.label.startsWith("IranAir")) {
+      return (
+        cat.label.includes("Company Manuals") ||
+        cat.label === "IranAir"
+      );
+    }
+
+    return true;
+  });
+
+  const seenForms = new Set();
+  const finalOptions = [];
+
+  flat.forEach((cat) => {
+    const isSpecialForm =
+      cat.label === "Forms > REPORTS" ||
+      cat.label === "Forms > sms" ||
+      cat.label === "Forms > training";
+
+    if (isSpecialForm) {
+      if (!seenForms.has("Forms")) {
+        finalOptions.push({ ...cat, label: "Forms" });
+        seenForms.add("Forms");
       }
-    });
+    } else {
+      finalOptions.push(cat);
+    }
+  });
 
-    return finalOptions;
-  };
+  return finalOptions;
+};
+
 
   const categoryOptions = getProcessedCategories();
 
-  // تابعی برای نمایش تمیز لیبل‌ها در لیست پایین صفحه (All Documents)
+  
   const formatDisplayLabel = (label) => {
     if (label === "Forms > REPORTS" || label === "Forms > sms" || label === "Forms > training") {
       return "Forms";
