@@ -80,7 +80,7 @@ body {
 
   backdrop-filter: blur(8px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  margin-top: 150px;
+  margin-top: 100px;
   background-color: rgba(231, 76, 60, 0.1);
   color: #e74c3c;
   border: 1px solid rgba(231, 76, 60, 0.2);

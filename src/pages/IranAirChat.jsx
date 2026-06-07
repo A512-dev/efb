@@ -1572,13 +1572,16 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   listMessages,
   sendMessage,
- markMessageAsRead,
+  sendMessageWithAttachments,   
+  downloadMessageAttachment,
+  markMessageAsRead,
   getCurrentUser,
 } from "../services/apiService";
+
 import refreshIcon from "../assets/icons/icons8-refresh-500.svg";
 import riskicon from "../assets/icons/risk-icon.svg";
 import PageWrapper from "../components/PageWrapper";
-
+import attachmentIcon from '../assets/icons/attachment.svg'
 const IranAirChat = () => {
   const [activeTab, setActiveTab] = useState("submit");
 
@@ -1588,12 +1591,14 @@ const IranAirChat = () => {
   const [subject, setSubject] = useState("");
   const [replyTo, setReplyTo] = useState(null);
 
+const fileInputRef = useRef(null);
 
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [recipientIds, setRecipientIds] = useState("");
+const [selectedFiles, setSelectedFiles] = useState([]);
 
 
   const formRef = useRef(null);
@@ -1631,6 +1636,9 @@ const IranAirChat = () => {
         [];
 
       setMessages(items);
+      console.log("MESSAGES RESPONSE:", data);
+console.log("ITEMS:", items);
+
     } catch (error) {
       console.error("Failed to load messages:", error);
       setStatus(
@@ -1725,10 +1733,16 @@ const IranAirChat = () => {
         payload.recipient_ids = ids;
       }
 
-      await sendMessage(payload);
+if (selectedFiles.length > 0) {
+  await sendMessageWithAttachments(payload, selectedFiles);
+} else {
+  await sendMessage(payload);
+}
+
 
       setStatus("Your message submitted successfully. Wait for the response.");
       setMessageText("");
+setSelectedFiles([]);
 
       setSubject("");
       if (isAdmin) setRecipientIds("");
@@ -1801,13 +1815,17 @@ const IranAirChat = () => {
         >
           Messages
         </button>
+        
+
       </div>
 
       {status && <p className="chat-status">{status}</p>}
 
       {activeTab === "submit" && (
         <div className="chat-tab-content" ref={formRef}>
+
           <form onSubmit={handleSubmit}>
+  
             {replyTo && (
               <div className="chat-reply-banner">
                 <div>
@@ -1832,12 +1850,49 @@ const IranAirChat = () => {
               className="chat-subject-input"
             />
 
-            <textarea
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              placeholder="please write the problem"
-              required
-            />
+            <div className="chat-input-row">
+  <textarea
+    value={messageText}
+    onChange={(e) => setMessageText(e.target.value)}
+    placeholder="please write the problem"
+    required
+  />
+
+  <img
+    src={attachmentIcon}
+    alt="attach"
+style={{width:'30px' , cursor:'pointer'}}
+    onClick={() => fileInputRef.current?.click()}
+  />
+</div>
+<input
+  type="file"
+  multiple
+  ref={fileInputRef}
+  style={{ display: "none" }}
+  onChange={(e) => setSelectedFiles([...e.target.files])}
+/>
+{selectedFiles.length > 0 && (
+  <div className="chat-attachment-list">
+    {selectedFiles.map((file, index) => (
+      <div key={index} className="chat-attachment-item">
+        {file.name}
+
+        <button
+          type="button"
+          onClick={() =>
+            setSelectedFiles((prev) =>
+              prev.filter((_, i) => i !== index)
+            )
+          }
+        >
+          remove
+        </button>
+      </div>
+    ))}
+  </div>
+)}
+
 
             {isAdmin && (
               <div className="chat-recipient-box">
@@ -1969,6 +2024,48 @@ const isRead = Boolean(msg.is_read || msg.read_at);
                     <p className="chat-message-body">
                       {msg.body || msg.content || "No message body"}
                     </p>
+                    {msg.attachments && msg.attachments.length > 0 && (
+  <div className="chat-attachments">
+    {msg.attachments.map((att) => (
+      <div key={att.id} className="chat-attachment-item">
+        
+        <button
+          type="button"
+          onClick={async (e) => {
+            e.stopPropagation();
+
+            try {
+              const blob = await downloadMessageAttachment(msg.id, att.id);
+
+              const url = window.URL.createObjectURL(blob);
+
+
+              if (att.filename && att.filename.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+                window.open(url, "_blank");
+                return;
+              }
+
+
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = att.filename || "attachment";
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+
+            } catch (err) {
+              console.error("Download failed", err);
+            }
+          }}
+        >
+          📎 {att.filename || "Download attachment"}
+        </button>
+
+      </div>
+    ))}
+  </div>
+)}
+
                   </div>
                 );
               })}

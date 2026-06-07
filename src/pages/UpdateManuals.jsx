@@ -4,7 +4,7 @@ import { useNotifications } from "../Context/NotificationContext";
 import { useAuth } from "../auth/useAuth";
 import logoutSvg from '../assets/icons/Power-Button--Streamline-Ultimate.svg'
 import PageWrapper from "../components/PageWrapper";
-import { style } from "framer-motion/client";
+
 
 import { useState } from "react";
 
@@ -20,8 +20,10 @@ const UpdateManuals = () => {
   } = useNotifications();
 const { logout } = useAuth();
   const handleUpdateClick = (item) => {
-    markAsSeen(item.id);
-  };
+  if (seenIds.includes(String(item.id))) return;
+  markAsSeen(item.id);
+};
+
 
     
 const handleMarkAllAsRead = () => {
@@ -72,7 +74,9 @@ const [isHelpClicked,setIsHelpClicked]= useState(false)
         <NavLink className={`headersForManuals`} to="/dashboard/manuals/chat">
           Change Password
         </NavLink>
-
+<NavLink className={`headersForManuals`} to="#">
+          About
+        </NavLink>
         <h5 className="card-header">App theme</h5>
 
         <div className="divDarkLight">
@@ -95,11 +99,13 @@ const [isHelpClicked,setIsHelpClicked]= useState(false)
           <div className="manual-updates-header">
             <h2 className="manual-updates-title">Manual Updates</h2>
             <button
-              className="manual-update-readall-btn"
-              onClick={handleMarkAllAsRead}
-            >
-              Update All Documents
-            </button>
+  className="manual-update-readall-btn"
+  onClick={handleMarkAllAsRead}
+  disabled={updateCount === 0}
+>
+  Update All Documents
+</button>
+
           </div>
 
           {loading && updates.length === 0 && (
