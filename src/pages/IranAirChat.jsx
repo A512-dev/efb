@@ -1895,14 +1895,18 @@ const IranAirChat = () => {
           ) : (
             <div className="chat-messages">
               {messages.map((msg) => {
-                const isRead = Boolean(msg.is_read || msg.read_at);
+                
+
 
                 const senderId = msg.sender_id ?? msg.sender?.id;
                 const senderName = msg.sender?.name || "Unknown";
 
                 const recipientId = msg.recipient_id ?? msg.recipient?.id;
                 const recipientName = msg.recipient?.name || "Unknown";
+const isSender = currentUser?.id === senderId;
+const isReceiver = currentUser?.id === recipientId;
 
+const isRead = Boolean(msg.is_read || msg.read_at);
                 return (
                   <div
                     key={msg.id || `${msg.subject}-${msg.created_at}`}
@@ -1910,20 +1914,28 @@ const IranAirChat = () => {
                       !isRead && box === "inbox" && handleMarkAsRead(msg.id)
                     }
                     className={`chat-message-card ${
-                      !isRead && box === "inbox" ? "unread" : ""
+                      !isRead ? "unread" : ""
                     }`}
                   >
                     <div className="chat-message-header">
                       <strong className="chat-message-title">
-                        #{msg.id} — {msg.subject || "No Subject"}
-                        {!isRead && box === "inbox" && (
-                          <img
-                            src={riskicon}
-                            alt="unread"
-                            className="chat-unread-icon"
-                          />
-                        )}
-                      </strong>
+  #{msg.id} — {msg.subject || "No Subject"}
+
+  
+  {(isReceiver || isSender) && !isRead && (
+    <img
+      src={riskicon}
+      alt="unread"
+      className="chat-unread-icon"
+    />
+  )}
+
+  
+  {isSender && isRead && (
+    <span className={`chat-seen-label `}>Seen</span>
+  )}
+</strong>
+
 
                       <small className="chat-message-date">
                         {msg.created_at

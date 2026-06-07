@@ -33,6 +33,7 @@ export const BookmarkProvider = ({ children }) => {
     <BookmarkContext.Provider
       value={{
         clipboardItems,
+        setClipboardItems,  
         toggleClipboardItem,
         isDocumentBookmarked
       }}

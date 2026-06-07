@@ -6,6 +6,7 @@ import logoutSvg from '../assets/icons/Power-Button--Streamline-Ultimate.svg'
 import PageWrapper from "../components/PageWrapper";
 import { style } from "framer-motion/client";
 
+import { useState } from "react";
 
 const UpdateManuals = () => {
   const {
@@ -26,7 +27,7 @@ const { logout } = useAuth();
 const handleMarkAllAsRead = () => {
   markAllAsSeen();
 };
-
+const [isHelpClicked,setIsHelpClicked]= useState(false)
   const formatDate = (dateString) => {
   const date = new Date(dateString);
 
@@ -55,14 +56,14 @@ const handleMarkAllAsRead = () => {
           className="headersForManuals active"
           to="/dashboard/UpdateManuals"
         >
-          <span className="spanUpdate">Updates</span>
+          <span className={ ` ${ !isHelpClicked ?'spanUpdate' : ''}`} onClick={()=>{setIsHelpClicked(false)}}>Updates</span>
           {updateCount > 0 && (
             <span className="update-alert-count">{updateCount}</span>
           )}
         </NavLink>
 
-        <NavLink to="/dashboard/manuals" className="headersForManuals">
-          Help
+        <NavLink to="#" className="headersForManuals" onClick={()=>{setIsHelpClicked(!isHelpClicked)}}>
+          <span className={ ` ${ isHelpClicked ?'spanUpdate' : ''}`}> Help </span>
         </NavLink>
 
         <NavLink className="headersForManuals" to="/dashboard/manuals/chat">
@@ -79,8 +80,17 @@ const handleMarkAllAsRead = () => {
           <button onClick={logout} className="logOutButton"><img src={logoutSvg} alt="" /> Logout</button>
         </div>
       </div>
-
-      <div className="manualsContainer">
+{isHelpClicked && <div className="manualsContainer" style={{height:'88vh'}}>
+        <iframe
+                src={'/EFB_Help_V2_050316.pdf#toolbar=0&navpanes=0&scrollbar=0'}
+                width="100%"
+                height="100%"
+                style={{ border: "none" ,borderRadius:'8px'}}
+                title="PDF preview"
+              />
+        </div>}
+    <div className={`${isHelpClicked ? 'hideManualsContainer':  'manualsContainer'}`}>
+        
         <div className="manual-updates-panel">
           <div className="manual-updates-header">
             <h2 className="manual-updates-title">Manual Updates</h2>
