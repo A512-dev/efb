@@ -44,7 +44,7 @@ const [isHelpClicked,setIsHelpClicked]= useState(false)
         <NavLink className={`headersForManuals`} to="/dashboard/manuals/chat">
           Change Password
         </NavLink>
-        <NavLink className={`headersForManuals`} to="#">
+        <NavLink className={`headersForManuals`} to="">
           About
         </NavLink>
 

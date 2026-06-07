@@ -874,7 +874,8 @@ h5 {
   background: var(--bg_input);
   color: var(--text);
 }
-.uploadBtn {
+.uploadBtn,
+.removeBtn {
   padding: 10px 18px;
   border: solid 1px var(--download-border);
   border-radius: 6px;
@@ -882,6 +883,12 @@ h5 {
   color: var(--download-text);
   cursor: pointer;
   transition: 0.25s;
+}
+.removeBtn {
+  padding: 5px 10px;
+  margin-left: 20px;
+  background-color: #ab0000;
+  color: white;
 }
 .uploadBtn:hover {
   transform: translateY(-2px);
@@ -1397,6 +1404,24 @@ h5 {
     height: 24px;
     background-color: #fff;
   }
+  .chatbox {
+    height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .chat-tab-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+  }
+
   .logOutButton {
     font-size: 0;
     padding-right: 3px;
