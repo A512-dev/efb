@@ -17,6 +17,7 @@ from app.models.session import Session
 from app.models.submission import Submission
 from app.models.submission_attachment import SubmissionAttachment
 from app.models.user import User
+from app.models.user_profile_picture import UserProfilePicture
 
 __all__ = [
     "AuditLog",
@@ -37,5 +38,6 @@ __all__ = [
     "SubmissionAttachment",
     "SubmissionStatus",
     "User",
+    "UserProfilePicture",
     "UserRole",
 ]

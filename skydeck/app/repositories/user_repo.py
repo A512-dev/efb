@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models.enums import UserRole
 from app.models.user import User
+from app.models.user_profile_picture import UserProfilePicture
 
 
 def get_by_email(db: Session, email: str) -> Optional[User]:
@@ -45,4 +46,54 @@ def list_by_ids(db: Session, *, org_id: int, user_ids: list[int]) -> list[User]:
         )
         .order_by(User.name.asc())
         .all()
+    )
+
+
+def create_profile_picture(
+    db: Session,
+    *,
+    org_id: int,
+    user_id: int,
+    storage_path: str,
+    original_filename: str,
+    mime_type: str,
+    file_size: int,
+    sha256: str,
+    encrypted_key: str,
+    key_nonce: str,
+    content_nonce: str,
+    encryption_key_id: str,
+    encryption_alg: str,
+) -> UserProfilePicture:
+    """Create encrypted profile picture metadata."""
+    picture = UserProfilePicture(
+        org_id=org_id,
+        user_id=user_id,
+        storage_path=storage_path,
+        original_filename=original_filename,
+        mime_type=mime_type,
+        file_size=file_size,
+        sha256=sha256,
+        encrypted_key=encrypted_key,
+        key_nonce=key_nonce,
+        content_nonce=content_nonce,
+        encryption_key_id=encryption_key_id,
+        encryption_alg=encryption_alg,
+    )
+    db.add(picture)
+    db.flush()
+    return picture
+
+
+def get_profile_picture(
+    db: Session,
+    *,
+    org_id: int,
+    picture_id: int,
+) -> Optional[UserProfilePicture]:
+    """Fetch profile picture metadata inside an organization."""
+    return (
+        db.query(UserProfilePicture)
+        .filter(UserProfilePicture.org_id == org_id, UserProfilePicture.id == picture_id)
+        .first()
     )

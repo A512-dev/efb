@@ -61,10 +61,13 @@ class Settings(BaseSettings):
     STORAGE_DIR: str = "storage/manuals"
     SUBMISSIONS_STORAGE_DIR: str = "storage/submissions"
     MESSAGE_ATTACHMENTS_STORAGE_DIR: str = "storage/message_attachments"
+    PROFILE_PICTURES_STORAGE_DIR: str = "storage/profile_pictures"
+    FILE_ENCRYPTION_MASTER_KEY: Optional[str] = None
     MESSAGE_ATTACHMENT_MASTER_KEY: Optional[str] = None
     MESSAGE_ATTACHMENT_MAX_FILE_MB: int = 25
     MESSAGE_ATTACHMENT_MAX_FILES: int = 5
     MESSAGE_ATTACHMENT_MAX_TOTAL_MB: int = 50
+    PROFILE_PICTURE_MAX_FILE_MB: int = 5
     WATERMARK_FONT_SIZE: int = 40
     MAX_UPLOAD_SIZE_MB: int = 50
 
