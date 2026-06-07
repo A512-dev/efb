@@ -11,6 +11,7 @@ from app.models.manual_category import ManualCategory
 from app.models.manual_update_event import ManualUpdateEvent
 from app.models.manual_update_read import ManualUpdateRead
 from app.models.message import Message
+from app.models.message_attachment import MessageAttachment
 from app.models.org import Org
 from app.models.session import Session
 from app.models.submission import Submission
@@ -29,6 +30,7 @@ __all__ = [
     "ManualUpdateEvent",
     "ManualUpdateRead",
     "Message",
+    "MessageAttachment",
     "Org",
     "Session",
     "Submission",

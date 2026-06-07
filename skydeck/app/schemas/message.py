@@ -31,6 +31,18 @@ class MessageUserOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class MessageAttachmentOut(BaseModel):
+    """Encrypted attachment metadata exposed in message responses."""
+
+    id: int
+    original_filename: Optional[str] = None
+    mime_type: str
+    file_size: int
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class MessageOut(BaseModel):
     """Public message representation with optional sender/recipient details."""
 
@@ -46,6 +58,7 @@ class MessageOut(BaseModel):
     created_at: datetime
     sender: Optional[MessageUserOut] = None
     recipient: Optional[MessageUserOut] = None
+    attachments: list[MessageAttachmentOut] = []
 
     model_config = {"from_attributes": True}
 

@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import BigInteger, DateTime, ForeignKey, Identity, Index, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.message_attachment import MessageAttachment
 
 
 class Message(Base):
@@ -43,6 +46,10 @@ class Message(Base):
 
     sender = relationship("User", foreign_keys=[sender_id])
     recipient = relationship("User", foreign_keys=[recipient_id])
+    attachments: Mapped[list[MessageAttachment]] = relationship(
+        back_populates="message",
+        cascade="all, delete-orphan",
+    )
 
     @property
     def is_read(self) -> bool:

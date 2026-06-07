@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+import io
+import json
+import secrets
+
+from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session as DbSession
 
 from app.core.deps import get_current_user
-from app.core.errors import AppError, AuthorisationError, NotFoundError
+from app.core.errors import AppError, AuthorisationError, NotFoundError, StorageError
 from app.db.session import get_db
 from app.models.enums import UserRole
+from app.models.message import Message
 from app.models.user import User
 from app.repositories import message_repo, user_repo
 from app.schemas.auth import ErrorResponse
@@ -21,6 +27,12 @@ from app.schemas.message import (
 )
 from app.schemas.pagination import PaginatedResponse
 from app.services import audit_service
+from app.services.attachment_crypto import decrypt_attachment, encrypt_attachment
+from app.services.message_attachment_service import (
+    ValidatedAttachment,
+    read_and_validate_attachments,
+)
+from app.services.storage import get_message_attachment_storage
 
 router = APIRouter(prefix="/messages", tags=["messages"])
 
@@ -49,6 +61,134 @@ def _get_users_by_ids(db: DbSession, *, org_id: int, user_ids: list[int]) -> lis
     return user_repo.list_by_ids(db, org_id=org_id, user_ids=user_ids)
 
 
+def _resolve_recipients(
+    db: DbSession,
+    *,
+    current_user: User,
+    recipient_ids: list[int] | None,
+) -> list[User]:
+    """Resolve recipient ids according to role-based messaging rules."""
+    normalised_ids = _normalise_recipient_ids(recipient_ids)
+
+    if current_user.role in {UserRole.pilot, UserRole.chief_pilot}:
+        if normalised_ids:
+            raise AuthorisationError("Pilots cannot choose message recipients")
+        recipients = _get_admin_recipients(db, org_id=current_user.org_id)
+        if not recipients:
+            raise AppError("No admin recipients are available in this organisation", code=400)
+        return recipients
+
+    if current_user.role in _ADMIN_SENDER_ROLES:
+        if not normalised_ids:
+            raise AppError("Admin messages require at least one recipient_id", code=400)
+        recipients = _get_users_by_ids(db, org_id=current_user.org_id, user_ids=normalised_ids)
+        found_ids = {recipient.id for recipient in recipients}
+        missing_ids = [user_id for user_id in normalised_ids if user_id not in found_ids]
+        if missing_ids:
+            raise NotFoundError(f"Recipient(s) not found: {missing_ids}")
+        invalid = [
+            recipient for recipient in recipients if recipient.role not in _PILOT_RECIPIENT_ROLES
+        ]
+        if invalid:
+            raise AuthorisationError("Admins can only send messages to pilot/chief_pilot users")
+        return recipients
+
+    raise AuthorisationError("Your role is not permitted to send messages")
+
+
+def _create_message_rows(
+    db: DbSession,
+    *,
+    current_user: User,
+    recipients: list[User],
+    subject: str | None,
+    body: str,
+) -> list[Message]:
+    """Create one message row per resolved recipient."""
+    return [
+        message_repo.create(
+            db,
+            org_id=current_user.org_id,
+            sender_id=current_user.id,
+            recipient_id=recipient.id,
+            subject=subject,
+            body=body,
+        )
+        for recipient in recipients
+    ]
+
+
+def _parse_recipient_ids_form(recipient_ids: str | None) -> list[int] | None:
+    """Parse multipart recipient ids from JSON array or comma-separated text."""
+    if recipient_ids is None or not recipient_ids.strip():
+        return None
+
+    raw = recipient_ids.strip()
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        parsed = raw.split(",")
+
+    if not isinstance(parsed, list):
+        parsed = [parsed]
+
+    ids: list[int] = []
+    for item in parsed:
+        try:
+            user_id = int(str(item).strip())
+        except ValueError:
+            raise AppError("recipient_ids must contain only integer ids", code=400) from None
+        if user_id > 0:
+            ids.append(user_id)
+    return ids
+
+
+def _store_attachments_for_message(
+    db: DbSession,
+    *,
+    message: Message,
+    attachments: list[ValidatedAttachment],
+    saved_paths: list[str],
+) -> None:
+    """Encrypt, store, and persist metadata for each attachment on one message."""
+    storage = get_message_attachment_storage()
+    for attachment in attachments:
+        encrypted = encrypt_attachment(attachment.contents)
+        relative_path = f"{message.id}/{secrets.token_hex(8)}_{attachment.filename}.enc"
+        storage_path = storage.save(relative_path, encrypted.ciphertext)
+        saved_paths.append(storage_path)
+        message_repo.create_attachment(
+            db,
+            org_id=message.org_id,
+            message_id=message.id,
+            storage_path=storage_path,
+            original_filename=attachment.filename,
+            mime_type=attachment.mime_type,
+            file_size=attachment.size,
+            sha256=attachment.sha256,
+            encrypted_key=encrypted.encrypted_key,
+            key_nonce=encrypted.key_nonce,
+            content_nonce=encrypted.content_nonce,
+            encryption_key_id=encrypted.key_id,
+            encryption_alg=encrypted.alg,
+        )
+
+
+def _message_response_items(
+    db: DbSession,
+    *,
+    current_user: User,
+    messages: list[Message],
+) -> list[MessageOut]:
+    """Reload newly created messages with relationships for response serialization."""
+    items: list[MessageOut] = []
+    for message in messages:
+        refreshed = message_repo.get_visible_to_user(db, message_id=message.id, user=current_user)
+        if refreshed is not None:
+            items.append(MessageOut.model_validate(refreshed))
+    return items
+
+
 @router.post(
     "",
     response_model=MessageCreateResponse,
@@ -71,46 +211,18 @@ def send_message(
       - pilot/chief_pilot users send to all admins in their organisation.
       - admin users send to explicitly selected pilot/chief_pilot recipients.
     """
-    recipient_ids = _normalise_recipient_ids(body.recipient_ids)
-
-    if current_user.role in {UserRole.pilot, UserRole.chief_pilot}:
-        # Pilots broadcast to admins so they cannot accidentally message the wrong peer.
-        if recipient_ids:
-            raise AuthorisationError("Pilots cannot choose message recipients")
-        recipients = _get_admin_recipients(db, org_id=current_user.org_id)
-        if not recipients:
-            raise AppError("No admin recipients are available in this organisation", code=400)
-
-    elif current_user.role in _ADMIN_SENDER_ROLES:
-        # Admins choose recipients, but only pilot roles are valid targets.
-        if not recipient_ids:
-            raise AppError("Admin messages require at least one recipient_id", code=400)
-        recipients = _get_users_by_ids(db, org_id=current_user.org_id, user_ids=recipient_ids)
-        found_ids = {recipient.id for recipient in recipients}
-        missing_ids = [user_id for user_id in recipient_ids if user_id not in found_ids]
-        if missing_ids:
-            raise NotFoundError(f"Recipient(s) not found: {missing_ids}")
-        invalid = [
-            recipient for recipient in recipients if recipient.role not in _PILOT_RECIPIENT_ROLES
-        ]
-        if invalid:
-            raise AuthorisationError("Admins can only send messages to pilot/chief_pilot users")
-
-    else:
-        raise AuthorisationError("Your role is not permitted to send messages")
-
-    created = []
-    for recipient in recipients:
-        created.append(
-            message_repo.create(
-                db,
-                org_id=current_user.org_id,
-                sender_id=current_user.id,
-                recipient_id=recipient.id,
-                subject=body.subject,
-                body=body.body,
-            )
-        )
+    recipients = _resolve_recipients(
+        db,
+        current_user=current_user,
+        recipient_ids=body.recipient_ids,
+    )
+    created = _create_message_rows(
+        db,
+        current_user=current_user,
+        recipients=recipients,
+        subject=body.subject,
+        body=body.body,
+    )
 
     audit_service.record(
         db,
@@ -123,10 +235,80 @@ def send_message(
     )
     db.commit()
 
-    for message in created:
-        db.refresh(message)
+    items = _message_response_items(db, current_user=current_user, messages=created)
 
-    return MessageCreateResponse(items=[MessageOut.model_validate(message) for message in created])
+    return MessageCreateResponse(items=items)
+
+
+@router.post(
+    "/with-attachments",
+    response_model=MessageCreateResponse,
+    status_code=201,
+    responses={
+        400: {"model": ErrorResponse},
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        413: {"model": ErrorResponse},
+        415: {"model": ErrorResponse},
+    },
+    summary="Send an internal message with encrypted attachments",
+)
+def send_message_with_attachments(
+    body: str = Form(..., min_length=1, max_length=5000),
+    subject: str | None = Form(None, max_length=200),
+    recipient_ids: str | None = Form(None),
+    files: list[UploadFile] | None = File(None),
+    current_user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+):
+    """Send a message and store any attachments encrypted at rest."""
+    recipients = _resolve_recipients(
+        db,
+        current_user=current_user,
+        recipient_ids=_parse_recipient_ids_form(recipient_ids),
+    )
+    attachments = read_and_validate_attachments(files)
+    saved_paths: list[str] = []
+    storage = get_message_attachment_storage()
+
+    try:
+        created = _create_message_rows(
+            db,
+            current_user=current_user,
+            recipients=recipients,
+            subject=subject,
+            body=body,
+        )
+        for message in created:
+            _store_attachments_for_message(
+                db,
+                message=message,
+                attachments=attachments,
+                saved_paths=saved_paths,
+            )
+
+        audit_service.record(
+            db,
+            action="message.send",
+            target_type="message",
+            target_id=",".join(str(message.id) for message in created),
+            user_id=current_user.id,
+            org_id=current_user.org_id,
+            metadata={
+                "recipient_ids": [recipient.id for recipient in recipients],
+                "attachment_count": len(attachments),
+            },
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        for path in saved_paths:
+            storage.delete(path)
+        raise
+
+    return MessageCreateResponse(
+        items=_message_response_items(db, current_user=current_user, messages=created)
+    )
 
 
 @router.get(
@@ -221,3 +403,66 @@ def mark_message_read(
     db.commit()
     db.refresh(message)
     return MessageReadResponse(item=MessageOut.model_validate(message))
+
+
+@router.get(
+    "/{message_id}/attachments/{attachment_id}",
+    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    summary="Download a message attachment",
+)
+def download_message_attachment(
+    message_id: int,
+    attachment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+):
+    """Decrypt and stream an attachment after confirming message visibility."""
+    message = message_repo.get_visible_to_user(db, message_id=message_id, user=current_user)
+    if message is None:
+        raise NotFoundError("Message not found")
+
+    attachment = message_repo.get_attachment_for_message(
+        db,
+        org_id=current_user.org_id,
+        message_id=message.id,
+        attachment_id=attachment_id,
+    )
+    if attachment is None:
+        raise NotFoundError("Attachment not found")
+
+    storage = get_message_attachment_storage()
+    if not storage.exists(attachment.storage_path):
+        raise NotFoundError("Attachment file missing from storage")
+
+    plaintext = decrypt_attachment(
+        ciphertext=storage.read(attachment.storage_path),
+        encrypted_key=attachment.encrypted_key,
+        key_nonce=attachment.key_nonce,
+        content_nonce=attachment.content_nonce,
+    )
+    if attachment.sha256 != _sha256(plaintext):
+        raise StorageError("Attachment integrity check failed")
+
+    audit_service.record(
+        db,
+        action="message.attachment.download",
+        target_type="message_attachment",
+        target_id=attachment.id,
+        user_id=current_user.id,
+        org_id=current_user.org_id,
+        metadata={"message_id": message.id, "filename": attachment.original_filename},
+    )
+    db.commit()
+
+    filename = attachment.original_filename or f"attachment_{attachment.id}"
+    return StreamingResponse(
+        io.BytesIO(plaintext),
+        media_type=attachment.mime_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+def _sha256(contents: bytes) -> str:
+    import hashlib
+
+    return hashlib.sha256(contents).hexdigest()

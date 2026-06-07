@@ -7,9 +7,10 @@ from typing import Literal, Optional
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session as DbSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.models.message import Message
+from app.models.message_attachment import MessageAttachment
 from app.models.user import User
 
 MessageBox = Literal["inbox", "sent", "all"]
@@ -48,7 +49,11 @@ def list_for_user(
     """Return a paginated message list and total count for a user's mailbox."""
     query = (
         db.query(Message)
-        .options(joinedload(Message.sender), joinedload(Message.recipient))
+        .options(
+            joinedload(Message.sender),
+            joinedload(Message.recipient),
+            selectinload(Message.attachments),
+        )
         .filter(Message.org_id == user.org_id)
     )
 
@@ -68,7 +73,11 @@ def get_visible_to_user(db: DbSession, *, message_id: int, user: User) -> Option
     """Fetch a message if the user belongs to its organization and can view it."""
     return (
         db.query(Message)
-        .options(joinedload(Message.sender), joinedload(Message.recipient))
+        .options(
+            joinedload(Message.sender),
+            joinedload(Message.recipient),
+            selectinload(Message.attachments),
+        )
         .filter(
             Message.id == message_id,
             Message.org_id == user.org_id,
@@ -84,3 +93,58 @@ def mark_read(db: DbSession, message: Message) -> Message:
         message.read_at = datetime.now(timezone.utc)
         db.flush()
     return message
+
+
+def create_attachment(
+    db: DbSession,
+    *,
+    org_id: int,
+    message_id: int,
+    storage_path: str,
+    original_filename: str,
+    mime_type: str,
+    file_size: int,
+    sha256: str,
+    encrypted_key: str,
+    key_nonce: str,
+    content_nonce: str,
+    encryption_key_id: str,
+    encryption_alg: str,
+) -> MessageAttachment:
+    """Create attachment metadata for an encrypted stored object."""
+    attachment = MessageAttachment(
+        org_id=org_id,
+        message_id=message_id,
+        storage_path=storage_path,
+        original_filename=original_filename,
+        mime_type=mime_type,
+        file_size=file_size,
+        sha256=sha256,
+        encrypted_key=encrypted_key,
+        key_nonce=key_nonce,
+        content_nonce=content_nonce,
+        encryption_key_id=encryption_key_id,
+        encryption_alg=encryption_alg,
+    )
+    db.add(attachment)
+    db.flush()
+    return attachment
+
+
+def get_attachment_for_message(
+    db: DbSession,
+    *,
+    org_id: int,
+    message_id: int,
+    attachment_id: int,
+) -> Optional[MessageAttachment]:
+    """Fetch an attachment by id inside a message and organization."""
+    return (
+        db.query(MessageAttachment)
+        .filter(
+            MessageAttachment.org_id == org_id,
+            MessageAttachment.message_id == message_id,
+            MessageAttachment.id == attachment_id,
+        )
+        .first()
+    )
