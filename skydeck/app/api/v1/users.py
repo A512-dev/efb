@@ -8,15 +8,16 @@ import secrets
 
 from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.responses import StreamingResponse
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as DbSession
 
 from app.core.deps import get_current_user
-from app.core.errors import NotFoundError, StorageError
+from app.core.errors import ConflictError, NotFoundError, StorageError
 from app.db.session import get_db
 from app.models.user import User
 from app.repositories import user_repo
 from app.schemas.auth import ErrorResponse
-from app.schemas.user import UserMeResponse
+from app.schemas.user import UserMeResponse, UserProfileUpdateRequest
 from app.services import audit_service
 from app.services.attachment_crypto import decrypt_profile_picture, encrypt_profile_picture
 from app.services.profile_picture_service import read_and_validate_profile_picture
@@ -33,6 +34,59 @@ router = APIRouter(prefix="/users", tags=["users"])
 )
 def me(current_user: User = Depends(get_current_user)):
     """Return the authenticated user's profile payload."""
+    return UserMeResponse.model_validate(current_user)
+
+
+@router.patch(
+    "/me/profile",
+    response_model=UserMeResponse,
+    responses={
+        401: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+    },
+    summary="Update current user's profile fields",
+)
+def update_my_profile(
+    body: UserProfileUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+):
+    """Update editable profile fields without touching profile-picture storage."""
+    updates = body.model_dump(exclude_unset=True)
+
+    if "employee_no" in updates:
+        existing_user = user_repo.get_by_employee_no(
+            db,
+            org_id=current_user.org_id,
+            employee_no=updates["employee_no"],
+            exclude_user_id=current_user.id,
+        )
+        if existing_user is not None:
+            raise ConflictError("Employee ID is taken.")
+
+    changed_fields = []
+    for field, value in updates.items():
+        if getattr(current_user, field) != value:
+            setattr(current_user, field, value)
+            changed_fields.append(field)
+
+    if changed_fields:
+        audit_service.record(
+            db,
+            action="user.profile.update",
+            target_type="user",
+            target_id=current_user.id,
+            user_id=current_user.id,
+            org_id=current_user.org_id,
+            metadata={"fields": sorted(changed_fields)},
+        )
+        try:
+            db.commit()
+        except IntegrityError as exc:
+            db.rollback()
+            raise ConflictError("Employee ID is taken.") from exc
+        db.refresh(current_user)
+
     return UserMeResponse.model_validate(current_user)
 
 

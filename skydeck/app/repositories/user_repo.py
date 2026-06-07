@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.enums import UserRole
@@ -19,6 +20,24 @@ def get_by_email(db: Session, email: str) -> Optional[User]:
 def get_by_id(db: Session, user_id: int) -> Optional[User]:
     """Fetch a non-deleted user by primary key."""
     return db.query(User).filter(User.id == user_id, User.deleted_at.is_(None)).first()
+
+
+def get_by_employee_no(
+    db: Session,
+    *,
+    org_id: int,
+    employee_no: str,
+    exclude_user_id: Optional[int] = None,
+) -> Optional[User]:
+    """Fetch an active same-organization user by employee number."""
+    query = db.query(User).filter(
+        User.org_id == org_id,
+        func.lower(func.btrim(User.employee_no)) == employee_no.strip().lower(),
+        User.deleted_at.is_(None),
+    )
+    if exclude_user_id is not None:
+        query = query.filter(User.id != exclude_user_id)
+    return query.first()
 
 
 def list_by_org_and_roles(db: Session, *, org_id: int, roles: list[UserRole]) -> list[User]:
