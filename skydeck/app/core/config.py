@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     DB_POOL_RECYCLE: int = 300
 
     # ── security / jwt ─────────────────────────────────────
+    # NOTE: these keys should a long number of random bytes (e.g. 64) to ensure the derived AES-256 key is strong.
     SECRET_KEY: str = "CHANGE-ME-generate-a-64-byte-random-key"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
@@ -62,6 +63,8 @@ class Settings(BaseSettings):
     SUBMISSIONS_STORAGE_DIR: str = "storage/submissions"
     MESSAGE_ATTACHMENTS_STORAGE_DIR: str = "storage/message_attachments"
     PROFILE_PICTURES_STORAGE_DIR: str = "storage/profile_pictures"
+
+    # NOTE: these keys should a long number of random bytes (e.g. 64) to ensure the derived AES-256 key is strong.
     FILE_ENCRYPTION_MASTER_KEY: Optional[str] = None
     MESSAGE_ATTACHMENT_MASTER_KEY: Optional[str] = None
     MESSAGE_ATTACHMENT_MAX_FILE_MB: int = 25
