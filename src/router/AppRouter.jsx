@@ -16,6 +16,8 @@ import IranAirChat from "../pages/IranAirChat";
 import Setting from "../pages/Setting";
 import UpdateManuals from "../pages/UpdateManuals";
 import { AnimatePresence } from "framer-motion";
+import EditProfile from "../pages/EditProfile";
+
 export default function AppRouter() {
   return (
       <AnimatePresence mode="wait">
@@ -29,11 +31,13 @@ export default function AppRouter() {
 
 
             <Route
-              path="profile"
-              element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
-            >
-              <Route index element={<Profile />} />
-            </Route>
+  path="profile"
+  element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
+>
+  <Route index element={<Profile />} />
+  <Route path="edit" element={<EditProfile />} />  
+</Route>
+
             
 
             <Route

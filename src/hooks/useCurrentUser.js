@@ -1,16 +1,12 @@
-import { useEffect, useState } from "react";
-import { getCurrentUser } from "../services/apiService";
+import { useContext } from "react";
+import { AuthContext } from "../auth/AuthContext";
 
 export const useCurrentUser = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const context = useContext(AuthContext);
 
-  useEffect(() => {
-    getCurrentUser()
-      .then((data) => setUser(data))
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
-  }, []);
+  if (!context) {
+    throw new Error("useCurrentUser must be used inside AuthProvider");
+  }
 
-  return { user, loading };
+  return context;
 };

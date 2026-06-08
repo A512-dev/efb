@@ -30,6 +30,7 @@ const handleMarkAllAsRead = () => {
   markAllAsSeen();
 };
 const [isHelpClicked,setIsHelpClicked]= useState(false)
+const [isAboutOpen, setIsAboutOpen] = useState(false);
   const formatDate = (dateString) => {
   const date = new Date(dateString);
 
@@ -93,6 +94,15 @@ const [isHelpClicked,setIsHelpClicked]= useState(false)
                 title="PDF preview"
               />
         </div>}
+              {isAboutOpen && (
+  <div className="manualsContainer" style={{height:'88vh', display:'flex', alignItems:'center', justifyContent:'center'}}>
+    <div className="aboutBox">
+      <h2>EFB Crew App</h2>
+      <p>Version: 1.0.0</p>
+      <p>Electronic Flight Bag for crew members.</p>
+    </div>
+  </div>
+)}
     <div className={`${isHelpClicked ? 'hideManualsContainer':  'manualsContainer'}`}>
         
         <div className="manual-updates-panel">

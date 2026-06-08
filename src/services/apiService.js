@@ -44,10 +44,17 @@ export const uploadProfilePicture = async (file) => {
 };
 
 export const downloadMyProfilePicture = async () => {
-  const response = await apiClient.get("/users/me/profile-picture", {
-    responseType: "blob",
-  });
-  return response.data;
+  try {
+    const response = await apiClient.get("/users/me/profile-picture", {
+      responseType: "blob",
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 };
 
 export const downloadUserProfilePicture = async (userId) => {

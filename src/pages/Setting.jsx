@@ -10,15 +10,18 @@ const Setting = () => {
   const { updateCount } = useNotifications();
 const { logout } = useAuth();
 const [isHelpClicked,setIsHelpClicked]= useState(false)
+const [isAboutOpen, setIsAboutOpen] = useState(false);
+
   return (
     <>
     <PageWrapper>
       <div className="manualsContainerLeft">
-        <div className="div-header">
-          <NavLink className="card-header" to="/dashboard/setting">
-            Settings
-          </NavLink>
-        </div>
+        <div className="div-header single-header">
+  <NavLink className="card-header single" to="/dashboard/setting">
+    Settings
+  </NavLink>
+</div>
+
 
         <NavLink
           className={`headersForManuals ${updateCount === 0 ? "unactive" : ""}`}
@@ -44,9 +47,18 @@ const [isHelpClicked,setIsHelpClicked]= useState(false)
         <NavLink className={`headersForManuals`} to="/dashboard/manuals/chat">
           Change Password
         </NavLink>
-        <NavLink className={`headersForManuals`} to="">
-          About
-        </NavLink>
+        <NavLink
+  className="headersForManuals"
+  to="#"
+  onClick={(e) => {
+    e.preventDefault();
+    setIsAboutOpen(!isAboutOpen);
+    setIsHelpClicked(false);
+  }}
+>
+  About
+</NavLink>
+
 
         <h5 className="card-header">App theme</h5>
 
@@ -64,6 +76,16 @@ const [isHelpClicked,setIsHelpClicked]= useState(false)
                 title="PDF preview"
               />
         </div>}
+        {isAboutOpen && (
+  <div className="manualsContainer" style={{height:'88vh', display:'flex', alignItems:'center', justifyContent:'center'}}>
+    <div className="aboutBox">
+      <h2>EFB Crew App</h2>
+      <p>Version: 1.0.0</p>
+      <p>Electronic Flight Bag for crew members.</p>
+    </div>
+  </div>
+)}
+
       </PageWrapper>
     </>
   );

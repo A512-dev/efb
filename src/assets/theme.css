@@ -1,5 +1,6 @@
 @import url("./styles.css");
 @import url("./iranairchat.css");
+@import url("./profile.css");
 :root {
   --bg: #dddddd;
   --text: #2b2b2b;
@@ -299,16 +300,12 @@ label {
   display: block;
 }
 
-/* RIGHT SECTION */
-
 .crew-right-section {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 28px;
 }
-
-/* HEADER */
 
 .crew-header h1 {
   font-size: 26px;
@@ -356,8 +353,6 @@ label {
   color: #e5e9f2;
 }
 
-/* EXPIRY SECTION */
-
 .crew-exp-section {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -392,8 +387,6 @@ label {
 .expiry-item.warn strong {
   color: #ffb547;
 }
-
-/* RESPONSIVE */
 
 @media (max-width: 950px) {
   .crew-main-card {
@@ -639,75 +632,64 @@ h5 {
 
 .div-header {
   position: relative;
-  background-color: #96969672;
-  width: 100%;
+  width: calc(100% + 40px);
   margin-left: -20px;
-  height: 25px;
   margin-top: -20px;
+  margin-bottom: 35px;
+  height: 45px;
+  background-color: #96969672;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
-  padding: 10px 20px;
-  margin-bottom: 40px;
-  z-index: 1;
-}
-.card-header {
-  width: 100%;
-  color: var(--text);
-  padding-bottom: 10px;
-  padding-top: 10px;
-  margin-bottom: 2%;
-  font-size: 17px;
-  cursor: pointer;
-  transition: 0.3s ease all;
-}
-.card-header1 {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 50%;
-  color: var(--text);
-  padding-bottom: 10px;
-  padding-top: 10px;
-  margin-bottom: 2%;
-  font-size: 12px;
-  cursor: pointer;
-  transition: 0.3s ease all;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: nowrap;
 }
 
+.card-header1,
 .card-header2 {
-  color: var(--text);
   position: absolute;
-  right: 0;
-  font-size: 12px;
   top: 0;
-  width: 50%;
-
-  padding-bottom: 10px;
-  padding-top: 10px;
-  margin-bottom: 2%;
+  width: 50% !important;
+  height: 100%;
+  color: var(--text);
+  font-size: 12px;
   cursor: pointer;
   transition: 0.3s ease all;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.card-header1:hover,
-.card-header2:hover {
-  transform: translateY(-4px);
-  border-right: none;
-  border-bottom: solid 1px var(--text);
-}
-.card-header1.active {
-  background-color: var(--firoozepor);
+
+.card-header1 {
+  left: 0;
   border-top-left-radius: 8px;
-  color: white;
 }
+.card-header2 {
+  right: 0;
+  border-top-right-radius: 8px;
+}
+
+.card-header1.active,
 .card-header2.active {
   background-color: var(--firoozepor);
-  border-top-right-radius: 8px;
-  font-size: 12px;
   color: white;
 }
-.card-header1:active,
-.card-header2:active {
-  background-color: #5b5656;
+
+.single-header {
+  background-color: var(--firoozepor);
+}
+
+.card-header.single {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: white;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .manualItem {
@@ -788,28 +770,24 @@ h5 {
   letter-spacing: 0.4px;
 }
 
-/* فرم */
 .create-user-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* گروه فیلد */
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-/* لیبل */
 .form-group label {
   font-size: 14px;
   color: var(--text);
   opacity: 0.85;
 }
 
-/* اینپوت و سلکت */
 .form-group input,
 .form-group select {
   padding: 12px 14px;
@@ -822,14 +800,12 @@ h5 {
   transition: all 0.25s ease;
 }
 
-/* فوکوس */
 .form-group input:focus,
 .form-group select:focus {
   border-color: #4da6ff;
   box-shadow: 0 0 0 3px rgba(77, 166, 255, 0.2);
 }
 
-/* دکمه */
 .create-user-form button {
   margin-top: 10px;
   padding: 12px;
@@ -1087,7 +1063,7 @@ h5 {
   background: var(--card);
   border: 1px solid var(--card-border);
   border-radius: 6px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--boxshadow_3d);
   padding: 14px;
   overflow: hidden;
   cursor: pointer;
@@ -1256,6 +1232,10 @@ h5 {
   right: 20px;
   margin-left: -60px;
   bottom: 20px;
+  border: solid 1px #02b3ff;
+}
+.CreateProfileButton:hover {
+  transform: translateY(-2px);
 }
 .replaceBtn:disabled {
   opacity: 0.6;

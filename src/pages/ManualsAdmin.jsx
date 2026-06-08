@@ -316,49 +316,84 @@ const ManualsAdmin = () => {
   }, []);
 
   
-  const getProcessedCategories = () => {
-  const flat = flattenCategories(categories).filter((cat) => {
-    if (cat.label.includes("MEL ")) return false;
+ const getProcessedCategories = () => {
+  if (!categories) return [];
 
-    if (cat.label.startsWith("Training and Resources")) {
-      return (
-        cat.label.includes("DGR") ||
-        cat.label.includes("ICAO") ||
-        cat.label === "Training and Resources"
-      );
-    }
-
-    if (cat.label.startsWith("IranAir")) {
-      return (
-        cat.label.includes("Company Manuals") ||
-        cat.label === "IranAir"
-      );
-    }
-
-    return true;
-  });
-
-  const seenForms = new Set();
+  const flat = flattenCategories(categories);
   const finalOptions = [];
+  const seenForms = new Set();
+
+  let iranAirHandled = false;
+
+  // پیدا کردن فرزندان Training
+  const trainingChildren = flat.filter((c) =>
+    c.label.toLowerCase().startsWith("training and resources >")
+  );
+
+  const trainingId1 = trainingChildren[0]?.id;
+  const trainingId2 = trainingChildren[1]?.id;
 
   flat.forEach((cat) => {
-    const isSpecialForm =
-      cat.label === "Forms > REPORTS" ||
-      cat.label === "Forms > sms" ||
-      cat.label === "Forms > training";
+    const label = cat.label;
+    const lower = label.toLowerCase();
 
-    if (isSpecialForm) {
+    // حذف MEL
+    if (lower.includes("mel ")) return;
+
+    // ✅ IranAir
+    if (lower.startsWith("iranair >")) {
+      if (!iranAirHandled) {
+        finalOptions.push({
+          id: cat.id,
+          label: "Iranair > Company Manuals",
+        });
+        iranAirHandled = true;
+      }
+      return;
+    }
+
+    // ✅ Training and resources → ساخت آیتم‌های مجازی
+    if (lower.startsWith("training and resources >")) {
+
+      if (trainingId1 && !finalOptions.some(o => o.label.includes("Dgr"))) {
+        finalOptions.push({
+          id: trainingId1,
+          label: "Training and resources > Dgr",
+        });
+      }
+
+      if (trainingId2 && !finalOptions.some(o => o.label.includes("lcao"))) {
+        finalOptions.push({
+          id: trainingId2,
+          label: "Training and resources > lcao",
+        });
+      }
+
+      return; // بقیه حذف
+    }
+
+    // ✅ Forms
+    if (lower.startsWith("forms >")) {
       if (!seenForms.has("Forms")) {
-        finalOptions.push({ ...cat, label: "Forms" });
+        finalOptions.push({
+          id: cat.id,
+          label: "Forms",
+        });
         seenForms.add("Forms");
       }
-    } else {
-      finalOptions.push(cat);
+      return;
     }
+
+    finalOptions.push(cat);
   });
 
   return finalOptions;
 };
+
+
+
+
+
 
 
   const categoryOptions = getProcessedCategories();
