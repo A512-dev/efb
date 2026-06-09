@@ -278,7 +278,9 @@ const getHeaderTitle = () => {
   if (currentCategory.id === 17) {
     return "lcao";
   }
-
+if (currentCategory.id === 23) {
+    return "Forms";
+  }
   return currentCategory.name;
 };
 
@@ -300,7 +302,7 @@ console.log("categories:", categories);
       style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       to={currentCategory?.parent_id ? `/dashboard/category/${currentCategory.parent_id}` : "/dashboard/manuals"}
     >
-      <img src={backIcon} alt="back" style={{ width: "16px" }} />
+      <img src={backIcon} alt="back" style={{ width: "23px" }} />
     </NavLink>
   )}
 

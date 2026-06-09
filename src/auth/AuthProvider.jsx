@@ -1,23 +1,3 @@
-// import { useState } from "react";
-// import { AuthContext } from "./AuthContext";
-
-// export const AuthProvider = ({ children }) => {
-  
-//   const [user, setUser] = useState({
-//     name: "Test User",
-//     role: "admin",
-//   });
-
-    
-//     // const [user, setUser] = useState(null);
-
-//   return (
-//     <AuthContext.Provider value={{ user, setUser }}>
-//       {children}
-//     </AuthContext.Provider>
-//   );
-// };
-
 import { useState, useEffect } from "react";
 import { AuthContext } from "./AuthContext";
 import apiClient from "../services/apiClient";
@@ -27,24 +7,22 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  
   const refreshUser = async () => {
     try {
       const userData = await getCurrentUser();
       setUser(userData);
-      localStorage.setItem("user", JSON.stringify(userData));
       return userData;
     } catch (err) {
-      console.error("Could not refresh user data", err);
+      setUser(null);
+      throw err;
     }
   };
 
   useEffect(() => {
     const initAuth = async () => {
-      const savedUser = localStorage.getItem("user");
       const refreshToken = localStorage.getItem("refresh_token");
 
-      if (!savedUser || !refreshToken) {
+      if (!refreshToken) {
         setLoading(false);
         return;
       }
@@ -56,11 +34,11 @@ const AuthProvider = ({ children }) => {
 
         const newAccess = response.data.access_token;
         localStorage.setItem("access_token", newAccess);
-        
-        
-        await refreshUser(); 
+
+        await refreshUser();
       } catch (err) {
-        localStorage.clear();
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
         setUser(null);
       } finally {
         setLoading(false);
@@ -75,9 +53,8 @@ const AuthProvider = ({ children }) => {
 
     localStorage.setItem("access_token", data.access_token);
     localStorage.setItem("refresh_token", data.refresh_token);
-    localStorage.setItem("user", JSON.stringify(data.user));
 
-    setUser(data.user);
+    await refreshUser();
   };
 
   const logout = async () => {
@@ -86,20 +63,31 @@ const AuthProvider = ({ children }) => {
       if (refresh) {
         await logoutUser(refresh);
       }
-    } catch (e) {
+    } catch (err) {
       console.log("Logout cleanup");
     } finally {
-      localStorage.clear();
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
       setUser(null);
       window.location = "/";
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-
-    <AuthContext.Provider value={{ user, login, logout, refreshUser, setUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        refreshUser,
+        setUser,
+        loading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

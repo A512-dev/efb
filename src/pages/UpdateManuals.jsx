@@ -31,6 +31,7 @@ const handleMarkAllAsRead = () => {
 };
 const [isHelpClicked,setIsHelpClicked]= useState(false)
 const [isAboutOpen, setIsAboutOpen] = useState(false);
+
   const formatDate = (dateString) => {
   const date = new Date(dateString);
 
@@ -49,11 +50,11 @@ const [isAboutOpen, setIsAboutOpen] = useState(false);
     <>
     <PageWrapper>
       <div className="manualsContainerLeft">
-        <div className="div-header">
-          <NavLink className="card-header" to="/dashboard/setting">
-            Settings
-          </NavLink>
-        </div>
+        <div className="div-header single-header">
+  <NavLink className="card-header single" to="/dashboard/setting">
+    Settings
+  </NavLink>
+</div>
 
         <NavLink
           className="headersForManuals active"
@@ -75,9 +76,18 @@ const [isAboutOpen, setIsAboutOpen] = useState(false);
         <NavLink className={`headersForManuals`} to="/dashboard/manuals/chat">
           Change Password
         </NavLink>
-<NavLink className={`headersForManuals`} to="#">
-          About
-        </NavLink>
+<NavLink
+  className="headersForManuals"
+  to="#"
+  onClick={(e) => {
+    e.preventDefault();
+    setIsAboutOpen(!isAboutOpen);
+    setIsHelpClicked(false);
+    
+  }}
+>
+  About
+</NavLink>
         <h5 className="card-header">App theme</h5>
 
         <div className="divDarkLight">
@@ -94,7 +104,7 @@ const [isAboutOpen, setIsAboutOpen] = useState(false);
                 title="PDF preview"
               />
         </div>}
-              {isAboutOpen && (
+        {isAboutOpen && (
   <div className="manualsContainer" style={{height:'88vh', display:'flex', alignItems:'center', justifyContent:'center'}}>
     <div className="aboutBox">
       <h2>EFB Crew App</h2>

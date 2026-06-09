@@ -9,15 +9,17 @@ import {
 import PageWrapper from "../components/PageWrapper";
 
 const EditProfile = () => {
-  const { user, refreshUser } = useCurrentUser();
+  const { user, refreshUser, loading } = useCurrentUser();
+
   const navigate = useNavigate();
 
-  const [employeeNo, setEmployeeNo] = useState(user?.employee_no || "");
-  const [position, setPosition] = useState(user?.position || "");
-  const [aircraftType, setAircraftType] = useState(user?.aircraft_type || "");
-  const [medicalExpire, setMedicalExpire] = useState("");
-  const [passportExpire, setPassportExpire] = useState("");
-  const [licenseExpire, setLicenseExpire] = useState("");
+  const [employeeNo, setEmployeeNo] = useState("");
+const [position, setPosition] = useState("");
+const [aircraftType, setAircraftType] = useState("");
+const [medicalExpire, setMedicalExpire] = useState("");
+const [passportExpire, setPassportExpire] = useState("");
+const [licenseExpire, setLicenseExpire] = useState("");
+
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -38,6 +40,21 @@ const EditProfile = () => {
 
     loadCurrentImg();
   }, []);
+  
+
+  useEffect(() => {
+  if (!user) return;
+
+  setEmployeeNo(user.employee_no || "");
+  setPosition(user.position || "");
+  setAircraftType(user.aircraft_type || "");
+
+  setMedicalExpire(user.medical_expires_at?.split("T")[0] || "");
+  setPassportExpire(user.passport_expires_at?.split("T")[0] || "");
+  setLicenseExpire(user.license_expires_at?.split("T")[0] || "");
+}, [user]);
+
+
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -82,6 +99,22 @@ const EditProfile = () => {
       setIsSubmitting(false);
     }
   };
+if (loading) {
+  return (
+    <PageWrapper>
+      <div style={{ padding: 40 }}>Loading profile...</div>
+    </PageWrapper>
+  );
+}
+
+if (!user) {
+  return (
+    <PageWrapper>
+      <div style={{ padding: 40 }}>Not authenticated</div>
+    </PageWrapper>
+  );
+}
+
 
   return (
    <PageWrapper>
