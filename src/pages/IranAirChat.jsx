@@ -1788,13 +1788,9 @@ setSelectedFiles([]);
     <div className="manualsContainer chatbox">
       <h4 className="testReport">Report your issue</h4>
 
-      <label>Write the issue for manager and get answer ASAP</label>
+      <label>Write an issue to manager and get answer ASAP</label>
 
-      {currentUser && (
-        <p className="chat-role">
-          Current role: <strong>{currentUser.role}</strong>
-        </p>
-      )}
+      
 
 
       <div className="chat-tabs">
@@ -1973,7 +1969,7 @@ const isRead = Boolean(msg.is_read || msg.read_at);
                   >
                     <div className="chat-message-header">
                       <strong className="chat-message-title">
-  #{msg.id} — {msg.subject || "No Subject"}
+  {msg.id} — {msg.subject || "No Subject"}
 
   
   {(isReceiver || isSender) && !isRead && (

@@ -675,7 +675,13 @@ h5 {
   background-color: var(--firoozepor);
   color: white;
 }
-
+.selectProfile {
+  height: 40px;
+  background-color: var(--bg);
+  color: var(--text);
+  border: solid 1px var(--borderBottom);
+  border-radius: 8px;
+}
 .single-header {
   background-color: var(--firoozepor);
 }

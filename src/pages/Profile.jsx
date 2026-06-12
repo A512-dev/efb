@@ -57,8 +57,8 @@ const Profile = () => {
   const licenseRemaining = calcRemainingDays(user.license_expires_at);
 const getExpiryClass = (days) => {
   if (days === null) return "";
-  if (days <= 30) return "expire-red";
-  if (days <= 60) return "expire-yellow";
+  if (days <= 10) return "expire-red";
+  if (days <= 30) return "expire-yellow";
   return "expire-green";
 };
 

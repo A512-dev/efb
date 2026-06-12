@@ -324,7 +324,7 @@ console.log("categories:", categories);
           displayCategories.map((category) => (
             <NavLink
               key={category.id}
-              className="headersForManuals"
+              className="headersForManuals" style={{textWrap:'auto'}}
               to={`/dashboard/category/${category.id}`}
             >
               {category.name}
@@ -346,7 +346,7 @@ console.log("categories:", categories);
                 style={{
                   cursor: "pointer",
                   fontSize: "15px",
-                  fontWeight: "500",
+                  fontWeight: "500",textWrap:'auto'
                 }}
                 onClick={() => openManual(manual)}
               >

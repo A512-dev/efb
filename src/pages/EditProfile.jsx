@@ -157,20 +157,29 @@ if (!user) {
 
           <div className="input-group">
             <label>Position</label>
-            <input
-              type="text"
-              value={position}
-              onChange={(e) => setPosition(e.target.value)}
-            />
+            <select className="selectProfile"
+  value={position}
+  onChange={(e) => setPosition(e.target.value)}
+>
+  <option value="">Select Position</option>
+  <option value="P1">P1</option>
+  <option value="P2">P2</option>
+</select>
+
           </div>
 
           <div className="input-group">
             <label>Aircraft Type</label>
-            <input
-              type="text"
-              value={aircraftType}
-              onChange={(e) => setAircraftType(e.target.value)}
-            />
+            <select className="selectProfile"
+  value={aircraftType}
+  
+  onChange={(e) => setAircraftType(e.target.value)}
+>
+  <option value="">Select Aircraft</option>
+  <option value="A300_600">A300-600</option>
+  <option value="A310">A310</option>
+</select>
+
           </div>
 
           <div className="input-group">
