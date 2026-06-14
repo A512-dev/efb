@@ -126,6 +126,9 @@ class TestAdminUserManagement:
         assert resp.status_code == 200, resp.text
         body = resp.json()
         assert any(user["email"] == SEED_EMAIL for user in body)
+        assert "medical_expires_at" in body[0]
+        assert "passport_expires_at" in body[0]
+        assert "license_expires_at" in body[0]
         assert "password_hash" not in body[0]
 
     def test_pilot_cannot_list_users(self, client: TestClient):
@@ -143,6 +146,7 @@ class TestAdminUserManagement:
         signup_resp = client.post(
             "/api/v1/auth/signup",
             json={"name": "Delete Me", "email": email, "password": password},
+            headers=_auth_header(admin_token),
         )
         assert signup_resp.status_code == 201, signup_resp.text
         user_id = signup_resp.json()["user_id"]

@@ -6,6 +6,8 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
+from app.models.enums import UserRole
+
 # ── requests ──────────────────────────────────────────────────
 
 
@@ -24,11 +26,12 @@ class RefreshRequest(BaseModel):
 
 
 class SignupRequest(BaseModel):
-    """New account payload; service layer assigns the default role."""
+    """New account payload created by an admin user."""
 
     name: str = Field(..., min_length=1, max_length=200)
     email: EmailStr
     password: str = Field(..., min_length=6, max_length=128)
+    role: UserRole = UserRole.pilot
 
 
 # ── embedded objects ──────────────────────────────────────────
@@ -71,6 +74,7 @@ class SignupResponse(BaseModel):
     """Signup response containing the created user id and token pair."""
 
     user_id: int
+    role: str
     access_token: str
     refresh_token: str
 

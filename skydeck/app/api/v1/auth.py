@@ -5,7 +5,10 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session as DbSession
 
+from app.core.deps import require_roles
 from app.db.session import get_db
+from app.models.enums import UserRole
+from app.models.user import User
 from app.schemas.auth import (
     ErrorResponse,
     LoginRequest,
@@ -19,22 +22,35 @@ from app.schemas.auth import (
 from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+_ADMIN = require_roles(UserRole.admin)
 
 
 @router.post(
     "/signup",
     response_model=SignupResponse,
     status_code=201,
-    responses={409: {"model": ErrorResponse}},
-    summary="Create a new pilot account",
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+    },
+    summary="Create a new user account (admin only)",
 )
-def signup(body: SignupRequest, request: Request, db: DbSession = Depends(get_db)):
-    """Register a new user (defaults to pilot role)."""
+def signup(
+    body: SignupRequest,
+    request: Request,
+    current_user: User = Depends(_ADMIN),
+    db: DbSession = Depends(get_db),
+):
+    """Register a new user in the current admin's organization."""
     result = auth_service.signup(
         db,
         name=body.name,
         email=body.email,
         password=body.password,
+        role=body.role,
+        org_id=current_user.org_id,
+        actor_user_id=current_user.id,
         ip=request.client.host if request.client else None,
     )
     return SignupResponse(**result)

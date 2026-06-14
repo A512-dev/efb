@@ -5,9 +5,22 @@ Runs against the seeded dev database (SkyWest Regional Airlines).
 
 from __future__ import annotations
 
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
 from tests.conftest import SEED_EMAIL, SEED_PASSWORD
+
+
+def _auth_header(token: str) -> dict:
+    return {"Authorization": f"Bearer {token}"}
+
+
+def _login(client: TestClient, email: str = SEED_EMAIL, password: str = SEED_PASSWORD) -> str:
+    resp = client.post("/api/v1/auth/login", json={"email": email, "password": password})
+    assert resp.status_code == 200, resp.text
+    return resp.json()["access_token"]
+
 
 # ── login ─────────────────────────────────────────────────────
 
@@ -68,6 +81,94 @@ class TestLogin:
         )
         assert resp.status_code == 200
         assert "access_token" in resp.json()
+
+
+class TestSignup:
+    def test_admin_can_create_non_pilot_user(self, client: TestClient):
+        admin_token = _login(client)
+        password = "SkyDeck@2026!"
+        email = f"safety-{uuid4().hex[:12]}@example.com"
+
+        signup_resp = client.post(
+            "/api/v1/auth/signup",
+            json={
+                "name": "Safety Officer",
+                "email": email,
+                "password": password,
+                "role": "safety",
+            },
+            headers=_auth_header(admin_token),
+        )
+
+        assert signup_resp.status_code == 201, signup_resp.text
+        body = signup_resp.json()
+        assert body["user_id"] > 0
+        assert body["role"] == "safety"
+
+        login_resp = client.post(
+            "/api/v1/auth/login",
+            json={"email": email, "password": password},
+        )
+        assert login_resp.status_code == 200, login_resp.text
+        assert login_resp.json()["user"]["role"] == "safety"
+
+        delete_resp = client.delete(
+            f"/api/v1/users/{body['user_id']}",
+            headers=_auth_header(admin_token),
+        )
+        assert delete_resp.status_code == 200, delete_resp.text
+
+    def test_signup_defaults_to_pilot_role(self, client: TestClient):
+        admin_token = _login(client)
+        email = f"pilot-{uuid4().hex[:12]}@example.com"
+
+        signup_resp = client.post(
+            "/api/v1/auth/signup",
+            json={
+                "name": "Default Pilot",
+                "email": email,
+                "password": "SkyDeck@2026!",
+            },
+            headers=_auth_header(admin_token),
+        )
+
+        assert signup_resp.status_code == 201, signup_resp.text
+        assert signup_resp.json()["role"] == "pilot"
+
+        delete_resp = client.delete(
+            f"/api/v1/users/{signup_resp.json()['user_id']}",
+            headers=_auth_header(admin_token),
+        )
+        assert delete_resp.status_code == 200, delete_resp.text
+
+    def test_signup_requires_admin(self, client: TestClient):
+        resp = client.post(
+            "/api/v1/auth/signup",
+            json={
+                "name": "No Auth",
+                "email": f"no-auth-{uuid4().hex[:12]}@example.com",
+                "password": "SkyDeck@2026!",
+                "role": "technical",
+            },
+        )
+
+        assert resp.status_code == 401
+
+    def test_signup_rejects_unknown_role(self, client: TestClient):
+        admin_token = _login(client)
+
+        resp = client.post(
+            "/api/v1/auth/signup",
+            json={
+                "name": "Unknown Role",
+                "email": f"unknown-{uuid4().hex[:12]}@example.com",
+                "password": "SkyDeck@2026!",
+                "role": "copilot",
+            },
+            headers=_auth_header(admin_token),
+        )
+
+        assert resp.status_code == 422
 
 
 # ── refresh ───────────────────────────────────────────────────
