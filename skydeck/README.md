@@ -545,7 +545,22 @@ All API paths below are prefixed with:
 
 #### `POST /auth/signup`
 
-Creates a new pilot account. New users default to `pilot`.
+Admin-only endpoint for creating a user in the current admin's organization.
+If `role` is omitted, the new user defaults to `pilot`.
+
+Supported roles:
+
+```text
+pilot
+chief_pilot
+admin
+safety
+planning
+technical
+```
+
+Use `pilot` for copilot/first-officer style users. Use `chief_pilot` for the
+chief pilot role.
 
 Request:
 
@@ -553,7 +568,8 @@ Request:
 {
   "name": "Ali",
   "email": "ali@example.com",
-  "password": "123456"
+  "password": "123456",
+  "role": "pilot"
 }
 ```
 
@@ -562,6 +578,7 @@ Response:
 ```json
 {
   "user_id": 12,
+  "role": "pilot",
   "access_token": "...",
   "refresh_token": "..."
 }
@@ -613,6 +630,48 @@ Response:
 ```
 
 ### Users and Profile Pictures
+
+#### `GET /users`
+
+Admin-only endpoint that lists active users in the current admin's organization.
+Soft-deleted users are not returned.
+
+Response shape:
+
+```json
+[
+  {
+    "id": 3,
+    "org_id": 1,
+    "name": "First Officer Ava Chen",
+    "email": "a.chen@skywest-air.com",
+    "role": "pilot",
+    "employee_no": "3",
+    "position": "P2",
+    "aircraft_type": "A310",
+    "profile_picture_id": 10,
+    "profile_picture_url": "/api/v1/users/3/profile-picture",
+    "created_at": "2026-06-07T00:00:00+00:00",
+    "updated_at": null
+  }
+]
+```
+
+#### `DELETE /users/{user_id}`
+
+Admin-only endpoint that soft-deletes a user in the current admin's organization.
+The user row is preserved for audit/history references, but the user can no
+longer log in and no longer appears in `GET /users`.
+
+Admins cannot delete their own account.
+
+Response:
+
+```json
+{
+  "message": "User deleted successfully"
+}
+```
 
 #### `GET /users/me`
 
