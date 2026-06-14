@@ -16,7 +16,6 @@ if TYPE_CHECKING:
     from app.models.manual import Manual
     from app.models.org import Org
     from app.models.session import Session
-    from app.models.submission import Submission
     from app.models.user_profile_picture import UserProfilePicture
 
 
@@ -56,7 +55,7 @@ class User(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), onupdate=func.now(), nullable=True
     )
-    # Users are soft-deleted so old sessions, submissions, and audit rows can still reference them.
+    # Users are soft-deleted so old sessions and audit rows can still reference them.
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # ── relationships ──────────────────────────────────────
@@ -65,7 +64,6 @@ class User(Base):
         back_populates="user", cascade="all, delete-orphan"
     )
     uploaded_manuals: Mapped[list[Manual]] = relationship(back_populates="uploaded_by_user")
-    submissions: Mapped[list[Submission]] = relationship(back_populates="user")
     profile_picture: Mapped[Optional[UserProfilePicture]] = relationship(
         "UserProfilePicture",
         foreign_keys=[profile_picture_id],

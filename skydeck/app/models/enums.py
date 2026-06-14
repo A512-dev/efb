@@ -14,15 +14,6 @@ class UserRole(str, enum.Enum):
     chief_pilot = "chief_pilot"
 
 
-class SubmissionStatus(str, enum.Enum):
-    """Lifecycle states for submitted forms."""
-
-    pending = "pending"
-    submitted = "submitted"
-    delivered = "delivered"
-    failed = "failed"
-
-
 class ManualAction(str, enum.Enum):
     """Audit actions that can be recorded for manual access."""
 
