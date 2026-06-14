@@ -65,3 +65,28 @@ class UserMeResponse(BaseModel):
     updated_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+
+class UserListItemResponse(BaseModel):
+    """Admin-safe user summary for organization user management."""
+
+    id: int
+    org_id: int
+    name: str
+    email: str
+    role: str
+    employee_no: str
+    position: str
+    aircraft_type: str
+    profile_picture_id: Optional[int] = None
+    profile_picture_url: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class UserDeleteResponse(BaseModel):
+    """Response after a user has been deactivated."""
+
+    message: str = "User deleted successfully"
