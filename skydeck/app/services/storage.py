@@ -111,11 +111,6 @@ def get_manual_storage() -> StorageProvider:
     return LocalStorage(settings.STORAGE_DIR)
 
 
-def get_submission_storage() -> StorageProvider:
-    """Return the configured storage provider for submission attachments."""
-    return LocalStorage(settings.SUBMISSIONS_STORAGE_DIR)
-
-
 def get_message_attachment_storage() -> StorageProvider:
     """Return the configured storage provider for encrypted message attachments."""
     return LocalStorage(settings.MESSAGE_ATTACHMENTS_STORAGE_DIR)

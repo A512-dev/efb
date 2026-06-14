@@ -2,8 +2,8 @@
 
 FastAPI backend for the SkyDeck aviation safety system. The backend provides
 authentication, organization-scoped users, manual library management, manual
-update notifications, digital forms/submissions, internal messaging, encrypted
-message attachments, encrypted user profile pictures, and audit logging.
+update notifications, internal messaging, encrypted message attachments,
+encrypted user profile pictures, and audit logging.
 
 This README is focused on the backend inside `skydeck/`. The React frontend
 lives at the repository root.
@@ -56,8 +56,6 @@ lives at the repository root.
 - Manual upload, update, list, download, and delete.
 - Manual category tree/path support.
 - Manual update feed with persisted per-user read state.
-- Digital form templates and versioned form schemas.
-- Digital form submissions with optional attachments.
 - Internal pilot/admin messaging.
 - Sender-visible message read receipts.
 - Admin recipient lookup for pilot/chief-pilot selection.
@@ -241,7 +239,6 @@ defaults in `app/core/config.py`.
 | `REFRESH_TOKEN_EXPIRE_DAYS` | `7` | Refresh-token lifetime |
 | `CORS_ORIGINS` | localhost Vite/React origins | Allowed browser origins |
 | `STORAGE_DIR` | `storage/manuals` | Manual PDF storage |
-| `SUBMISSIONS_STORAGE_DIR` | `storage/submissions` | Submission attachment storage |
 | `MESSAGE_ATTACHMENTS_STORAGE_DIR` | `storage/message_attachments` | Encrypted message attachment storage |
 | `PROFILE_PICTURES_STORAGE_DIR` | `storage/profile_pictures` | Encrypted profile picture storage |
 | `MESSAGE_ATTACHMENT_MAX_FILE_MB` | `25` | Max size per message attachment |
@@ -277,6 +274,8 @@ Important security notes:
 | `0006_manual_update_reads.py` | Per-user manual update read state |
 | `0007_message_attachments.py` | Encrypted message attachment metadata |
 | `0008_user_profile_pictures.py` | Encrypted profile pictures and user reference |
+| `0009_unique_employee_no.py` | Active employee number uniqueness per organization |
+| `0010_remove_forms_submissions.py` | Drop removed forms/submissions tables |
 
 Check the current database revision:
 
@@ -303,10 +302,6 @@ manuals
 manual_access_logs
 manual_update_events
 manual_update_reads
-form_templates
-form_versions
-submissions
-submission_attachments
 messages
 message_attachments
 audit_logs
@@ -383,7 +378,6 @@ important for:
 - manual update reads
 - user profile pictures
 - manuals and categories
-- submissions
 
 ### Manual PDFs
 
@@ -828,30 +822,6 @@ Marks one update read for the current user.
 
 Marks all currently existing updates read for the current user. Future update
 events still appear unread.
-
-### Forms and Submissions
-
-#### `GET /forms/active`
-
-Returns latest active form versions for the current org.
-
-#### `POST /submissions`
-
-Creates a form submission. Request is `multipart/form-data`.
-
-| Field | Type | Required |
-| --- | --- | --- |
-| `form_version_id` | int | Yes |
-| `data` | JSON string | Yes |
-| `file` | file | No |
-
-#### `GET /submissions`
-
-Admin/viewer listing.
-
-#### `GET /submissions/{submission_id}`
-
-Admin/viewer detail response including attachment metadata.
 
 ### Messages
 

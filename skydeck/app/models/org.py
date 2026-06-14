@@ -12,15 +12,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
-    from app.models.form_template import FormTemplate
     from app.models.manual import Manual
     from app.models.manual_category import ManualCategory
-    from app.models.submission import Submission
     from app.models.user import User
 
 
 class Org(Base):
-    """Top-level tenant boundary for users, manuals, forms, and submissions."""
+    """Top-level tenant boundary for users, manuals, and related organization data."""
 
     __tablename__ = "orgs"
 
@@ -37,12 +35,6 @@ class Org(Base):
     users: Mapped[list[User]] = relationship(back_populates="org", cascade="all, delete-orphan")
     manuals: Mapped[list[Manual]] = relationship(back_populates="org", cascade="all, delete-orphan")
     manual_categories: Mapped[list[ManualCategory]] = relationship(
-        back_populates="org", cascade="all, delete-orphan"
-    )
-    form_templates: Mapped[list[FormTemplate]] = relationship(
-        back_populates="org", cascade="all, delete-orphan"
-    )
-    submissions: Mapped[list[Submission]] = relationship(
         back_populates="org", cascade="all, delete-orphan"
     )
 
