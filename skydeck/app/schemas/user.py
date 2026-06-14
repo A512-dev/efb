@@ -78,6 +78,8 @@ class UserListItemResponse(BaseModel):
     employee_no: str
     position: str
     aircraft_type: str
+    medical_expires_at: datetime
+    passport_expires_at: datetime
     license_expires_at: datetime
     profile_picture_id: Optional[int] = None
     profile_picture_url: Optional[str] = None

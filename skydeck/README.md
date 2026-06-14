@@ -649,6 +649,8 @@ Response shape:
     "employee_no": "3",
     "position": "P2",
     "aircraft_type": "A310",
+    "medical_expires_at": "2027-06-07T00:00:00+00:00",
+    "passport_expires_at": "2031-06-07T00:00:00+00:00",
     "license_expires_at": "2027-06-07T00:00:00+00:00",
     "profile_picture_id": 10,
     "profile_picture_url": "/api/v1/users/3/profile-picture",
