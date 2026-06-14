@@ -16,6 +16,10 @@ import IranAirChat from "../pages/IranAirChat";
 import Setting from "../pages/Setting";
 import UpdateManuals from "../pages/UpdateManuals";
 import { AnimatePresence } from "framer-motion";
+import EditProfile from "../pages/EditProfile";
+import FlightFolder from "../pages/FlightFolder";
+import InsideFolder from "../pages/InsideFolder";
+import CrewProfile from "../pages/CrewProfile";
 export default function AppRouter() {
   return (
       <AnimatePresence mode="wait">
@@ -29,11 +33,13 @@ export default function AppRouter() {
 
 
             <Route
-              path="profile"
-              element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
-            >
-              <Route index element={<Profile />} />
-            </Route>
+  path="profile"
+  element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
+>
+  <Route index element={<Profile />} />
+  <Route path="edit" element={<EditProfile />} />  
+</Route>
+
             
 
             <Route
@@ -90,8 +96,27 @@ export default function AppRouter() {
             >
               <Route index element={<SignUp />} />
             </Route>
+            <Route
+              path="flightFolder"
+              element={<RequireAuth allowedRoles={["admin","pilot"]} />}
+            >
+              <Route index element={<FlightFolder />} />
+            </Route>
+            <Route
+              path="insidefolder"
+              element={<RequireAuth allowedRoles={["admin","pilot"]} />}
+            >
+              <Route index element={<InsideFolder />} />
+            </Route>
+            <Route
+              path="CrewProfile"
+              element={<RequireAuth allowedRoles={["admin","pilot"]} />}
+            >
+              <Route index element={<CrewProfile />} />
+            </Route>
 
           </Route>
+          
         </Route>
       </Routes>
     </BrowserRouter>

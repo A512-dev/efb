@@ -1,17 +1,25 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useAuth } from "../auth/useAuth";
 
 export const BookmarkContext = createContext();
 
 export const BookmarkProvider = ({ children }) => {
+  const { user } = useAuth();
 
-  const [clipboardItems, setClipboardItems] = useState(() => {
-    const saved = localStorage.getItem("clipboardItems");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const storageKey = user ? `clipboard_${user.id}` : "clipboard_guest";
+
+  const [clipboardItems, setClipboardItems] = useState([]);
+
 
   useEffect(() => {
-    localStorage.setItem("clipboardItems", JSON.stringify(clipboardItems));
-  }, [clipboardItems]);
+    const saved = localStorage.getItem(storageKey);
+    setClipboardItems(saved ? JSON.parse(saved) : []);
+  }, [storageKey]);
+
+
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify(clipboardItems));
+  }, [clipboardItems, storageKey]);
 
   const toggleClipboardItem = (doc) => {
     setClipboardItems((prev) => {
@@ -33,7 +41,7 @@ export const BookmarkProvider = ({ children }) => {
     <BookmarkContext.Provider
       value={{
         clipboardItems,
-        setClipboardItems,  
+        setClipboardItems,
         toggleClipboardItem,
         isDocumentBookmarked
       }}

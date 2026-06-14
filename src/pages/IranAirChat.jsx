@@ -1788,13 +1788,9 @@ setSelectedFiles([]);
     <div className="manualsContainer chatbox">
       <h4 className="testReport">Report your issue</h4>
 
-      <label>Write the issue for manager and get answer ASAP</label>
+      <label>Write an issue to manager and get answer ASAP</label>
 
-      {currentUser && (
-        <p className="chat-role">
-          Current role: <strong>{currentUser.role}</strong>
-        </p>
-      )}
+      
 
 
       <div className="chat-tabs">
@@ -1861,7 +1857,7 @@ setSelectedFiles([]);
   <img
     src={attachmentIcon}
     alt="attach"
-style={{width:'30px' , cursor:'pointer'}}
+style={{width:'30px' , cursor:'pointer',position:'absolute',right:'30px',marginTop:'20px'}}
     onClick={() => fileInputRef.current?.click()}
   />
 </div>
@@ -1879,14 +1875,13 @@ style={{width:'30px' , cursor:'pointer'}}
         {file.name}
 
         <button
-          type="button"
+          type="button" className="removeBtn"
           onClick={() =>
             setSelectedFiles((prev) =>
               prev.filter((_, i) => i !== index)
             )
           }
-        >
-          remove
+        >remove
         </button>
       </div>
     ))}
@@ -1974,7 +1969,7 @@ const isRead = Boolean(msg.is_read || msg.read_at);
                   >
                     <div className="chat-message-header">
                       <strong className="chat-message-title">
-  #{msg.id} — {msg.subject || "No Subject"}
+  {msg.id} — {msg.subject || "No Subject"}
 
   
   {(isReceiver || isSender) && !isRead && (
@@ -2030,7 +2025,7 @@ const isRead = Boolean(msg.is_read || msg.read_at);
       <div key={att.id} className="chat-attachment-item">
         
         <button
-          type="button"
+          type="button" className="uploadBtn"  
           onClick={async (e) => {
             e.stopPropagation();
 
@@ -2058,7 +2053,7 @@ const isRead = Boolean(msg.is_read || msg.read_at);
             }
           }}
         >
-          📎 {att.filename || "Download attachment"}
+          <img src={attachmentIcon} style={{width:'20px' , marginBottom:'-5px'}} alt="" /> {att.filename || "Download attachment"}
         </button>
 
       </div>

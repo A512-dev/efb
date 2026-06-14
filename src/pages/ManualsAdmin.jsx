@@ -315,35 +315,90 @@ const ManualsAdmin = () => {
       .catch((err) => console.error("Failed to load categories", err));
   }, []);
 
-  // پردازش دسته‌بندی‌ها برای فیلتر کردن و یکسان‌سازی نام‌ها
-  const getProcessedCategories = () => {
-    const flat = flattenCategories(categories);
-    const seenForms = new Set();
-    const finalOptions = [];
+  
+ const getProcessedCategories = () => {
+  if (!categories) return [];
 
-    flat.forEach((cat) => {
-      const isSpecialForm = 
-        cat.label === "Forms > REPORTS" || 
-        cat.label === "Forms > sms" || 
-        cat.label === "Forms > training";
+  const flat = flattenCategories(categories);
+  const finalOptions = [];
+  const seenForms = new Set();
 
-      if (isSpecialForm) {
-        // فقط اولین مورد "Forms" را نگه می‌داریم تا تکراری نشود
-        if (!seenForms.has("Forms")) {
-          finalOptions.push({ ...cat, label: "Forms" });
-          seenForms.add("Forms");
-        }
-      } else {
-        finalOptions.push(cat);
+  let iranAirHandled = false;
+
+  // پیدا کردن فرزندان Training
+  const trainingChildren = flat.filter((c) =>
+    c.label.toLowerCase().startsWith("training and resources >")
+  );
+
+  const trainingId1 = trainingChildren[0]?.id;
+  const trainingId2 = trainingChildren[1]?.id;
+
+  flat.forEach((cat) => {
+    const label = cat.label;
+    const lower = label.toLowerCase();
+
+    // حذف MEL
+    if (lower.includes("mel ")) return;
+
+    // ✅ IranAir
+    if (lower.startsWith("iranair >")) {
+      if (!iranAirHandled) {
+        finalOptions.push({
+          id: cat.id,
+          label: "Iranair > Company Manuals",
+        });
+        iranAirHandled = true;
       }
-    });
+      return;
+    }
 
-    return finalOptions;
-  };
+    // ✅ Training and resources → ساخت آیتم‌های مجازی
+    if (lower.startsWith("training and resources >")) {
+
+      if (trainingId1 && !finalOptions.some(o => o.label.includes("Dgr"))) {
+        finalOptions.push({
+          id: trainingId1,
+          label: "Training and resources > Dgr",
+        });
+      }
+
+      if (trainingId2 && !finalOptions.some(o => o.label.includes("lcao"))) {
+        finalOptions.push({
+          id: trainingId2,
+          label: "Training and resources > lcao",
+        });
+      }
+
+      return; // بقیه حذف
+    }
+
+    // ✅ Forms
+    if (lower.startsWith("forms >")) {
+      if (!seenForms.has("Forms")) {
+        finalOptions.push({
+          id: cat.id,
+          label: "Forms",
+        });
+        seenForms.add("Forms");
+      }
+      return;
+    }
+
+    finalOptions.push(cat);
+  });
+
+  return finalOptions;
+};
+
+
+
+
+
+
 
   const categoryOptions = getProcessedCategories();
 
-  // تابعی برای نمایش تمیز لیبل‌ها در لیست پایین صفحه (All Documents)
+  
   const formatDisplayLabel = (label) => {
     if (label === "Forms > REPORTS" || label === "Forms > sms" || label === "Forms > training") {
       return "Forms";
@@ -405,6 +460,7 @@ const ManualsAdmin = () => {
   return (
     <PageWrapper>
       <div className="manualsAdminContainer">
+        
         <form onSubmit={handleSubmit} className="manualUploadForm">
           <input
             type="text"
