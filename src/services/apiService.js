@@ -214,7 +214,13 @@ export const markAllManualUpdatesRead = async () => {
   const response = await apiClient.post(`/manual-updates/read-all`);
   return response.data;
 };
+
 export const getAllUsers = async () => {
   const response = await apiClient.get(`/users`);
+  return response.data;
+};
+
+export const deleteUser = async (userId) => {
+  const response = await apiClient.delete(`/users/${userId}`);
   return response.data;
 };

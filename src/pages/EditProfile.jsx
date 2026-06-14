@@ -170,15 +170,19 @@ if (!user) {
 
           <div className="input-group">
             <label>Aircraft Type</label>
-            <select className="selectProfile"
+         <select
+  className="selectProfile"
   value={aircraftType}
-  
   onChange={(e) => setAircraftType(e.target.value)}
 >
   <option value="">Select Aircraft</option>
+  <option value="A330">A330</option>
   <option value="A300_600">A300-600/310</option>
-  <option value="A310">A320</option>
+  <option value="A320">A320</option>
+  <option value="F100">F100</option>
+  <option value="ATR">ATR 72-600</option>
 </select>
+
 
           </div>
 

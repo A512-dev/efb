@@ -309,12 +309,12 @@
 // };
 
 // export default CrewProfile;
-
 import { useEffect, useMemo, useState } from "react";
 import PageWrapper from "../components/PageWrapper";
 import { getAllUsers, downloadUserProfilePicture } from "../services/apiService";
 import CrewCard from "../components/CrewCard";
-
+import crossMarkIcon from '../assets/icons/Delete-1--Streamline-Sharp.svg'
+import { deleteUser } from "../services/apiService";
 const CrewProfile = () => {
   const [users, setUsers] = useState([]);
   const [selectedPilot, setSelectedPilot] = useState(null);
@@ -322,6 +322,7 @@ const CrewProfile = () => {
   const [fleetFilter, setFleetFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
+
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -343,6 +344,10 @@ const CrewProfile = () => {
       (user) => user.position === "P1" || user.position === "P2"
     );
   }, [users]);
+const aircraftLabels = {
+  A300_600: "A300-600 / A310",
+  A320: "A320"
+};
 
   const fleetOptions = useMemo(() => {
     const fleets = pilots.map((p) => p.aircraft_type).filter(Boolean);
@@ -392,6 +397,29 @@ const CrewProfile = () => {
     });
   }, [pilots, crewType, fleetFilter]);
 
+  const handleDeleteUser = async () => {
+  if (!selectedPilot) return;
+
+  const confirmDelete = window.confirm("Are you sure you want to delete this user?");
+  if (!confirmDelete) return;
+
+  try {
+    const userId = selectedPilot.id || selectedPilot.user_id;
+
+    await deleteUser(userId);
+
+    setUsers((prev) =>
+      prev.filter((u) => (u.id || u.user_id) !== userId)
+    );
+
+    setSelectedPilot(null);
+
+  } catch (err) {
+    console.error("Delete error:", err);
+    alert("Failed to delete user");
+  }
+};
+
   return (
     <PageWrapper>
       <section className="dashboard-panel">
@@ -399,16 +427,18 @@ const CrewProfile = () => {
 
         <div className="dashboard-filters">
           <select
-            value={fleetFilter}
-            onChange={(e) => setFleetFilter(e.target.value)}
-          >
-            <option value="all">All Fleets</option>
-            {fleetOptions.map((fleet) => (
-              <option key={fleet} value={fleet}>
-                {fleet}
-              </option>
-            ))}
-          </select>
+  value={fleetFilter}
+  onChange={(e) => setFleetFilter(e.target.value)}
+>
+  <option value="all">All Fleets</option>
+
+  {fleetOptions.map((fleet) => (
+    <option key={fleet} value={fleet}>
+      {aircraftLabels[fleet] || fleet}
+    </option>
+  ))}
+</select>
+
 
           <select
             value={crewType}
@@ -451,7 +481,7 @@ const CrewProfile = () => {
                 className="modal-close"
                 onClick={() => setSelectedPilot(null)}
               >
-                ✕
+                <img src={crossMarkIcon}  alt="" />
               </button>
 
               <CrewCard
@@ -459,6 +489,8 @@ const CrewProfile = () => {
                 profileImage={profileImage}
               />
             </div>
+
+<button onClick={handleDeleteUser} className="deleteBtn deleteProfile"> Delete </button>
           </div>
         )}
       </section>
