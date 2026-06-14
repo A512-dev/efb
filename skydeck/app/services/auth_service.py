@@ -13,7 +13,7 @@ from jose import JWTError
 from sqlalchemy.orm import Session as DbSession
 
 from app.core.config import settings
-from app.core.errors import AuthenticationError, ConflictError
+from app.core.errors import AuthenticationError, ConflictError, NotFoundError
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -41,19 +41,20 @@ def signup(
     name: str,
     email: str,
     password: str,
+    role: UserRole = UserRole.pilot,
+    org_id: Optional[int] = None,
+    actor_user_id: Optional[int] = None,
     ip: Optional[str] = None,
 ) -> dict:
-    """Register a new pilot account.
+    """Register a new account.
 
-    MVP rule: new accounts default to ``pilot`` role.
     Raises ``ConflictError`` if the email is already registered.
     """
-    
 
     if user_repo.get_by_email(db, email):
         raise ConflictError("Email is already registered")
 
-    org = _get_or_create_default_org(db)
+    org = _get_org_by_id(db, org_id) if org_id is not None else _get_or_create_default_org(db)
     now = datetime.now(timezone.utc)
 
     user = User(
@@ -61,9 +62,9 @@ def signup(
         name=name,
         email=email,
         password_hash=hash_password(password),
-        role=UserRole.pilot,
+        role=role,
         employee_no="pending",
-        position=_default_position(name=name, role=UserRole.pilot),
+        position=_default_position(name=name, role=role),
         aircraft_type="A310",
         medical_expires_at=_add_years(now, 1),
         passport_expires_at=_add_years(now, 5),
@@ -81,14 +82,16 @@ def signup(
         action="auth.signup",
         target_type="user",
         target_id=user.id,
-        user_id=user.id,
+        user_id=actor_user_id or user.id,
         org_id=user.org_id,
         ip=ip,
+        metadata={"role": role.value},
     )
     db.commit()
 
     return {
         "user_id": user.id,
+        "role": user.role.value,
         "access_token": tokens["access_token"],
         "refresh_token": tokens["refresh_token"],
     }
@@ -243,7 +246,7 @@ def _add_years(value: datetime, years: int) -> datetime:
 
 def _get_or_create_default_org(db: DbSession):
     """Return the MVP default org, creating it and its manual categories if needed."""
-    
+
     from app.models.org import Org
 
     org = db.query(Org).first()
@@ -253,6 +256,16 @@ def _get_or_create_default_org(db: DbSession):
         db.flush()
 
     ensure_default_categories(db, org_id=org.id)
+    return org
+
+
+def _get_org_by_id(db: DbSession, org_id: int):
+    """Return an existing org for admin-created accounts."""
+    from app.models.org import Org
+
+    org = db.query(Org).filter(Org.id == org_id).first()
+    if org is None:
+        raise NotFoundError("Organization not found")
     return org
 
 
