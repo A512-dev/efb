@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import func
@@ -20,6 +21,16 @@ def get_by_email(db: Session, email: str) -> Optional[User]:
 def get_by_id(db: Session, user_id: int) -> Optional[User]:
     """Fetch a non-deleted user by primary key."""
     return db.query(User).filter(User.id == user_id, User.deleted_at.is_(None)).first()
+
+
+def list_by_org(db: Session, *, org_id: int) -> list[User]:
+    """List non-deleted users in one organization."""
+    return (
+        db.query(User)
+        .filter(User.org_id == org_id, User.deleted_at.is_(None))
+        .order_by(User.name.asc(), User.id.asc())
+        .all()
+    )
 
 
 def get_by_employee_no(
@@ -66,6 +77,12 @@ def list_by_ids(db: Session, *, org_id: int, user_ids: list[int]) -> list[User]:
         .order_by(User.name.asc())
         .all()
     )
+
+
+def soft_delete(db: Session, user: User) -> None:
+    """Deactivate a user while preserving historical references."""
+    user.deleted_at = datetime.now(timezone.utc)
+    db.flush()
 
 
 def create_profile_picture(

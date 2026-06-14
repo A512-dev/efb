@@ -6,24 +6,48 @@ import hashlib
 import io
 import secrets
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as DbSession
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, require_roles
 from app.core.errors import ConflictError, NotFoundError, StorageError
 from app.db.session import get_db
+from app.models.enums import UserRole
 from app.models.user import User
 from app.repositories import user_repo
 from app.schemas.auth import ErrorResponse
-from app.schemas.user import UserMeResponse, UserProfileUpdateRequest
+from app.schemas.user import (
+    UserDeleteResponse,
+    UserListItemResponse,
+    UserMeResponse,
+    UserProfileUpdateRequest,
+)
 from app.services import audit_service
 from app.services.attachment_crypto import decrypt_profile_picture, encrypt_profile_picture
 from app.services.profile_picture_service import read_and_validate_profile_picture
 from app.services.storage import get_profile_picture_storage
 
 router = APIRouter(prefix="/users", tags=["users"])
+_ADMIN = require_roles(UserRole.admin)
+
+
+@router.get(
+    "",
+    response_model=list[UserListItemResponse],
+    responses={401: {"model": ErrorResponse}, 403: {"model": ErrorResponse}},
+    summary="List users in the current admin's organization",
+)
+def list_users(
+    current_user: User = Depends(_ADMIN),
+    db: DbSession = Depends(get_db),
+):
+    """Return active users for the current admin's organization."""
+    return [
+        UserListItemResponse.model_validate(user)
+        for user in user_repo.list_by_org(db, org_id=current_user.org_id)
+    ]
 
 
 @router.get(
@@ -191,6 +215,46 @@ def download_profile_picture(
 ):
     """Download another same-organization user's decrypted profile picture."""
     return _download_profile_picture(user_id, current_user=current_user, db=db)
+
+
+@router.delete(
+    "/{user_id}",
+    response_model=UserDeleteResponse,
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+    },
+    summary="Delete a user in the current admin's organization",
+)
+def delete_user(
+    user_id: int,
+    request: Request,
+    current_user: User = Depends(_ADMIN),
+    db: DbSession = Depends(get_db),
+):
+    """Soft-delete one same-organization user."""
+    if user_id == current_user.id:
+        raise ConflictError("Admins cannot delete their own account")
+
+    target_user = user_repo.get_by_id(db, user_id)
+    if target_user is None or target_user.org_id != current_user.org_id:
+        raise NotFoundError("User not found")
+
+    user_repo.soft_delete(db, target_user)
+    audit_service.record(
+        db,
+        action="user.delete",
+        target_type="user",
+        target_id=target_user.id,
+        user_id=current_user.id,
+        org_id=current_user.org_id,
+        ip=request.client.host if request.client else None,
+        metadata={"email": target_user.email, "role": target_user.role.value},
+    )
+    db.commit()
+    return UserDeleteResponse()
 
 
 def _download_profile_picture(
