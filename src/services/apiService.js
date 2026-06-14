@@ -214,3 +214,7 @@ export const markAllManualUpdatesRead = async () => {
   const response = await apiClient.post(`/manual-updates/read-all`);
   return response.data;
 };
+export const getAllUsers = async () => {
+  const response = await apiClient.get(`/users`);
+  return response.data;
+};
