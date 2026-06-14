@@ -649,6 +649,7 @@ Response shape:
     "employee_no": "3",
     "position": "P2",
     "aircraft_type": "A310",
+    "license_expires_at": "2027-06-07T00:00:00+00:00",
     "profile_picture_id": 10,
     "profile_picture_url": "/api/v1/users/3/profile-picture",
     "created_at": "2026-06-07T00:00:00+00:00",

@@ -126,6 +126,7 @@ class TestAdminUserManagement:
         assert resp.status_code == 200, resp.text
         body = resp.json()
         assert any(user["email"] == SEED_EMAIL for user in body)
+        assert "license_expires_at" in body[0]
         assert "password_hash" not in body[0]
 
     def test_pilot_cannot_list_users(self, client: TestClient):
