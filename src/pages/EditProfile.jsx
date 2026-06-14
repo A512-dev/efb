@@ -176,8 +176,8 @@ if (!user) {
   onChange={(e) => setAircraftType(e.target.value)}
 >
   <option value="">Select Aircraft</option>
-  <option value="A300_600">A300-600</option>
-  <option value="A310">A310</option>
+  <option value="A300_600">A300-600/310</option>
+  <option value="A310">A320</option>
 </select>
 
           </div>

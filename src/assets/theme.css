@@ -568,7 +568,7 @@ h5 {
   border-bottom: 1px solid var(--borderBottom);
   width: auto;
   cursor: pointer;
-  text-wrap: nowrap;
+  text-wrap: auto;
   border-bottom-left-radius: 6px;
   border-top-left-radius: 6px;
   transition:
@@ -600,6 +600,77 @@ h5 {
   display: inline-flex;
   gap: 50%;
   height: 200px;
+}
+.dashboard-panel {
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  width: 100%;
+  box-shadow: var(--boxshadow_3d);
+  overflow: hidden;
+  margin-left: 100px;
+  box-sizing: border-box;
+  position: fixed;
+  right: 12%;
+
+  width: 63%;
+  background: var(--card);
+
+  border-radius: 0.375rem;
+}
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.dashboard-card {
+  background: var(--bg_input);
+
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: var(--boxshadow_3d);
+}
+
+.dashboard-card span {
+  display: block;
+  font-size: 17px;
+}
+
+.dashboard-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 28px;
+}
+.dashboard-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 16px;
+  margin-left: 200px;
+}
+
+.dashboard-filters input,
+.dashboard-filters select {
+  width: 100%;
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  background: var(--bg_input);
+  color: var(--text);
+  padding: 10px 12px;
+  font: inherit;
+}
+.dashboard-filters select {
+  margin-left: -90px;
+}
+.signupContainer {
+  box-sizing: border-box;
+  position: fixed;
+  right: 12%;
+  margin-top: 25px;
+  width: 63%;
+  background: var(--card);
+  padding: 25px;
+  border-radius: 0.375rem;
+  box-shadow: var(--boxshadow_3d);
 }
 .manualsContainerLeft {
   box-sizing: border-box;
@@ -661,6 +732,20 @@ h5 {
   justify-content: center;
 }
 
+.toggle-password {
+  position: absolute;
+  margin-top: -47px;
+  margin-left: 470px;
+  background: none !important;
+  border: none;
+  cursor: pointer;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  z-index: 1000;
+  border-left: 1px solid #000;
+}
+
 .card-header1 {
   left: 0;
   border-top-left-radius: 8px;
@@ -668,6 +753,8 @@ h5 {
 .card-header2 {
   right: 0;
   border-top-right-radius: 8px;
+  background-color: var(--firoozepor);
+  color: white;
 }
 
 .card-header1.active,

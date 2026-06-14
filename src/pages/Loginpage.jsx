@@ -58,7 +58,7 @@ import { useAuth } from "../auth/useAuth";
 import { useNavigate } from "react-router-dom"; 
 import ThemeToggle from "../components/ThemeToggle";
 import loginLogo from '../assets/icons/Skytech-logo-transparent (1).png';
-
+import { Eye, EyeOff } from "lucide-react";
 
 import loginImg from "../assets/icons/bgEFB..webp";
 
@@ -71,7 +71,7 @@ const Loginpage = () => {
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
+const [showPassword, setShowPassword] = useState(false);
   
   const [error, setError] = useState("");
   
@@ -124,7 +124,7 @@ const Loginpage = () => {
 
           
           
-          <input
+          {/* <input
             id="passwordInput"
             type="password"
             className="loginInput"
@@ -136,8 +136,28 @@ const Loginpage = () => {
             }}
             disabled={isLoading}
             required
-          />
-
+          /> */}
+<input
+id="passwordInput"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              value={password}
+              onChange={(e) => {
+              setPassword(e.target.value);
+              setError(""); 
+            }}
+            disabled={isLoading}
+            required
+              className={`loginInput errors.password ? "error-input" : ""`}
+            />
+            <button
+              type="button"
+              className="toggle-password"
+              onClick={() => setShowPassword((prev) => !prev)}
+            >
+              {showPassword ? <EyeOff style={{paddingLeft:'5px'}} size={20} color="#000"/> : <Eye style={{paddingLeft:'5px'}} size={20} color="#000"/>}
+            </button>
           
           {error && <p className="loginError">{error}</p>}
 

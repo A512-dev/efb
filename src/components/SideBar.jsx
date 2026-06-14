@@ -336,10 +336,11 @@ import chatboxicon from "../assets/icons/download.svg";
 import settingIcon from "../assets/icons/settings.svg";
 import riskicon from "../assets/icons/risk-icon.svg";
 import iranAirLogo from '../assets/icons/iranair-logo (1).png'
-
+import folderIcon from '../assets/icons/folder-Core.svg'
 
 import { listMessages } from "../services/apiService";
-
+import FlightFolder from "../pages/FlightFolder";
+import { span } from "framer-motion/client";
 const SideBar = () => {
   const { user } = useAuth();
 
@@ -392,10 +393,16 @@ const SideBar = () => {
 
       {canSeeChat && (
         <>
-          <NavLink className="nav-item" to="/dashboard/profile">
-            <img src={crewProfileSvg} alt="" className="navIcon" /> Profile
+          <NavLink className="nav-item" to={`${user.role==='pilot' ? "/dashboard/profile" : "/dashboard/CrewProfile"} `}>
+            <img src={crewProfileSvg} alt="" className="navIcon" /> {user.role==='admin' && <span> Crew </span>} Profile
           </NavLink>
+        <NavLink className="nav-item" to="/dashboard/flightFolder">
 
+            <img src={folderIcon} alt="" className="navIcon chatboxicon" style={{width:'22px'}}/> Flight Folders
+
+            
+
+          </NavLink>
           <NavLink to="/dashboard/manuals" className="nav-item">
             <img src={documentSvg} alt="" className="navIcon" /> Documents
           </NavLink>
@@ -423,17 +430,18 @@ const SideBar = () => {
             )}
 
           </NavLink>
+          
         </>
       )}
 
       {user.role === "admin" && (
         <>
           <NavLink to="/dashboard/manuals-admin" className="nav-item">
-            <img src={manualsAdminSvg} alt="" className="navIcon" /> Manage
+            <img src={manualsAdminSvg} alt="" className="navIcon" /> Manage Documents
           </NavLink>
 
           <NavLink to="/dashboard/add-profile" className="nav-item">
-            <img src={addPilotSvg} alt="" className="navIcon" /> Add Pilot
+            <img src={addPilotSvg} alt="" className="navIcon" /> Manage Crew
           </NavLink>
         </>
       )}

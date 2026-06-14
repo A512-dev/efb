@@ -460,6 +460,7 @@ const ManualsAdmin = () => {
   return (
     <PageWrapper>
       <div className="manualsAdminContainer">
+        
         <form onSubmit={handleSubmit} className="manualUploadForm">
           <input
             type="text"
