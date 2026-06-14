@@ -115,3 +115,67 @@ class TestUserProfileUpdate:
         )
 
         assert resp.status_code == 415
+
+
+class TestAdminUserManagement:
+    def test_admin_can_list_users(self, client: TestClient):
+        admin_token = _login(client, SEED_EMAIL, SEED_PASSWORD)
+
+        resp = client.get("/api/v1/users", headers=_auth_header(admin_token))
+
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert any(user["email"] == SEED_EMAIL for user in body)
+        assert "password_hash" not in body[0]
+
+    def test_pilot_cannot_list_users(self, client: TestClient):
+        pilot_token = _login(client, PILOT_EMAIL, PILOT_PASSWORD)
+
+        resp = client.get("/api/v1/users", headers=_auth_header(pilot_token))
+
+        assert resp.status_code == 403
+
+    def test_admin_can_delete_user(self, client: TestClient):
+        admin_token = _login(client, SEED_EMAIL, SEED_PASSWORD)
+        password = "SkyDeck@2026!"
+        email = f"delete-{uuid4().hex[:12]}@example.com"
+
+        signup_resp = client.post(
+            "/api/v1/auth/signup",
+            json={"name": "Delete Me", "email": email, "password": password},
+        )
+        assert signup_resp.status_code == 201, signup_resp.text
+        user_id = signup_resp.json()["user_id"]
+
+        delete_resp = client.delete(
+            f"/api/v1/users/{user_id}",
+            headers=_auth_header(admin_token),
+        )
+
+        assert delete_resp.status_code == 200, delete_resp.text
+        assert delete_resp.json()["message"] == "User deleted successfully"
+
+        list_resp = client.get("/api/v1/users", headers=_auth_header(admin_token))
+        assert list_resp.status_code == 200, list_resp.text
+        assert all(user["id"] != user_id for user in list_resp.json())
+
+        login_resp = client.post(
+            "/api/v1/auth/login",
+            json={"email": email, "password": password},
+        )
+        assert login_resp.status_code == 401
+
+    def test_admin_cannot_delete_self(self, client: TestClient):
+        admin_token = _login(client, SEED_EMAIL, SEED_PASSWORD)
+        admin = _me(client, admin_token)
+
+        resp = client.delete(
+            f"/api/v1/users/{admin['id']}",
+            headers=_auth_header(admin_token),
+        )
+
+        assert resp.status_code == 409
+        assert resp.json() == {
+            "error": "Admins cannot delete their own account",
+            "code": 409,
+        }
