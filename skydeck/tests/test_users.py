@@ -143,6 +143,7 @@ class TestAdminUserManagement:
         signup_resp = client.post(
             "/api/v1/auth/signup",
             json={"name": "Delete Me", "email": email, "password": password},
+            headers=_auth_header(admin_token),
         )
         assert signup_resp.status_code == 201, signup_resp.text
         user_id = signup_resp.json()["user_id"]
