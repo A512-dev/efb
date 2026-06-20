@@ -1576,6 +1576,7 @@ import {
   downloadMessageAttachment,
   markMessageAsRead,
   getCurrentUser,
+  getAllUsers
 } from "../services/apiService";
 
 import refreshIcon from "../assets/icons/icons8-refresh-500.svg";
@@ -1590,6 +1591,11 @@ const IranAirChat = () => {
   const [messages, setMessages] = useState([]);
   const [subject, setSubject] = useState("");
   const [replyTo, setReplyTo] = useState(null);
+const [users, setUsers] = useState([]);
+const [showRecipientMenu, setShowRecipientMenu] = useState(false);
+const [fleetFilter, setFleetFilter] = useState("all");
+const [positionFilter, setPositionFilter] = useState("all");
+const [selectedRecipients, setSelectedRecipients] = useState([]);
 
 const fileInputRef = useRef(null);
 
@@ -1674,8 +1680,11 @@ console.log("ITEMS:", items);
     }
 
     if (senderId) {
-      setRecipientIds(String(senderId));
-    }
+  setRecipientIds(String(senderId));
+  setSelectedRecipients([senderId]);
+  setShowRecipientMenu(true);
+}
+
 
     setReplyTo(msg);
 
@@ -1745,7 +1754,14 @@ if (selectedFiles.length > 0) {
 setSelectedFiles([]);
 
       setSubject("");
-      if (isAdmin) setRecipientIds("");
+      if (isAdmin) {
+  setRecipientIds("");
+  setSelectedRecipients([]);
+  setFleetFilter("all");
+  setPositionFilter("all");
+  setShowRecipientMenu(false);
+}
+
       setReplyTo(null);
 
       setActiveTab("messages");
@@ -1781,6 +1797,57 @@ setSelectedFiles([]);
       );
     }
   };
+
+  const aircraftLabels = {
+  A300_600: "A300-600 / A310",
+  A320: "A320",
+  A330: "A330",
+  F100: "F100",
+  ATR: "ATR72-600",
+};
+
+const loadUsers = async () => {
+  try {
+    const data = await getAllUsers();
+    const items = Array.isArray(data) ? data : data?.items || data?.results || [];
+    setUsers(items);
+  } catch (error) {
+    console.error("Failed to load users:", error);
+  }
+};
+useEffect(() => {
+  if (isAdmin) {
+    loadUsers();
+  }
+}, [isAdmin]);
+
+const filteredRecipients = useMemo(() => {
+  return users.filter((user) => {
+    const userId = user.id;
+
+    if (!userId) return false;
+    if (currentUser && userId === currentUser.id) return false;
+
+    const fleetMatch =
+      fleetFilter === "all" ? true : user.aircraft_type === fleetFilter;
+
+    const positionMatch =
+      positionFilter === "all" ? true : user.position === positionFilter;
+
+    return fleetMatch && positionMatch;
+  });
+}, [users, fleetFilter, positionFilter, currentUser]);
+
+const toggleRecipient = (userId) => {
+  setSelectedRecipients((prev) =>
+    prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+  );
+};
+useEffect(() => {
+  if (isAdmin) {
+    setRecipientIds(selectedRecipients.join(","));
+  }
+}, [selectedRecipients, isAdmin]);
 
   return (
 
@@ -1890,22 +1957,85 @@ style={{width:'30px' , cursor:'pointer',position:'absolute',right:'30px',marginT
 
 
             {isAdmin && (
-              <div className="chat-recipient-box">
-                <label className="chat-recipient-label">
-                  Recipient IDs (comma-separated)
+  <div className="chat-recipient-box">
+    <div className="chat-recipient-header">
+      <label className="chat-recipient-label">Recipients</label>
+
+      <button
+        type="button"
+        className="chat-recipient-toggle"
+        onClick={() => setShowRecipientMenu((prev) => !prev)}
+      >
+        {showRecipientMenu ? "Hide Recipient Selector" : "Choose Recipients"}
+      </button>
+    </div>
+
+    {showRecipientMenu && (
+      <>
+        <div className="chat-recipient-filters">
+          <select
+            value={fleetFilter}
+            onChange={(e) => {
+              setFleetFilter(e.target.value);
+              setPositionFilter("all");
+            }}
+            className="chat-recipient-select"
+          >
+            <option value="all">All Fleets</option>
+            <option value="A300_600">A300-600 / A310</option>
+            <option value="A320">A320</option>
+            <option value="A330">A330</option>
+            <option value="F100">F100</option>
+            <option value="ATR">ATR72-600</option>
+          </select>
+
+          <select
+            value={positionFilter}
+            onChange={(e) => setPositionFilter(e.target.value)}
+            className="chat-recipient-select"
+          >
+            <option value="all">All Positions</option>
+            <option value="P1">P1</option>
+            <option value="P2">P2</option>
+          </select>
+        </div>
+
+        <div className="chat-recipient-list">
+          {filteredRecipients.length > 0 ? (
+            filteredRecipients.map((user) => {
+              const userId = user.id || user.user_id;
+              const checked = selectedRecipients.includes(userId);
+
+              return (
+                <label key={userId} className="chat-recipient-item">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleRecipient(userId)}
+                  />
+                  <span>
+                    {user.email} —{" "}
+                    {aircraftLabels[user.aircraft_type] || user.aircraft_type || "-"} —{" "}
+                    {user.position || "-"}
+                  </span>
                 </label>
-                <input
-                  type="text"
-                  value={recipientIds}
-                  onChange={(e) => setRecipientIds(e.target.value)}
-                  placeholder="e.g. 12, 18, 24"
-                  className="chat-recipient-input"
-                />
-                <small className="chat-recipient-help">
-                  Required for admin users.
-                </small>
-              </div>
-            )}
+              );
+            })
+          ) : (
+            <small className="chat-recipient-help">
+              No users found for selected filters.
+            </small>
+          )}
+        </div>
+      </>
+    )}
+
+    <small className="chat-recipient-help">
+      Selected IDs: {recipientIds || "None"}
+    </small>
+  </div>
+)}
+
 
             <button
               type="submit"
