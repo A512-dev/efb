@@ -23,6 +23,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from skydeck.app.models.manual_reads import ManualReads
 
 if TYPE_CHECKING:
     from app.models.manual_access_log import ManualAccessLog
@@ -79,6 +80,9 @@ class Manual(Base):
     category: Mapped[ManualCategory] = relationship(back_populates="manuals")
     uploaded_by_user: Mapped[Optional[User]] = relationship(back_populates="uploaded_manuals")
     access_logs: Mapped[list[ManualAccessLog]] = relationship(back_populates="manual")
+    reads: Mapped[list[ManualReads]] = relationship(back_populates="manual")
+
+
 
 
 @event.listens_for(Manual, "before_insert")

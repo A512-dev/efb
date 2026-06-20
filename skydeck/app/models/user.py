@@ -11,6 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.db.types import CIText
 from app.models.enums import UserRole
+from skydeck.app.models.manual_reads import ManualReads
 
 if TYPE_CHECKING:
     from app.models.manual import Manual
@@ -55,7 +56,7 @@ class User(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), onupdate=func.now(), nullable=True
     )
-    # Users are soft-deleted so old sessions and audit rows can still reference them.
+    # Users are soft-deleted so old sessions, submissions, and audit rows can still reference them.
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # ── relationships ──────────────────────────────────────
@@ -64,10 +65,14 @@ class User(Base):
         back_populates="user", cascade="all, delete-orphan"
     )
     uploaded_manuals: Mapped[list[Manual]] = relationship(back_populates="uploaded_by_user")
+    submissions: Mapped[str] = mapped_column(Text, nullable=False)
     profile_picture: Mapped[Optional[UserProfilePicture]] = relationship(
         "UserProfilePicture",
         foreign_keys=[profile_picture_id],
     )
+
+
+    manual_reads: Mapped[list[ManualReads]] = relationship(back_populates="user")
 
     @property
     def profile_picture_url(self) -> Optional[str]:
