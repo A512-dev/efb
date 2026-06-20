@@ -62,8 +62,6 @@ import { Eye, EyeOff } from "lucide-react";
 
 import loginImg from "../assets/icons/bgEFB..webp";
 
-
-
 const Loginpage = () => {
   const { login } = useAuth(); 
   const navigate = useNavigate();

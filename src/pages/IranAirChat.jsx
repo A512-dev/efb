@@ -928,9 +928,14 @@
 
 // export default IranAirChat;
 
+<<<<<<< HEAD
+// import React, { useEffect, useMemo, useState } from "react";
+
+=======
 
 // import React, { useEffect, useMemo, useState } from "react";
 
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
 // import {
 //   listMessages,
 //   sendMessage,
@@ -1581,6 +1586,8 @@ import {
 
 import refreshIcon from "../assets/icons/icons8-refresh-500.svg";
 import riskicon from "../assets/icons/risk-icon.svg";
+<<<<<<< HEAD
+=======
 import PageWrapper from "../components/PageWrapper";
 import attachmentIcon from '../assets/icons/attachment.svg'
 const IranAirChat = () => {
@@ -1599,6 +1606,7 @@ const [selectedRecipients, setSelectedRecipients] = useState([]);
 
 const fileInputRef = useRef(null);
 
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState("");
@@ -1606,10 +1614,15 @@ const fileInputRef = useRef(null);
   const [recipientIds, setRecipientIds] = useState("");
 const [selectedFiles, setSelectedFiles] = useState([]);
 
+<<<<<<< HEAD
+  const formRef = useRef(null);
+
+=======
 
   const formRef = useRef(null);
 
 
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
   const role = currentUser?.role;
   const isAdmin = useMemo(() => role === "admin", [role]);
 
@@ -1663,7 +1676,10 @@ console.log("ITEMS:", items);
   }, []);
 
   useEffect(() => {
+<<<<<<< HEAD
+=======
 
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
     if (activeTab === "messages") {
       fetchMessages();
     }
@@ -1699,7 +1715,10 @@ console.log("ITEMS:", items);
   const clearReply = () => {
     setReplyTo(null);
   };
+<<<<<<< HEAD
+=======
 
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1717,13 +1736,21 @@ console.log("ITEMS:", items);
 
     try {
       const payload = {
+<<<<<<< HEAD
+=======
 
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
         subject: subject.trim(),
         body: trimmedMessage,
       };
 
+<<<<<<< HEAD
+      // اگر بک‌اند پشتیبانی کرد:
+      // if (replyTo?.id) payload.reply_to_message_id = replyTo.id;
+=======
       
 
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
 
       if (isAdmin) {
         const ids = recipientIds
@@ -1733,9 +1760,13 @@ console.log("ITEMS:", items);
 
         if (!ids.length) {
           setStatus("For admin users, at least one recipient_id is required.");
+<<<<<<< HEAD
+          setSending(false);
+=======
 
           setSending(false);
 
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
           return;
         }
 
@@ -1753,6 +1784,7 @@ if (selectedFiles.length > 0) {
       setMessageText("");
 setSelectedFiles([]);
 
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
       setSubject("");
       if (isAdmin) {
   setRecipientIds("");
@@ -1867,9 +1899,13 @@ useEffect(() => {
           onClick={() => setActiveTab("submit")}
         >
           Submit
+<<<<<<< HEAD
+        </button>
+=======
 
         </button>
 
+>>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
 
         <button
           type="button"
