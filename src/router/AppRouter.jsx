@@ -75,19 +75,6 @@ export default function AppRouter() {
             >
             <Route index element={<Clipboard/>} />
             </Route>
-<<<<<<< HEAD
-            <Route path="A300_600" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
-            >
-            <Route index element={<A300_600/>} />
-            </Route>
-            <Route path="aircraftdocuments" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
-            >
-            <Route index element={<AircraftDocuments/>} />
-            </Route>
-=======
-            
-            
->>>>>>> 4a48c8ffb9676ba640969bb14afd172c1cec28df
             <Route path="Chat" element={<RequireAuth allowedRoles={["pilot", "viewer", "admin"]} />}
             >
             <Route index element={<IranAirChat/>} />

@@ -1436,12 +1436,12 @@ h5 {
   body {
     height: auto;
   }
-  /* .changethemebutton {
+  .changethemebutton {
     /* right: 20px;
     left: auto;
     top: 20px;
     bottom: auto; */
-  } */
+  }
   .logOutButton {
     left: 20px;
     right: auto;
@@ -1474,6 +1474,7 @@ h5 {
     width: 60%;
     margin-right: 0;
   }
+}
 
 @media (max-width: 900px) {
   .imgLogin {
