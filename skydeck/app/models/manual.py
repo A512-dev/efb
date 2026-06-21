@@ -27,6 +27,7 @@ from app.db.base import Base
 if TYPE_CHECKING:
     from app.models.manual_access_log import ManualAccessLog
     from app.models.manual_category import ManualCategory
+    from app.models.manual_reads import ManualRead
     from app.models.org import Org
     from app.models.user import User
 
@@ -79,6 +80,7 @@ class Manual(Base):
     category: Mapped[ManualCategory] = relationship(back_populates="manuals")
     uploaded_by_user: Mapped[Optional[User]] = relationship(back_populates="uploaded_manuals")
     access_logs: Mapped[list[ManualAccessLog]] = relationship(back_populates="manual")
+    reads: Mapped[list[ManualRead]] = relationship(back_populates="manual")
 
 
 @event.listens_for(Manual, "before_insert")

@@ -14,6 +14,7 @@ from app.models.enums import UserRole
 
 if TYPE_CHECKING:
     from app.models.manual import Manual
+    from app.models.manual_reads import ManualRead
     from app.models.org import Org
     from app.models.session import Session
     from app.models.user_profile_picture import UserProfilePicture
@@ -64,6 +65,7 @@ class User(Base):
         back_populates="user", cascade="all, delete-orphan"
     )
     uploaded_manuals: Mapped[list[Manual]] = relationship(back_populates="uploaded_by_user")
+    manual_reads: Mapped[list[ManualRead]] = relationship(back_populates="user")
     profile_picture: Mapped[Optional[UserProfilePicture]] = relationship(
         "UserProfilePicture",
         foreign_keys=[profile_picture_id],

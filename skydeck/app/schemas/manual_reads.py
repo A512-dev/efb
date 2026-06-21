@@ -1,13 +1,18 @@
-#Recommended functions:
+"""Pydantic schemas for manual read tracking."""
 
-# mark_read(db, user, manual)
-# list_for_user(db, user)
-# get_read_manual_ids_for_user(db, user)
+from datetime import datetime
 
-# The mark_read logic should be idempotent:
+from pydantic import BaseModel
 
-# If row does not exist:
-#     create row with read_count = 1
-# If row exists:
-#     update last_read_at
-#     increment read_count
+
+class ManualReadOut(BaseModel):
+    id: int
+    org_id: int
+    user_id: int
+    manual_id: int
+    read_at: datetime
+    last_read_at: datetime
+    read_count: int
+    created_at: datetime
+    user_name: str
+    manual_title: str

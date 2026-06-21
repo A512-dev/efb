@@ -25,7 +25,12 @@ from app.models.enums import ManualAction, UserRole
 from app.models.manual import Manual
 from app.models.manual_category import ManualCategory
 from app.models.user import User
-from app.repositories import manual_category_repo, manual_repo, manual_update_event_repo
+from app.repositories import (
+    manual_category_repo,
+    manual_reads_repo,
+    manual_repo,
+    manual_update_event_repo,
+)
 from app.schemas.auth import ErrorResponse
 from app.schemas.manual import ManualDeleteOut, ManualOut, ManualUpdateOut, ManualUploadOut
 from app.schemas.manual_category import ManualCategoryPathItem
@@ -568,6 +573,12 @@ def download_manual(
         ip=client_ip,
     )
     manual_repo.touch_last_accessed(db, manual)
+    manual_reads_repo.mark_read(
+        db,
+        org_id=current_user.org_id,
+        user_id=current_user.id,
+        manual_id=manual.id,
+    )
     audit_service.record(
         db,
         action="manual.download",
