@@ -1,4 +1,9 @@
-"""User profile routes."""
+"""User profile, encrypted picture, and administrator user-management routes.
+
+Ordinary users can read/update their own profile and view pictures belonging to
+same-organization users. Administrators additionally list and soft-delete
+accounts. Passwords, roles, and tenant ownership are not editable here.
+"""
 
 from __future__ import annotations
 
@@ -43,7 +48,7 @@ def list_users(
     current_user: User = Depends(_ADMIN),
     db: DbSession = Depends(get_db),
 ):
-    """Return active users for the current admin's organization."""
+    """Return only active users inside the authenticated admin's tenant."""
     return [
         UserListItemResponse.model_validate(user)
         for user in user_repo.list_by_org(db, org_id=current_user.org_id)
@@ -57,7 +62,7 @@ def list_users(
     summary="Current authenticated user profile",
 )
 def me(current_user: User = Depends(get_current_user)):
-    """Return the authenticated user's profile payload."""
+    """Serialize the already-authenticated ORM user into the safe public shape."""
     return UserMeResponse.model_validate(current_user)
 
 
@@ -75,7 +80,12 @@ def update_my_profile(
     current_user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ):
-    """Update editable profile fields without touching profile-picture storage."""
+    """Apply only supplied editable fields and audit actual changes.
+
+    Pydantic has already normalized text/date inputs. The explicit employee
+    number lookup gives a friendly conflict, while the database constraint and
+    ``IntegrityError`` handler close the race between concurrent updates.
+    """
     updates = body.model_dump(exclude_unset=True)
 
     if "employee_no" in updates:
@@ -88,6 +98,8 @@ def update_my_profile(
         if existing_user is not None:
             raise ConflictError("Employee ID is taken.")
 
+    # Avoid an empty commit/audit event when the submitted values equal current
+    # values.
     changed_fields = []
     for field, value in updates.items():
         if getattr(current_user, field) != value:
@@ -129,7 +141,12 @@ def upload_my_profile_picture(
     current_user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ):
-    """Validate, encrypt, and store the current user's profile picture."""
+    """Atomically replace the current picture metadata with encrypted storage.
+
+    The new ciphertext is saved first. If SQL work fails it is deleted; after a
+    successful commit the old ciphertext is removed. This ordering ensures the
+    committed profile never points at a file deleted too early.
+    """
     picture = read_and_validate_profile_picture(file)
     encrypted = encrypt_profile_picture(picture.contents)
     storage = get_profile_picture_storage()
@@ -143,6 +160,7 @@ def upload_my_profile_picture(
         else None
     )
 
+    # Track external side effects for compensation if the DB transaction fails.
     saved_path: str | None = None
     old_storage_path = old_picture.storage_path if old_picture is not None else None
     try:
@@ -183,6 +201,7 @@ def upload_my_profile_picture(
             storage.delete(saved_path)
         raise
 
+    # Old bytes are no longer referenced after commit, so cleanup is now safe.
     if old_storage_path is not None:
         storage.delete(old_storage_path)
 
@@ -234,7 +253,7 @@ def delete_user(
     current_user: User = Depends(_ADMIN),
     db: DbSession = Depends(get_db),
 ):
-    """Soft-delete one same-organization user."""
+    """Soft-delete a same-tenant user while preventing admin self-deletion."""
     if user_id == current_user.id:
         raise ConflictError("Admins cannot delete their own account")
 
@@ -263,7 +282,12 @@ def _download_profile_picture(
     current_user: User,
     db: DbSession,
 ) -> StreamingResponse:
-    """Fetch, decrypt, integrity-check, audit, and stream one profile picture."""
+    """Authorize, decrypt, verify, audit, and stream one profile picture.
+
+    The target user lookup enforces tenant visibility before picture metadata or
+    storage existence is revealed. ``inline`` disposition lets browsers render
+    the image while still supplying its original filename.
+    """
     target_user = user_repo.get_by_id(db, user_id)
     if target_user is None or target_user.org_id != current_user.org_id:
         raise NotFoundError("User not found")
@@ -282,6 +306,8 @@ def _download_profile_picture(
     if not storage.exists(picture.storage_path):
         raise NotFoundError("Profile picture file missing from storage")
 
+    # Plaintext is produced only in memory after both user and storage
+    # authorization checks succeed.
     plaintext = decrypt_profile_picture(
         ciphertext=storage.read(picture.storage_path),
         encrypted_key=picture.encrypted_key,

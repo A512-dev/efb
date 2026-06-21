@@ -1,4 +1,9 @@
-"""Manual update feed routes."""
+"""User-specific HTTP view of organization-wide manual update events.
+
+Upload/update/delete actions create shared feed rows in ``manuals.py``. These
+routes combine those rows with the current user's independent read markers and
+provide idempotent single/all read operations.
+"""
 
 from __future__ import annotations
 
@@ -68,7 +73,7 @@ def list_manual_updates(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
-    """Return update-feed entries scoped to the current user's organization."""
+    """Return a page of tenant events annotated with the caller's read state."""
     if page < 1:
         page = 1
     if limit < 1 or limit > 100:
@@ -81,6 +86,7 @@ def list_manual_updates(
         offset=offset,
         limit=limit,
     )
+    # Fetch all read markers for this page in one query, then merge in memory.
     read_map = manual_update_event_repo.get_read_map(
         db,
         org_id=current_user.org_id,
@@ -107,7 +113,7 @@ def mark_manual_update_read(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
-    """Persist read state for one manual update feed item."""
+    """Idempotently persist read state and audit it for one visible event."""
     item = manual_update_event_repo.get_for_org(
         db,
         org_id=current_user.org_id,
@@ -147,7 +153,7 @@ def mark_all_manual_updates_read(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
-    """Persist read state for every current update feed item."""
+    """Create missing markers for every event currently in the tenant feed."""
     marked_count = manual_update_event_repo.mark_all_read(
         db,
         org_id=current_user.org_id,

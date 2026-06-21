@@ -1,4 +1,9 @@
-"""Manual category browsing routes."""
+"""Read-only HTTP endpoints for browsing manual category navigation.
+
+All roles may browse, but every query is scoped to ``current_user.org_id``.
+Helpers translate self-referential ORM objects into flat breadcrumbs or nested
+tree schemas suitable for frontend navigation.
+"""
 
 from __future__ import annotations
 
@@ -36,7 +41,7 @@ def _path_items(category: ManualCategory) -> list[ManualCategoryPathItem]:
 
 
 def _category_out(db: DbSession, category: ManualCategory) -> ManualCategoryOut:
-    """Build the public category response with path and has_children metadata."""
+    """Build a flat response with computed breadcrumb and child-presence data."""
     return ManualCategoryOut(
         id=category.id,
         org_id=category.org_id,
@@ -53,7 +58,11 @@ def _category_out(db: DbSession, category: ManualCategory) -> ManualCategoryOut:
 
 
 def _tree_node(category: ManualCategory) -> ManualCategoryTreeOut:
-    """Recursively convert an ORM category subtree into an API tree node."""
+    """Recursively convert a preloaded ORM subtree into a sorted API tree.
+
+    Inactive children are omitted even if they remain present in the loaded ORM
+    relationship for historical reasons.
+    """
     active_children = [child for child in category.children if child.is_active]
     active_children.sort(key=lambda item: (item.sort_order, item.name.lower()))
     return ManualCategoryTreeOut(
@@ -109,7 +118,11 @@ def list_category_children(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
-    """List active direct children after checking parent ownership."""
+    """List direct children after confirming the parent belongs to the tenant.
+
+    Returning 404 for absent and out-of-organization IDs avoids leaking the
+    existence of another tenant's category.
+    """
     parent = manual_category_repo.get_for_org(
         db,
         org_id=current_user.org_id,

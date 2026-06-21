@@ -1,4 +1,15 @@
-"""Internal user-to-user messaging routes."""
+"""Internal role-constrained messaging and encrypted attachment downloads.
+
+Messages are tenant-scoped and intentionally asymmetric:
+
+* pilots/chief pilots send to every administrator automatically;
+* administrators choose one or more pilot/chief-pilot recipients;
+* other roles cannot send with the current business rules.
+
+One logical send creates one ``Message`` row per recipient so read receipts are
+independent. Attachment bytes are validated, encrypted, and stored separately
+for every resulting message row.
+"""
 
 from __future__ import annotations
 
@@ -36,6 +47,8 @@ from app.services.storage import get_message_attachment_storage
 
 router = APIRouter(prefix="/messages", tags=["messages"])
 
+# Keeping these policy sets near the router makes current product rules visible
+# without burying them inside generic repository queries.
 _ADMIN_RECIPIENT_ROLES = {UserRole.admin}
 _ADMIN_SENDER_ROLES = {UserRole.admin}
 _PILOT_RECIPIENT_ROLES = {UserRole.pilot, UserRole.chief_pilot}
@@ -67,7 +80,12 @@ def _resolve_recipients(
     current_user: User,
     recipient_ids: list[int] | None,
 ) -> list[User]:
-    """Resolve recipient ids according to role-based messaging rules."""
+    """Resolve recipients and enforce sender-role/tenant policy.
+
+    Explicit IDs are never trusted directly: repository resolution constrains
+    them to active users in the sender's organization, and missing IDs produce
+    a not-found error before any message rows are created.
+    """
     normalised_ids = _normalise_recipient_ids(recipient_ids)
 
     if current_user.role in {UserRole.pilot, UserRole.chief_pilot}:
@@ -104,7 +122,7 @@ def _create_message_rows(
     subject: str | None,
     body: str,
 ) -> list[Message]:
-    """Create one message row per resolved recipient."""
+    """Create one recipient-specific message row for each resolved user."""
     return [
         message_repo.create(
             db,
@@ -119,7 +137,12 @@ def _create_message_rows(
 
 
 def _parse_recipient_ids_form(recipient_ids: str | None) -> list[int] | None:
-    """Parse multipart recipient ids from JSON array or comma-separated text."""
+    """Parse multipart recipient IDs from JSON array or comma-separated text.
+
+    Multipart form fields arrive as strings, unlike the typed JSON endpoint.
+    Supporting both formats keeps browser/form clients simple while converging
+    on the same list-of-integers policy.
+    """
     if recipient_ids is None or not recipient_ids.strip():
         return None
 
@@ -150,9 +173,15 @@ def _store_attachments_for_message(
     attachments: list[ValidatedAttachment],
     saved_paths: list[str],
 ) -> None:
-    """Encrypt, store, and persist metadata for each attachment on one message."""
+    """Encrypt/store attachments and add their metadata to one message.
+
+    ``saved_paths`` is an external-operation undo log. If a later database or
+    storage step fails, the caller deletes every path accumulated so far.
+    """
     storage = get_message_attachment_storage()
     for attachment in attachments:
+        # A fresh data key and random storage key are generated per
+        # message/attachment copy.
         encrypted = encrypt_attachment(attachment.contents)
         relative_path = f"{message.id}/{secrets.token_hex(8)}_{attachment.filename}.enc"
         storage_path = storage.save(relative_path, encrypted.ciphertext)
@@ -205,7 +234,7 @@ def send_message(
     current_user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ):
-    """Send a message.
+    """Send a text-only message and audit all recipient-specific rows.
 
     Rules:
       - pilot/chief_pilot users send to all admins in their organisation.
@@ -261,7 +290,11 @@ def send_message_with_attachments(
     current_user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ):
-    """Send a message and store any attachments encrypted at rest."""
+    """Send a message and store validated attachments encrypted at rest.
+
+    PostgreSQL rollback cannot remove files already written to disk, so the
+    exception path rolls back SQL and walks ``saved_paths`` to compensate.
+    """
     recipients = _resolve_recipients(
         db,
         current_user=current_user,
@@ -301,6 +334,8 @@ def send_message_with_attachments(
         )
         db.commit()
     except Exception:
+        # Compensating cleanup approximates an atomic transaction across the
+        # database and filesystem.
         db.rollback()
         for path in saved_paths:
             storage.delete(path)
@@ -324,7 +359,7 @@ def list_messages(
     current_user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ):
-    """List the current user's inbox, sent messages, or combined mailbox."""
+    """List one mailbox view with bounded page-number pagination."""
     if page < 1:
         page = 1
     if limit < 1 or limit > 100:
@@ -384,7 +419,10 @@ def mark_message_read(
     current_user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ):
-    """Mark a message as read after confirming the caller is its recipient."""
+    """Set a first-read receipt after confirming the caller is the recipient.
+
+    Senders may view the row but cannot mark it read on behalf of its recipient.
+    """
     message = message_repo.get_visible_to_user(db, message_id=message_id, user=current_user)
     if message is None:
         raise NotFoundError("Message not found")
@@ -416,7 +454,11 @@ def download_message_attachment(
     current_user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ):
-    """Decrypt and stream an attachment after confirming message visibility."""
+    """Authorize, decrypt, integrity-check, audit, and stream an attachment.
+
+    Both sender and recipient can download because both can view the parent
+    message. Plaintext exists only in memory for the duration of this response.
+    """
     message = message_repo.get_visible_to_user(db, message_id=message_id, user=current_user)
     if message is None:
         raise NotFoundError("Message not found")
@@ -440,6 +482,8 @@ def download_message_attachment(
         key_nonce=attachment.key_nonce,
         content_nonce=attachment.content_nonce,
     )
+    # AES-GCM already authenticates ciphertext; the stored plaintext digest
+    # additionally verifies that database metadata matches the decrypted file.
     if attachment.sha256 != _sha256(plaintext):
         raise StorageError("Attachment integrity check failed")
 
@@ -463,6 +507,7 @@ def download_message_attachment(
 
 
 def _sha256(contents: bytes) -> str:
+    """Return a lowercase hexadecimal SHA-256 digest for integrity checks."""
     import hashlib
 
     return hashlib.sha256(contents).hexdigest()

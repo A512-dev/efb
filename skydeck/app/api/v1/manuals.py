@@ -1,4 +1,17 @@
-"""Manual Library endpoints with categories, upload/update/delete safety, and audit trail."""
+"""Manual-library HTTP workflows from upload through watermarked download.
+
+This module coordinates the backend's most cross-cutting feature:
+
+* role and tenant authorization;
+* PDF validation and filename normalization;
+* physical storage plus SQL metadata;
+* category and title business rules;
+* update-feed and audit records;
+* forensic watermarking and accumulated read state.
+
+Storage and PostgreSQL cannot share one atomic transaction, so mutation routes
+carefully order operations and clean up where possible when one side fails.
+"""
 
 from __future__ import annotations
 
@@ -42,6 +55,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/manuals", tags=["manuals"])
 
+# The magic-byte check catches obvious disguised uploads. Full readability is
+# checked later by pypdf when a PDF is watermarked for download.
 _PDF_MAGIC = b"%PDF-"
 _MAX_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
@@ -57,7 +72,11 @@ _ALL_ROLES = require_roles(
 
 
 def _read_and_validate_pdf(file: UploadFile) -> tuple[bytes, str, str]:
-    """Read an uploaded file once and validate it is a safe PDF payload."""
+    """Read one upload and return exact bytes, checksum, and safe filename.
+
+    Reading once ensures the checksum and stored object describe identical
+    bytes and avoids relying on the mutable stream position later.
+    """
     contents = file.file.read()
 
     if len(contents) > _MAX_BYTES:
@@ -69,6 +88,7 @@ def _read_and_validate_pdf(file: UploadFile) -> tuple[bytes, str, str]:
     if not contents[:5].startswith(_PDF_MAGIC):
         raise UnsupportedMediaError("File is not a valid PDF (magic bytes check failed)")
 
+    # The digest is used for audit/update metadata and content identification.
     sha256 = hashlib.sha256(contents).hexdigest()
     safe_name = secure_filename(file.filename or "manual.pdf")
     if not safe_name.lower().endswith(".pdf"):
@@ -84,7 +104,11 @@ def _ensure_unique_active_title(
     title: str,
     current_manual_id: Optional[int] = None,
 ) -> None:
-    """Prevent duplicate active manual titles inside a single organization."""
+    """Enforce case/whitespace-insensitive active-title uniqueness per tenant.
+
+    During updates ``current_manual_id`` permits a manual to keep its own title
+    while still rejecting a collision with another active row.
+    """
     existing = manual_repo.get_active_by_title(db, org_id=org_id, title=title)
     if existing and existing.id != current_manual_id:
         raise ConflictError("An active manual with this title already exists")
@@ -109,7 +133,11 @@ def _get_leaf_category_for_org(
     org_id: int,
     category_id: int,
 ) -> ManualCategory:
-    """Fetch a category that can actually contain manuals."""
+    """Fetch a tenant category and reject non-leaf navigation nodes.
+
+    Keeping manuals only at leaves makes breadcrumb and subtree filtering
+    predictable for clients.
+    """
     category = _get_category_for_org(db, org_id=org_id, category_id=category_id)
     if manual_category_repo.has_children(db, category_id=category.id):
         raise AppError("Manuals must be assigned to a final leaf category", code=400)
@@ -182,7 +210,11 @@ def _manual_update_out(manual: Manual) -> ManualUpdateOut:
 
 
 def _delete_physical_file_or_fail(storage_path: str) -> bool:
-    """Delete a manual file from storage and verify it disappeared."""
+    """Delete a stored PDF, verify deletion, and report whether it existed.
+
+    ``StorageProvider.delete`` is intentionally best-effort, so this helper adds
+    the stronger verification required by manual deletion semantics.
+    """
     storage = get_manual_storage()
     if not storage.exists(storage_path):
         return False
@@ -220,7 +252,14 @@ def upload_manual(
     current_user: User = Depends(_ADMIN),
     db: DbSession = Depends(get_db),
 ):
-    """Upload a new manual, store the file, and create audit/update feed rows."""
+    """Create one new manual across storage, metadata, feed, and audit systems.
+
+    Workflow order:
+    1. validate title/category/file before creating state;
+    2. flush a ``pending`` row to obtain its ID;
+    3. use that ID in a collision-resistant storage key;
+    4. add feed/audit rows and commit one SQL transaction.
+    """
     title = title.strip()
     if not title:
         raise AppError("Manual title is required", code=400)
@@ -236,6 +275,8 @@ def upload_manual(
     storage = get_manual_storage()
     client_ip = request.client.host if request and request.client else None
 
+    # The sentinel reveals interrupted uploads to cleanup tooling and avoids
+    # inventing a storage path before the database has allocated an ID.
     manual = manual_repo.create(
         db,
         org_id=current_user.org_id,
@@ -254,6 +295,7 @@ def upload_manual(
     try:
         disk_path = storage.save(relative_path, contents)
     except StorageError:
+        # The SQL row is still uncommitted and can be discarded cleanly.
         db.rollback()
         raise
 
@@ -290,6 +332,7 @@ def upload_manual(
         },
     )
 
+    # Commit manual metadata, update event, and audit row together.
     db.commit()
     manual = manual_repo.get_by_id(db, manual.id)
     return _manual_upload_out(manual)
@@ -322,7 +365,13 @@ def update_manual(
     current_user: User = Depends(_ADMIN),
     db: DbSession = Depends(get_db),
 ):
-    """Replace an existing manual's PDF and preserve the update trail."""
+    """Replace a manual's PDF while retaining version and audit history.
+
+    The new file is saved before the metadata row is changed, so a storage
+    failure leaves the old version untouched. Old-file deletion is best-effort
+    after the new file is usable; failure may leave an orphan but does not make
+    the current manual unavailable.
+    """
     manual = manual_repo.get_by_id(db, manual_id)
     if manual is None or manual.org_id != current_user.org_id:
         raise NotFoundError("Manual not found")
@@ -349,6 +398,8 @@ def update_manual(
     storage = get_manual_storage()
     client_ip = request.client.host if request and request.client else None
 
+    # Snapshot old values before mutation so the feed/audit event can describe
+    # the transition rather than only the resulting state.
     old_storage_path = manual.storage_path
     old_sha256 = manual.sha256
     old_version_number = manual.version_number
@@ -422,6 +473,7 @@ def update_manual(
         },
     )
 
+    # Database state now points at the already-saved new object.
     db.commit()
     manual = manual_repo.get_by_id(db, manual.id)
     return _manual_update_out(manual)
@@ -448,13 +500,19 @@ def delete_manual(
     current_user: User = Depends(_ADMIN),
     db: DbSession = Depends(get_db),
 ):
-    """Soft-delete the manual row and remove its physical file."""
+    """Remove physical bytes, then soft-delete metadata and append history.
+
+    Storage deletion is performed first and verified. If it fails, database
+    state remains active so clients are not told a manual was deleted while its
+    protected source file still exists.
+    """
     manual = manual_repo.get_by_id(db, manual_id)
     if manual is None or manual.org_id != current_user.org_id:
         raise NotFoundError("Manual not found")
 
     file_deleted = _delete_physical_file_or_fail(manual.storage_path)
 
+    # Capture human/audit details before the model is marked inactive.
     old_storage_path = manual.storage_path
     old_sha256 = manual.sha256
     old_version_number = manual.version_number
@@ -512,7 +570,11 @@ def list_manuals(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
-    """List active manuals, optionally including descendants of a category."""
+    """List active tenant manuals, optionally filtered to a category subtree.
+
+    Category ownership is validated separately even when no manuals match,
+    preserving a clear 404 for an invalid or cross-tenant filter ID.
+    """
     if category_id is not None:
         _get_category_for_org(db, org_id=current_user.org_id, category_id=category_id)
 
@@ -544,7 +606,12 @@ def download_manual(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
-    """Read, watermark, audit, and stream a manual PDF to the caller."""
+    """Read, watermark, record access/read state, and stream a fresh PDF.
+
+    Watermarking finishes before access state commits, so corrupt/unreadable
+    files do not create successful-download evidence. The response includes the
+    same forensic hash stored in ``ManualAccessLog``.
+    """
     manual = manual_repo.get_by_id(db, manual_id)
     if manual is None or manual.org_id != current_user.org_id:
         raise NotFoundError("Manual not found")
@@ -553,6 +620,8 @@ def download_manual(
     if not storage.exists(manual.storage_path):
         raise NotFoundError("Manual file missing from storage")
 
+    # Source bytes stay server-side; the client receives only the watermarked
+    # in-memory copy produced below.
     source_bytes = storage.read(manual.storage_path)
 
     pdf_buffer, watermark_hash = watermark_pdf(
@@ -589,10 +658,13 @@ def download_manual(
         ip=client_ip,
         metadata={"watermark_hash": watermark_hash},
     )
+    # Access log, last-access timestamp, read counter, and generic audit row are
+    # one database transaction describing the successful download.
     db.commit()
 
     download_name = secure_filename(manual.original_filename or f"manual_{manual.id}.pdf")
 
+    # StreamingResponse consumes the rewound BytesIO without another disk write.
     return StreamingResponse(
         pdf_buffer,
         media_type="application/pdf",

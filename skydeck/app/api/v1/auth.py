@@ -1,4 +1,9 @@
-"""Authentication routes: signup, login, refresh, and logout."""
+"""HTTP boundary for signup, login, refresh, and logout.
+
+These handlers validate request/response shapes and collect request context,
+then delegate authentication transactions to :mod:`app.services.auth_service`.
+They never manipulate password hashes, JWT claims, or session rows directly.
+"""
 
 from __future__ import annotations
 
@@ -21,7 +26,10 @@ from app.schemas.auth import (
 )
 from app.services import auth_service
 
+# ``app.main`` adds /api/v1; this router contributes the /auth segment.
 router = APIRouter(prefix="/auth", tags=["auth"])
+# Build the reusable role dependency once. FastAPI executes the returned inner
+# function for each protected request.
 _ADMIN = require_roles(UserRole.admin)
 
 
@@ -42,7 +50,11 @@ def signup(
     current_user: User = Depends(_ADMIN),
     db: DbSession = Depends(get_db),
 ):
-    """Register a new user in the current admin's organization."""
+    """Register a user inside the authenticated admin's organization.
+
+    The route supplies the admin as both tenant boundary and audit actor, so a
+    caller cannot choose an arbitrary organization in the JSON body.
+    """
     result = auth_service.signup(
         db,
         name=body.name,
@@ -63,7 +75,7 @@ def signup(
     summary="Authenticate and receive tokens",
 )
 def login(body: LoginRequest, request: Request, db: DbSession = Depends(get_db)):
-    """Validate email/password, create a session, and return tokens."""
+    """Validate credentials, create a persisted session, and return tokens."""
     result = auth_service.login(
         db,
         email=body.email,
@@ -85,7 +97,7 @@ def login(body: LoginRequest, request: Request, db: DbSession = Depends(get_db))
     summary="Exchange refresh token for a new access token",
 )
 def refresh_token(body: RefreshRequest, db: DbSession = Depends(get_db)):
-    """Validate a refresh token and issue a replacement access token."""
+    """Issue a replacement access token without rotating the refresh token."""
     result = auth_service.refresh(db, raw_refresh_token=body.refresh_token)
     return RefreshResponse(access_token=result["access_token"])
 
@@ -97,6 +109,6 @@ def refresh_token(body: RefreshRequest, db: DbSession = Depends(get_db)):
     summary="Revoke the current session",
 )
 def logout(body: RefreshRequest, db: DbSession = Depends(get_db)):
-    """Revoke the refresh-token session so it cannot be used again."""
+    """Revoke refresh state; repeated/unknown-token logout remains harmless."""
     auth_service.logout(db, raw_refresh_token=body.refresh_token)
     return LogoutResponse()

@@ -1,4 +1,10 @@
-"""Manual read tracking routes."""
+"""HTTP endpoints for accumulated manual-read state.
+
+Users can inspect and update their own state; administrators can inspect the
+organization-wide matrix. Downloading a manual also marks it read in
+``manuals.py``, while the explicit POST supports clients that record reading
+through another UI flow.
+"""
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session as DbSession
@@ -28,6 +34,7 @@ _ADMIN = require_roles(UserRole.admin)
 
 
 def _read_out(read: ManualRead) -> ManualReadOut:
+    """Flatten a read row and its eagerly loaded user/manual relationships."""
     return ManualReadOut(
         id=read.id,
         org_id=read.org_id,
@@ -52,6 +59,7 @@ def list_my_manual_reads(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
+    """Return the current user's newest-read-first manual history."""
     reads = manual_reads_repo.list_for_user(
         db,
         org_id=current_user.org_id,
@@ -70,6 +78,7 @@ def list_manual_reads(
     current_user: User = Depends(_ADMIN),
     db: DbSession = Depends(get_db),
 ):
+    """Return organization-wide read state for compliance/reporting."""
     reads = manual_reads_repo.list_for_org(db, org_id=current_user.org_id)
     return [_read_out(read) for read in reads]
 
@@ -85,6 +94,7 @@ def mark_manual_read(
     current_user: User = Depends(_ALL_ROLES),
     db: DbSession = Depends(get_db),
 ):
+    """Upsert read state and audit the action in one transaction."""
     manual = manual_repo.get_by_id(db, manual_id)
     if manual is None or manual.org_id != current_user.org_id:
         raise NotFoundError("Manual not found")
@@ -103,6 +113,8 @@ def mark_manual_read(
         user_id=current_user.id,
         org_id=current_user.org_id,
     )
+    # The read counter and audit row should either both persist or both roll
+    # back. Refresh reloads server-generated timestamps/relationships.
     db.commit()
     db.refresh(read)
     return _read_out(read)
