@@ -1,4 +1,8 @@
-"""Reusable pagination request and response models."""
+"""Reusable page-number pagination request and response models.
+
+Routes validate ``page`` and ``limit`` once, use ``offset`` in SQL queries, and
+return the original paging values with a total count and typed item list.
+"""
 
 from __future__ import annotations
 
@@ -17,6 +21,7 @@ class PaginationParams(BaseModel):
 
     @property
     def offset(self) -> int:
+        """Translate a one-based API page into a zero-based SQL row offset."""
         return (self.page - 1) * self.limit
 
 

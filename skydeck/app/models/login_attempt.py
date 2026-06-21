@@ -1,4 +1,9 @@
-"""SQLAlchemy model for login attempt audit records."""
+"""SQLAlchemy model for login-attempt security records.
+
+Rows are written for successful and failed attempts, including cases where no
+user can be resolved. That is why organization, user, and email are nullable:
+the attempted identity may be unknown or malformed.
+"""
 
 from __future__ import annotations
 
@@ -24,7 +29,12 @@ from app.db.types import CIText
 
 
 class LoginAttempt(Base):
-    """Security record of successful and failed authentication attempts."""
+    """Append-only evidence of one authentication attempt.
+
+    Indexes support security investigations by tenant, user, time, or repeated
+    attempts against an email address. ``failure_reason`` should contain a safe
+    category, never a password or raw token.
+    """
 
     __tablename__ = "login_attempts"
     __table_args__ = (

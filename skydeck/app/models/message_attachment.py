@@ -1,4 +1,9 @@
-"""SQLAlchemy model for encrypted files attached to messages."""
+"""SQLAlchemy metadata for encrypted files attached to messages.
+
+The ciphertext is stored through a ``StorageProvider``. This row stores the
+path plus envelope-encryption metadata needed to recover the per-file data key;
+plaintext file bytes and plaintext keys never enter the database.
+"""
 
 from __future__ import annotations
 
@@ -24,7 +29,12 @@ if TYPE_CHECKING:
 
 
 class MessageAttachment(Base):
-    """Encrypted attachment metadata for one message row."""
+    """Storage, integrity, and envelope-encryption metadata for one file.
+
+    ``sha256`` describes plaintext contents for integrity checks. The three
+    nonce/key fields are not secrets by themselves but must match the encrypted
+    object and configured master key for authenticated decryption to succeed.
+    """
 
     __tablename__ = "message_attachments"
     __table_args__ = (

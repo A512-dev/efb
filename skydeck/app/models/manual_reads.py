@@ -1,4 +1,9 @@
-"""SQLAlchemy model tracking which users have read which manuals."""
+"""SQLAlchemy model tracking each user's accumulated manual-read state.
+
+The unique user/manual pair makes this a compact state table rather than an
+event stream. Repeated reads update ``last_read_at`` and ``read_count`` while
+``read_at`` preserves the first read timestamp.
+"""
 
 from __future__ import annotations
 
@@ -25,7 +30,11 @@ if TYPE_CHECKING:
 
 
 class ManualRead(Base):
-    """One user's accumulated read state for one manual."""
+    """One user's first/latest timestamps and count for one manual.
+
+    ``org_id`` is denormalized from the user/manual relationship to make tenant
+    filtering explicit and efficient in administrative read-report queries.
+    """
 
     __tablename__ = "manual_reads"
     __table_args__ = (

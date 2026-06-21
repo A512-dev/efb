@@ -1,4 +1,9 @@
-"""Pydantic schemas for manual update feed responses."""
+"""Pydantic schemas for the user-facing manual-update feed.
+
+``is_read`` and ``read_at`` are computed by joining shared events with the
+current user's ``ManualUpdateRead`` rows; they are not columns on the event
+itself.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +14,7 @@ from pydantic import BaseModel
 
 
 class ManualUpdateEventOut(BaseModel):
-    """User-facing summary of one manual upload/update/delete event."""
+    """User-specific view of one shared upload/update/delete event."""
 
     id: int
     org_id: int

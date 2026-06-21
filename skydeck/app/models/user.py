@@ -1,4 +1,9 @@
-"""SQLAlchemy model for application users."""
+"""SQLAlchemy model for authenticated application users.
+
+Users belong to exactly one organization and carry one coarse-grained role.
+Passwords are represented only by bcrypt hashes; API serializers deliberately
+exclude ``password_hash`` and deletion state.
+"""
 
 from __future__ import annotations
 
@@ -21,7 +26,13 @@ if TYPE_CHECKING:
 
 
 class User(Base):
-    """A person who can authenticate and act within a single organization."""
+    """A person who can authenticate and act within one organization.
+
+    Expiry fields hold operational credentials relevant to aviation staff.
+    ``employee_no`` is unique within current business rules, and soft deletion
+    keeps historical relationships intact while repository queries hide the
+    account from active use.
+    """
 
     __tablename__ = "users"
     __table_args__ = (
@@ -73,7 +84,11 @@ class User(Base):
 
     @property
     def profile_picture_url(self) -> Optional[str]:
-        """Return the download URL for the current profile picture, if present."""
+        """Return the authenticated download URL for the current picture.
+
+        This is computed rather than stored so route prefixes stay consistent
+        and changing a picture ID immediately changes whether a URL is exposed.
+        """
         if self.profile_picture_id is None:
             return None
         return f"/api/v1/users/{self.id}/profile-picture"

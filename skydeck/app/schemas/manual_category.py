@@ -1,4 +1,8 @@
-"""Pydantic schemas for manual category tree and breadcrumb responses."""
+"""Pydantic schemas for category-tree and breadcrumb responses.
+
+The same category data appears in three useful shapes: a small path segment, a
+flat node with computed metadata, and a recursive tree node for navigation.
+"""
 
 from __future__ import annotations
 
@@ -9,17 +13,18 @@ from pydantic import BaseModel, Field
 
 
 class ManualCategoryPathItem(BaseModel):
-    """Single breadcrumb segment for a category path."""
+    """Single ordered segment in a root-to-leaf breadcrumb."""
 
     id: int
     name: str
     slug: str
 
+    # Permit direct validation from a SQLAlchemy ManualCategory instance.
     model_config = {"from_attributes": True}
 
 
 class ManualCategoryOut(BaseModel):
-    """Flat category response used for root/children endpoints."""
+    """Flat category response with path and child-presence hints."""
 
     id: int
     org_id: int
@@ -35,7 +40,7 @@ class ManualCategoryOut(BaseModel):
 
 
 class ManualCategoryTreeOut(BaseModel):
-    """Recursive category response used to render navigation trees."""
+    """Recursive node whose ``children`` contain the same schema type."""
 
     id: int
     org_id: int

@@ -1,4 +1,8 @@
-"""SQLAlchemy model tracking which users have read manual update events."""
+"""SQLAlchemy model tracking per-user reads of manual-update events.
+
+Absence of a row means unread. Creating one row marks an event read, and the
+unique constraint makes that operation naturally idempotent.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +15,7 @@ from app.db.base import Base
 
 
 class ManualUpdateRead(Base):
-    """Per-user read state for the manual update feed."""
+    """Join record saying one user has read one update-feed event."""
 
     __tablename__ = "manual_update_reads"
     __table_args__ = (

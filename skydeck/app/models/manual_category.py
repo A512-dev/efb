@@ -1,4 +1,9 @@
-"""SQLAlchemy model for hierarchical manual categories."""
+"""SQLAlchemy model for hierarchical manual categories.
+
+Categories form an adjacency-list tree: each row points to its optional parent.
+Root and sibling slug uniqueness is enforced with separate partial indexes,
+allowing the same slug to appear under different branches.
+"""
 
 from __future__ import annotations
 
@@ -16,7 +21,12 @@ if TYPE_CHECKING:
 
 
 class ManualCategory(Base):
-    """Hierarchical, organisation-scoped category used to build manual paths."""
+    """Organization-scoped node used to build manual navigation paths.
+
+    The self-referential ``parent``/``children`` relationships let code walk in
+    either direction. Deleting a parent cascades to descendants, while manuals
+    use ``RESTRICT`` so a category containing documents cannot vanish silently.
+    """
 
     __tablename__ = "manual_categories"
     __table_args__ = (
@@ -58,6 +68,9 @@ class ManualCategory(Base):
         DateTime(timezone=True), onupdate=func.now(), nullable=True
     )
 
+    # ``remote_side`` tells SQLAlchemy which copy of the self-join is the
+    # parent. ``delete-orphan`` treats children removed from the tree as rows
+    # that should be deleted.
     org: Mapped[Org] = relationship(back_populates="manual_categories")
     parent: Mapped[Optional[ManualCategory]] = relationship(
         remote_side="ManualCategory.id",

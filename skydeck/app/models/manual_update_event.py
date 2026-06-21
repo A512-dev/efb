@@ -1,4 +1,9 @@
-"""SQLAlchemy model for the user-facing manual update feed."""
+"""SQLAlchemy model for the user-facing manual-update feed.
+
+Each upload, replacement, or deletion creates an immutable event. Per-user
+read state lives separately in ``ManualUpdateRead`` so one shared event can be
+unread for one user and read for another.
+"""
 
 from __future__ import annotations
 
@@ -12,7 +17,11 @@ from app.db.base import Base
 
 
 class ManualUpdateEvent(Base):
-    """User-facing update feed entry for manual upload/update/delete actions."""
+    """Snapshot of one manual upload, update, or deletion.
+
+    Title and old/new metadata are copied into the event so the feed remains
+    meaningful even if the manual is later renamed, replaced, or soft-deleted.
+    """
 
     __tablename__ = "manual_update_events"
     __table_args__ = (

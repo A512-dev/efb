@@ -1,4 +1,8 @@
-"""Pydantic schemas for manual read tracking."""
+"""Pydantic schemas for manual-read tracking responses.
+
+The response combines persisted counters/timestamps with denormalized user and
+manual display names assembled by the API layer.
+"""
 
 from datetime import datetime
 
@@ -6,6 +10,8 @@ from pydantic import BaseModel
 
 
 class ManualReadOut(BaseModel):
+    """One user's accumulated read state for one manual."""
+
     id: int
     org_id: int
     user_id: int

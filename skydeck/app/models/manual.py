@@ -1,4 +1,9 @@
-"""SQLAlchemy model for uploaded operational manuals."""
+"""SQLAlchemy model for uploaded operational manuals.
+
+The database stores searchable metadata and the storage-provider path; the PDF
+bytes live outside PostgreSQL. Updating a manual replaces that external object
+and increments ``version_number`` while retaining one logical manual row.
+"""
 
 from __future__ import annotations
 
@@ -33,7 +38,13 @@ if TYPE_CHECKING:
 
 
 class Manual(Base):
-    """A versioned PDF/manual file owned by an organization and category."""
+    """A versioned PDF/manual file owned by an organization and category.
+
+    ``deleted_at`` implements soft deletion for auditability. Most user-facing
+    repository queries filter it out, while cleanup and history code can still
+    find the row. The checksum identifies exact file contents independently of
+    title, path, and version metadata.
+    """
 
     __tablename__ = "manuals"
     __table_args__ = (
@@ -64,6 +75,8 @@ class Manual(Base):
     uploaded_by: Mapped[Optional[int]] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
+    # ``is_active`` is a business-state flag; ``deleted_at`` is deletion
+    # history. Normal active-library queries require both states to be valid.
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(
@@ -90,6 +103,8 @@ def _assign_fallback_category(_mapper, connection, target: Manual) -> None:
     API uploads still require an explicit leaf category. This fallback exists
     only to keep old seed scripts and internal inserts compatible.
     """
+    # New API traffic always supplies a category, so the normal path exits
+    # immediately without issuing either fallback query.
     if target.category_id is not None:
         return
 
@@ -117,4 +132,6 @@ def _assign_fallback_category(_mapper, connection, target: Manual) -> None:
     if category_id is None:
         raise ValueError("Default manual category Iranair / General was not created")
 
+    # Assigning on the target before INSERT makes SQLAlchemy include the found
+    # category in the same statement that creates the manual.
     target.category_id = category_id

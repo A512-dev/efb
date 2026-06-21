@@ -1,4 +1,9 @@
-"""Pydantic schemas for internal messaging routes."""
+"""Pydantic schemas for internal messaging routes.
+
+The models support both JSON-only sends and multipart sends with attachments.
+A single request may create several recipient-specific ``Message`` rows, which
+is why create responses contain a list of items.
+"""
 
 from __future__ import annotations
 
@@ -32,7 +37,7 @@ class MessageUserOut(BaseModel):
 
 
 class MessageAttachmentOut(BaseModel):
-    """Encrypted attachment metadata exposed in message responses."""
+    """Safe attachment metadata; encryption internals and paths stay private."""
 
     id: int
     original_filename: Optional[str] = None
@@ -44,7 +49,7 @@ class MessageAttachmentOut(BaseModel):
 
 
 class MessageOut(BaseModel):
-    """Public message representation with optional sender/recipient details."""
+    """Public message representation with users, receipts, and attachments."""
 
     id: int
     org_id: int
@@ -58,6 +63,8 @@ class MessageOut(BaseModel):
     created_at: datetime
     sender: Optional[MessageUserOut] = None
     recipient: Optional[MessageUserOut] = None
+    # Pydantic copies model defaults, but this field conceptually represents an
+    # empty collection when a message has no attachments.
     attachments: list[MessageAttachmentOut] = []
 
     model_config = {"from_attributes": True}

@@ -1,4 +1,9 @@
-"""SQLAlchemy model for tenant organizations."""
+"""SQLAlchemy model for tenant organizations.
+
+``Org`` is the root of SkyDeck's multi-tenant ownership graph. Feature queries
+must scope rows by ``org_id`` so one airline cannot observe another airline's
+users, manuals, messages, or activity.
+"""
 
 from __future__ import annotations
 
@@ -18,7 +23,7 @@ if TYPE_CHECKING:
 
 
 class Org(Base):
-    """Top-level tenant boundary for users, manuals, and related organization data."""
+    """Top-level tenant boundary and owner of organization data."""
 
     __tablename__ = "orgs"
 
@@ -41,7 +46,12 @@ class Org(Base):
 
 @event.listens_for(Org, "after_insert")
 def _create_default_manual_categories(_mapper, connection, target: Org) -> None:
-    """Create the default manual category tree for every newly inserted org."""
+    """Create the default manual category tree for every newly inserted org.
+
+    This mapper event runs inside the transaction that inserted the
+    organization. A category failure therefore aborts organization creation
+    instead of leaving a tenant without required navigation roots.
+    """
     from app.models.manual_category import ManualCategory
     from app.services.manual_category_service import DEFAULT_MANUAL_CATEGORY_TREE
 
@@ -60,6 +70,8 @@ def _create_default_manual_categories(_mapper, connection, target: Org) -> None:
             .returning(ManualCategory.id)
         ).scalar_one()
 
+        # Children can be inserted in one executemany call once the generated
+        # root ID is known.
         connection.execute(
             insert(ManualCategory.__table__),
             [

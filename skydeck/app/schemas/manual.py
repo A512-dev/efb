@@ -1,4 +1,9 @@
-"""Pydantic response schemas for manual library routes."""
+"""Pydantic response schemas for manual-library routes.
+
+The API never exposes ``storage_path`` because it is an internal storage key,
+not a public URL. Upload/update variants include checksum and status text useful
+immediately after mutation, while ``ManualOut`` is the normal listing shape.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +16,7 @@ from app.schemas.manual_category import ManualCategoryPathItem
 
 
 class ManualOut(BaseModel):
-    """Public representation of a manual record."""
+    """Public metadata for a manual, including its category breadcrumb."""
 
     id: int
     org_id: int
@@ -30,7 +35,7 @@ class ManualOut(BaseModel):
 
 
 class ManualUploadOut(BaseModel):
-    """Response after a successful upload."""
+    """Mutation result after file storage and database commit succeed."""
 
     id: int
     category_id: int
@@ -45,7 +50,7 @@ class ManualUploadOut(BaseModel):
 
 
 class ManualUpdateOut(BaseModel):
-    """Response after replacing the PDF for an existing manual."""
+    """Mutation result after replacing a PDF and incrementing its version."""
 
     id: int
     category_id: int
@@ -60,6 +65,6 @@ class ManualUpdateOut(BaseModel):
 
 
 class ManualDeleteOut(BaseModel):
-    """Response after a manual has been deleted."""
+    """Minimal confirmation after logical/physical manual deletion."""
 
     message: str = "Manual deleted successfully"

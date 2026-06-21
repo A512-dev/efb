@@ -1,4 +1,9 @@
-"""SQLAlchemy model for refresh-token sessions."""
+"""SQLAlchemy model for revocable refresh-token sessions.
+
+Access JWTs are stateless and short-lived. Refresh tokens are tied to these
+database rows so logout, expiration, or administrative revocation can prevent
+future access-token issuance.
+"""
 
 from __future__ import annotations
 
@@ -17,7 +22,12 @@ if TYPE_CHECKING:
 
 
 class Session(Base):
-    """A revocable login session backed by a hashed refresh token."""
+    """A revocable login session backed by a hashed refresh token.
+
+    A row is usable only while it is unrevoked and before ``expires_at``.
+    ``last_seen_at`` records refresh activity without changing the original
+    creation timestamp.
+    """
 
     __tablename__ = "sessions"
     __table_args__ = (

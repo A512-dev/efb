@@ -1,4 +1,9 @@
-"""SQLAlchemy model for manual view/download audit entries."""
+"""SQLAlchemy model for manual view/download audit entries.
+
+Unlike ``ManualRead``, which stores a user's accumulated current read state,
+this table is an append-only event log: every view or download creates another
+row for traceability.
+"""
 
 from __future__ import annotations
 
@@ -18,7 +23,12 @@ if TYPE_CHECKING:
 
 
 class ManualAccessLog(Base):
-    """Append-only access event for manual viewing and downloading."""
+    """Append-only access event for manual viewing and downloading.
+
+    Nullable ``SET NULL`` foreign keys intentionally preserve the event after
+    referenced users, sessions, or manuals disappear. Denormalized org/user
+    identifiers also make audit queries efficient.
+    """
 
     __tablename__ = "manual_access_logs"
     __table_args__ = (

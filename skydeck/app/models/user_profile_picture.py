@@ -1,4 +1,9 @@
-"""SQLAlchemy model for encrypted user profile pictures."""
+"""SQLAlchemy metadata for encrypted user profile pictures.
+
+This uses the same envelope-encryption pattern as message attachments but a
+different authenticated-data domain, preventing ciphertext from one feature
+being substituted into the other.
+"""
 
 from __future__ import annotations
 
@@ -24,7 +29,12 @@ if TYPE_CHECKING:
 
 
 class UserProfilePicture(Base):
-    """Encrypted profile picture metadata for one user."""
+    """Storage and envelope-encryption metadata for one user's image.
+
+    ``User.profile_picture_id`` identifies the current picture. Older metadata
+    can be replaced transactionally and its external ciphertext cleaned up
+    after the new picture is safely stored.
+    """
 
     __tablename__ = "user_profile_pictures"
     __table_args__ = (

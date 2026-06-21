@@ -1,4 +1,9 @@
-"""SQLAlchemy model for organization-scoped user messages."""
+"""SQLAlchemy model for organization-scoped user messages.
+
+One database row represents one sender/recipient delivery. Sending the same
+content to several recipients therefore creates several rows, allowing each
+recipient to have an independent ``read_at`` timestamp.
+"""
 
 from __future__ import annotations
 
@@ -15,7 +20,12 @@ if TYPE_CHECKING:
 
 
 class Message(Base):
-    """Direct message between users inside the same organisation."""
+    """Direct message and recipient-specific read receipt.
+
+    User deletion nulls sender/recipient IDs rather than erasing message
+    history. Attachments are true children of the message and are deleted with
+    it through both database cascade and ORM ``delete-orphan`` behavior.
+    """
 
     __tablename__ = "messages"
     __table_args__ = (
