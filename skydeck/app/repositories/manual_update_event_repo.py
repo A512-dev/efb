@@ -1,4 +1,9 @@
-"""Repository helpers for manual update event persistence."""
+"""Persistence for manual-update feed events and per-user read markers.
+
+Events are shared organization-wide. Separate ``ManualUpdateRead`` rows model
+each user's view, allowing listing code to merge one event page with a compact
+mapping of read timestamps.
+"""
 
 from __future__ import annotations
 
@@ -111,7 +116,11 @@ def get_read_map(
     user_id: int,
     event_ids: list[int],
 ) -> dict[int, datetime]:
-    """Return read timestamps keyed by manual update event id."""
+    """Return read timestamps keyed by event ID for efficient response merging.
+
+    A dictionary avoids repeated database queries or linear searches while API
+    code annotates a page of events.
+    """
     if not event_ids:
         return {}
 
@@ -134,7 +143,7 @@ def mark_read(
     user_id: int,
     event_id: int,
 ) -> ManualUpdateRead:
-    """Create or return an existing read marker for one manual update event."""
+    """Idempotently create a read marker for one event and user."""
     existing = (
         db.query(ManualUpdateRead)
         .filter(
@@ -159,7 +168,11 @@ def mark_all_read(
     org_id: int,
     user_id: int,
 ) -> int:
-    """Mark every current manual update event in an organization as read by a user."""
+    """Create only missing read markers for all current organization events.
+
+    The return value counts new markers rather than total events, which lets the
+    API report whether this call actually changed state.
+    """
     event_ids = [
         row[0]
         for row in db.query(ManualUpdateEvent.id)

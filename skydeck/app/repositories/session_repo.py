@@ -1,4 +1,8 @@
-"""Repository helpers for refresh-token sessions and login attempts."""
+"""Persistence for refresh-token sessions and authentication-attempt history.
+
+The service layer verifies JWT claims and password hashes; this repository owns
+the SQL details for creating/revoking session rows and appending audit attempts.
+"""
 
 from __future__ import annotations
 
@@ -32,7 +36,11 @@ def create_session(
 
 
 def get_by_token_hash(db: DbSession, token_hash: str) -> Optional[Session]:
-    """Find a non-revoked session by hashed refresh token."""
+    """Find a non-revoked session by deterministic refresh-token digest.
+
+    Expiration is checked in the service because it requires comparison against
+    an application UTC timestamp and a more specific client error.
+    """
     return (
         db.query(Session)
         .filter(
@@ -44,7 +52,7 @@ def get_by_token_hash(db: DbSession, token_hash: str) -> Optional[Session]:
 
 
 def revoke_session(db: DbSession, session: Session) -> None:
-    """Invalidate a refresh-token session without deleting its audit history."""
+    """Timestamp revocation instead of deleting session history."""
     session.revoked_at = datetime.now(timezone.utc)
     db.flush()
 

@@ -56,7 +56,11 @@ def create(
 
 
 def _category_descendant_ids(db: DbSession, *, org_id: int, category_id: int):
-    """Build a recursive query for a category and its active descendants."""
+    """Build a recursive CTE selecting a category and active descendants.
+
+    PostgreSQL evaluates this tree traversal in one statement. Returning a
+    selectable keeps the helper composable inside the manual ``IN`` filter.
+    """
     descendants = (
         select(ManualCategory.id)
         .where(ManualCategory.id == category_id, ManualCategory.org_id == org_id)
@@ -80,6 +84,8 @@ def list_active(
     include_descendants: bool = True,
 ) -> list[Manual]:
     """List active manuals, optionally scoped to a category subtree."""
+    # Every ordinary library query enforces tenant, soft-delete, and business
+    # active-state boundaries before optional category filtering.
     query = (
         db.query(Manual)
         .options(joinedload(Manual.category))
@@ -145,7 +151,12 @@ def update_file_metadata(
     title: Optional[str] = None,
     category_id: Optional[int] = None,
 ) -> Manual:
-    """Replace a manual's file metadata and bump its visible version number."""
+    """Replace a manual's file metadata and bump its visible version number.
+
+    Physical file storage occurs before this repository call. The caller keeps
+    the old values for update-feed/audit records and handles cleanup if the
+    database transaction later fails.
+    """
     if title is not None:
         manual.title = title
     if category_id is not None:
@@ -175,7 +186,12 @@ def touch_last_accessed(db: DbSession, manual: Manual) -> None:
 
 
 def cleanup_orphans(db: DbSession) -> list[Manual]:
-    """Return manuals stuck in 'pending' storage_path (orphaned uploads)."""
+    """Return rows left with the upload sentinel instead of a real path.
+
+    ``pending`` indicates a workflow stopped between database-row creation and
+    final storage metadata assignment. This function only discovers candidates;
+    cleanup policy belongs to a higher-level maintenance workflow.
+    """
     return (
         db.query(Manual).filter(Manual.storage_path == "pending", Manual.deleted_at.is_(None)).all()
     )

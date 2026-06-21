@@ -1,8 +1,12 @@
-"""Storage abstraction layer.
+"""Storage abstraction and local-disk implementation.
 
 Provides a ``StorageProvider`` ABC so the application can swap between
 local-disk and object-store (S3 / MinIO) backends without touching
 business logic.
+
+Callers store only the returned canonical path/key in PostgreSQL. Manual PDFs
+are stored as supplied, while message attachments and profile pictures pass
+encrypted ciphertext to the same byte-oriented interface.
 """
 
 from __future__ import annotations
@@ -27,6 +31,8 @@ def secure_filename(name: str) -> str:
     Strips directory components, replaces non-ASCII, collapses whitespace,
     and removes anything that is not alphanumeric, dash, underscore, or dot.
     """
+    # Normalize accented characters before ASCII conversion so a readable base
+    # letter is preserved where possible.
     name = unicodedata.normalize("NFKD", name)
     name = name.encode("ascii", "ignore").decode("ascii")
     for sep in ("/", "\\"):
@@ -37,7 +43,11 @@ def secure_filename(name: str) -> str:
 
 
 class StorageProvider(abc.ABC):
-    """Abstract base for file persistence backends."""
+    """Minimal byte-storage contract consumed by feature workflows.
+
+    Paths are opaque to callers after ``save`` returns, which keeps local
+    filesystem details out of route and repository code.
+    """
 
     @abc.abstractmethod
     def save(self, relative_path: str, data: bytes) -> str:
@@ -57,14 +67,18 @@ class StorageProvider(abc.ABC):
 
 
 class LocalStorage(StorageProvider):
-    """Persist files on the local filesystem under *base_dir*."""
+    """Persist files on the local filesystem under ``base_dir``."""
 
     def __init__(self, base_dir: str) -> None:
         self._base = Path(base_dir)
         self._base.mkdir(parents=True, exist_ok=True)
 
     def _resolve(self, relative_path: str) -> Path:
-        """Resolve a storage key while preventing escape from the base directory."""
+        """Resolve a write key while preventing escape from the base directory.
+
+        This protects against ``..`` and absolute-path traversal even if a
+        caller forgets to sanitize part of a generated storage key.
+        """
         resolved = (self._base / relative_path).resolve()
         if not str(resolved).startswith(str(self._base.resolve())):
             raise StorageError("Path traversal detected")
@@ -107,7 +121,11 @@ class LocalStorage(StorageProvider):
 
 
 def get_manual_storage() -> StorageProvider:
-    """Return the configured storage provider for manuals."""
+    """Construct the configured manual storage provider.
+
+    Returning the interface type keeps call sites ready for a future factory
+    that selects S3/MinIO instead of local disk.
+    """
     return LocalStorage(settings.STORAGE_DIR)
 
 

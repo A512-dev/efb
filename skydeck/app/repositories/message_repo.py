@@ -1,4 +1,9 @@
-"""Repository helpers for creating, reading, and updating messages."""
+"""Repository operations for messages, mailboxes, and attachment metadata.
+
+Visibility is always constrained by both organization and sender/recipient
+membership. Relationship-loading options avoid extra queries when response
+schemas access users and attachments after the main mailbox query.
+"""
 
 from __future__ import annotations
 
@@ -13,6 +18,8 @@ from app.models.message import Message
 from app.models.message_attachment import MessageAttachment
 from app.models.user import User
 
+# A Literal documents and type-checks the only mailbox filters understood by
+# ``list_for_user`` without introducing another persisted enum.
 MessageBox = Literal["inbox", "sent", "all"]
 
 
@@ -64,13 +71,18 @@ def list_for_user(
     else:
         query = query.filter(or_(Message.recipient_id == user.id, Message.sender_id == user.id))
 
+    # Count before adding offset/limit so clients can calculate page counts.
     total = query.count()
     items = query.order_by(Message.created_at.desc()).offset(offset).limit(limit).all()
     return items, total
 
 
 def get_visible_to_user(db: DbSession, *, message_id: int, user: User) -> Optional[Message]:
-    """Fetch a message if the user belongs to its organization and can view it."""
+    """Fetch a message only when the user is its sender or recipient.
+
+    Combining authorization into the query avoids loading an out-of-scope row
+    and accidentally leaking whether another tenant's message ID exists.
+    """
     return (
         db.query(Message)
         .options(
@@ -88,7 +100,7 @@ def get_visible_to_user(db: DbSession, *, message_id: int, user: User) -> Option
 
 
 def mark_read(db: DbSession, message: Message) -> Message:
-    """Set a message's read timestamp if it has not already been read."""
+    """Set the first read timestamp while preserving idempotency."""
     if message.read_at is None:
         message.read_at = datetime.now(timezone.utc)
         db.flush()

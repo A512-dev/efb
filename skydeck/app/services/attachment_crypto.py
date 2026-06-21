@@ -1,4 +1,14 @@
-"""Encryption helpers for message attachments."""
+"""Envelope encryption for message attachments and profile pictures.
+
+Each file receives a fresh random AES-256 data key. File bytes are encrypted
+with that data key, then the data key itself is encrypted with a stable master
+key derived from configuration. The database stores ciphertext metadata, not
+plaintext keys.
+
+AES-GCM authenticates both ciphertext and feature-specific additional data
+(``AAD``). Distinct AAD values prevent a valid profile-picture ciphertext from
+being transplanted and accepted as a message attachment, or vice versa.
+"""
 
 from __future__ import annotations
 
@@ -20,7 +30,12 @@ _ALG = "AES-256-GCM"
 
 @dataclass(frozen=True)
 class EncryptedAttachmentBytes:
-    """Encrypted attachment payload plus the metadata required to decrypt it."""
+    """Ciphertext and serializable envelope metadata required for decryption.
+
+    Nonces and the wrapped data key are safe to store alongside ciphertext.
+    Security depends on keeping the configured master secret private and never
+    reusing a nonce with the same AES key.
+    """
 
     ciphertext: bytes
     encrypted_key: str
@@ -41,11 +56,16 @@ def encrypt_profile_picture(plaintext: bytes) -> EncryptedAttachmentBytes:
 
 
 def _encrypt_bytes(plaintext: bytes, *, aad: bytes) -> EncryptedAttachmentBytes:
-    """Encrypt bytes with a random data key and protected key metadata."""
+    """Encrypt bytes with a random per-file key, then wrap that key.
+
+    Twelve-byte random nonces are the recommended size for GCM. Separate nonces
+    are used for content encryption and master-key wrapping.
+    """
     data_key = os.urandom(32)
     content_nonce = os.urandom(12)
     key_nonce = os.urandom(12)
 
+    # AESGCM appends an authentication tag to each returned ciphertext.
     ciphertext = AESGCM(data_key).encrypt(content_nonce, plaintext, aad)
     encrypted_key = AESGCM(_master_key()).encrypt(key_nonce, data_key, aad)
 
@@ -100,7 +120,11 @@ def _decrypt_bytes(
     content_nonce: str,
     aad: bytes,
 ) -> bytes:
-    """Decrypt encrypted bytes in memory."""
+    """Unwrap the data key and authenticate/decrypt file bytes in memory.
+
+    Invalid tags can mean a wrong master key, changed nonce/AAD, or corrupted or
+    tampered ciphertext. All are intentionally exposed as one storage failure.
+    """
     try:
         data_key = AESGCM(_master_key()).decrypt(_unb64(key_nonce), _unb64(encrypted_key), aad)
         return AESGCM(data_key).decrypt(_unb64(content_nonce), ciphertext, aad)
@@ -109,7 +133,11 @@ def _decrypt_bytes(
 
 
 def _master_secret() -> str:
-    """Return the configured attachment master secret."""
+    """Return the configured master secret using backward-compatible fallbacks.
+
+    ``FILE_ENCRYPTION_MASTER_KEY`` is preferred. The older attachment-specific
+    setting and finally ``SECRET_KEY`` keep existing deployments readable.
+    """
     return (
         settings.FILE_ENCRYPTION_MASTER_KEY
         or settings.MESSAGE_ATTACHMENT_MASTER_KEY
@@ -123,13 +151,15 @@ def _master_key() -> bytes:
 
 
 def _key_id() -> str:
-    """Return a non-secret identifier for the current master key."""
+    """Return a non-secret fingerprint useful for key-rotation diagnostics."""
     return hashlib.sha256(_master_secret().encode("utf-8")).hexdigest()[:16]
 
 
 def _b64(value: bytes) -> str:
+    """Encode binary encryption metadata for text database columns."""
     return base64.urlsafe_b64encode(value).decode("ascii")
 
 
 def _unb64(value: str) -> bytes:
+    """Decode text database metadata back into cryptographic bytes."""
     return base64.urlsafe_b64decode(value.encode("ascii"))

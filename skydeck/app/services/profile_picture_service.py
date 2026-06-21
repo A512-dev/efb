@@ -1,4 +1,9 @@
-"""Validation helpers for encrypted user profile pictures."""
+"""Validate profile-picture bytes before encryption and storage.
+
+The filename extension must agree with a recognized image magic signature.
+This is intentionally lightweight validation—it blocks obvious disguised
+uploads without decoding or transforming the user's image.
+"""
 
 from __future__ import annotations
 
@@ -34,7 +39,7 @@ class ValidatedProfilePicture:
 
 
 def read_and_validate_profile_picture(file: UploadFile) -> ValidatedProfilePicture:
-    """Read and validate one profile picture upload."""
+    """Read one upload and return normalized trusted metadata plus bytes."""
     contents = file.file.read()
     size = len(contents)
 
@@ -57,7 +62,7 @@ def read_and_validate_profile_picture(file: UploadFile) -> ValidatedProfilePictu
 
 
 def _detect_image_type(filename: str, contents: bytes) -> str:
-    """Return the trusted image MIME type after extension and content checks."""
+    """Return a MIME type only when extension and leading bytes agree."""
     ext = Path(filename).suffix.lower()
 
     if ext in {".jpg", ".jpeg"} and contents.startswith(b"\xff\xd8\xff"):

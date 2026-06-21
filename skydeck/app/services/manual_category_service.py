@@ -1,4 +1,10 @@
-"""Service helpers for ensuring the default manual category tree exists."""
+"""Idempotent construction of the default manual-category tree.
+
+New organizations receive this navigation structure from a mapper event, while
+the auth/signup path can call :func:`ensure_default_categories` to repair older
+or partially initialized tenants. Slug paths are stable machine identifiers;
+display names may contain spaces or capitalization.
+"""
 
 from __future__ import annotations
 
@@ -7,7 +13,8 @@ from sqlalchemy.orm import Session as DbSession
 from app.models.manual_category import ManualCategory
 
 
-# Shared seed structure used when an organization is created or repaired.
+# Shared declarative seed structure used by both the Org mapper event and the
+# repair helper below. List order becomes ``sort_order`` in API navigation.
 DEFAULT_MANUAL_CATEGORY_TREE: list[dict] = [
     {
         "name": "A300/600",
@@ -75,6 +82,8 @@ def ensure_default_categories(db: DbSession, *, org_id: int) -> dict[str, Manual
     Returns a mapping keyed by slash-separated slug path, for example:
     ``iranair/general``.
     """
+    # Returning created *and* pre-existing rows gives callers a convenient
+    # lookup without requiring another query after repair.
     result: dict[str, ManualCategory] = {}
 
     for root_order, root_spec in enumerate(DEFAULT_MANUAL_CATEGORY_TREE, start=1):

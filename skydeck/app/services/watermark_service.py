@@ -4,7 +4,9 @@ Uses **reportlab** to generate a transparent watermark overlay containing
 the user's name, timestamp, a unique hash ID, and a CONFIDENTIAL notice.
 The overlay is then merged onto every page of the source PDF using **pypdf**.
 
-The entire pipeline runs in-memory — no temp files touch disk.
+The entire pipeline runs in memory—no plaintext temporary files touch disk.
+The short watermark ID is also stored in access logs, connecting a leaked copy
+back to the user/manual download event that produced it.
 """
 
 from __future__ import annotations
@@ -32,6 +34,8 @@ def generate_watermark_hash(user_id: int, manual_id: int) -> str:
     Combines user id, manual id, a random nonce, and the current
     timestamp into a SHA-256 digest truncated to 16 hex chars.
     """
+    # Randomness permits multiple downloads by the same user at the same moment
+    # to receive distinct forensic IDs.
     raw = f"{user_id}:{manual_id}:{secrets.token_hex(8)}:{datetime.now(timezone.utc).isoformat()}"
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
@@ -43,7 +47,11 @@ def _build_watermark_page(
     timestamp: str,
     watermark_hash: str,
 ) -> io.BytesIO:
-    """Generate a single-page transparent PDF overlay via reportlab."""
+    """Generate a source-page-sized transparent PDF overlay with reportlab.
+
+    The caller builds one overlay per page because source manuals may mix page
+    sizes or orientations.
+    """
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=(width, height))
 
@@ -85,7 +93,7 @@ def watermark_pdf(
     user_id: int,
     manual_id: int,
 ) -> tuple[io.BytesIO, str]:
-    """Apply a forensic watermark to every page of *source_bytes*.
+    """Apply a forensic watermark to every page of ``source_bytes``.
 
     Returns:
         A tuple of (watermarked_pdf_buffer, watermark_hash_id).
@@ -106,6 +114,8 @@ def watermark_pdf(
             f"Cannot read PDF — file may be corrupt or encrypted: {exc}"
         ) from exc
 
+    # PdfWriter receives modified page objects and serializes one new in-memory
+    # document after every source page has been processed.
     writer = PdfWriter()
 
     try:

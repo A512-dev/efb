@@ -1,4 +1,10 @@
-"""Validation and metadata helpers for message attachments."""
+"""Read and validate message attachments before encryption and storage.
+
+Client-provided MIME headers are not trusted. The service checks filename
+extensions against file signatures or container contents, enforces per-file,
+per-message, and count limits, and returns immutable in-memory payload objects
+with trusted metadata.
+"""
 
 from __future__ import annotations
 
@@ -35,7 +41,7 @@ _TEXT_TYPES = {".txt", ".csv", ".log"}
 
 @dataclass(frozen=True)
 class ValidatedAttachment:
-    """A safe attachment payload ready for encryption and storage."""
+    """Normalized attachment bytes and trusted metadata for the next stage."""
 
     filename: str
     mime_type: str
@@ -45,7 +51,12 @@ class ValidatedAttachment:
 
 
 def read_and_validate_attachments(files: list[UploadFile] | None) -> list[ValidatedAttachment]:
-    """Read uploaded files once and validate count, size, filename, and type."""
+    """Read each upload once and validate count, size, filename, and contents.
+
+    ``UploadFile.file`` is a stream. Capturing bytes here avoids later stages
+    depending on stream position and makes the exact bytes hashed, encrypted,
+    and stored identical.
+    """
     if not files:
         return []
     if len(files) > _MAX_FILES:
@@ -57,6 +68,8 @@ def read_and_validate_attachments(files: list[UploadFile] | None) -> list[Valida
         if not file.filename:
             continue
 
+        # Read before MIME detection because all supported signature checks use
+        # actual bytes rather than the untrusted Content-Type header.
         contents = file.file.read()
         size = len(contents)
         total_size += size
@@ -88,7 +101,7 @@ def read_and_validate_attachments(files: list[UploadFile] | None) -> list[Valida
 
 
 def _detect_type(filename: str, contents: bytes) -> str:
-    """Return the trusted MIME type after extension and content checks."""
+    """Return a trusted MIME type only when extension and signature agree."""
     ext = Path(filename).suffix.lower()
 
     if ext == ".pdf" and contents.startswith(b"%PDF-"):
@@ -110,6 +123,7 @@ def _detect_type(filename: str, contents: bytes) -> str:
 
 
 def _looks_like_text(contents: bytes) -> bool:
+    """Accept UTF-8 text without NUL bytes, a common binary-file indicator."""
     try:
         text = contents.decode("utf-8")
     except UnicodeDecodeError:
@@ -118,6 +132,7 @@ def _looks_like_text(contents: bytes) -> bool:
 
 
 def _looks_like_openxml(contents: bytes, required_prefix: str) -> bool:
+    """Validate an Office Open XML ZIP container and expected subdirectory."""
     if not contents.startswith(b"PK\x03\x04"):
         return False
     try:

@@ -1,4 +1,9 @@
-"""Repository helpers for manual category trees."""
+"""Repository queries for organization-scoped manual category trees.
+
+The API can ask for roots, direct children, the full active tree, or a
+root-to-node breadcrumb. SQL query construction stays here so route handlers
+work with domain objects instead of repeating tenant and active-state filters.
+"""
 
 from __future__ import annotations
 
@@ -60,7 +65,11 @@ def list_children(db: DbSession, *, org_id: int, parent_id: int) -> list[ManualC
 
 
 def list_all(db: DbSession, *, org_id: int) -> list[ManualCategory]:
-    """Return all active categories, preloading children for tree building."""
+    """Return all active categories, preloading children for tree building.
+
+    ``selectinload`` fetches children in a bounded additional query rather than
+    issuing one lazy query per category while the recursive response is built.
+    """
     return (
         db.query(ManualCategory)
         .options(selectinload(ManualCategory.children))
@@ -71,7 +80,7 @@ def list_all(db: DbSession, *, org_id: int) -> list[ManualCategory]:
 
 
 def has_children(db: DbSession, *, category_id: int) -> bool:
-    """Check whether an active category has active children."""
+    """Check for an active child without loading complete child rows."""
     return (
         db.query(ManualCategory.id)
         .filter(ManualCategory.parent_id == category_id, ManualCategory.is_active.is_(True))
@@ -81,7 +90,11 @@ def has_children(db: DbSession, *, category_id: int) -> bool:
 
 
 def get_path(category: ManualCategory) -> list[ManualCategory]:
-    """Walk from a category to the root and return that breadcrumb path."""
+    """Walk parent links and return a root-first breadcrumb.
+
+    The loop naturally produces leaf-to-root order, so the list is reversed
+    once before being serialized for clients.
+    """
     path: list[ManualCategory] = []
     current: Optional[ManualCategory] = category
     while current is not None:

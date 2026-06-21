@@ -1,8 +1,12 @@
-"""Centralised audit-logging helper.
+"""Centralized best-effort audit-logging helper.
 
 Every security-relevant action (upload, delete, download, submit, login)
 must flow through here so the audit_logs table is the single source of
 truth for compliance investigations.
+
+The caller supplies the transaction's existing SQLAlchemy session. A flush
+makes the row part of that transaction, while the caller retains authority to
+commit or roll back the business action and its audit evidence together.
 """
 
 from __future__ import annotations
@@ -29,7 +33,14 @@ def record(
     device_info: Optional[dict] = None,
     metadata: Optional[dict] = None,
 ) -> None:
-    """Append an immutable audit row. Never raises — logs and continues."""
+    """Append an audit row without failing the user-facing operation.
+
+    This deliberately catches database/serialization errors because audit
+    telemetry should not turn a successful core action into a 500 response.
+    The exception is still logged for operators. Note that SQLAlchemy may mark
+    a transaction failed after a flush error, so callers should still follow
+    normal rollback handling around their overall workflow.
+    """
     try:
         # Audit failures should not break the user action that triggered them.
         db.add(

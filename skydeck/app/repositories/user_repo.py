@@ -1,4 +1,9 @@
-"""Repository helpers for user lookup and organization-scoped lists."""
+"""Repository queries and persistence helpers for users and profile pictures.
+
+Normal lookups hide soft-deleted users. Selection helpers require an
+organization ID whenever caller-provided IDs could otherwise cross tenant
+boundaries.
+"""
 
 from __future__ import annotations
 
@@ -40,7 +45,11 @@ def get_by_employee_no(
     employee_no: str,
     exclude_user_id: Optional[int] = None,
 ) -> Optional[User]:
-    """Fetch an active same-organization user by employee number."""
+    """Find a case/whitespace-insensitive employee number collision.
+
+    ``exclude_user_id`` supports profile updates: retaining the current user's
+    own employee number is valid, while matching another active user conflicts.
+    """
     query = db.query(User).filter(
         User.org_id == org_id,
         func.lower(func.btrim(User.employee_no)) == employee_no.strip().lower(),
@@ -66,7 +75,7 @@ def list_by_org_and_roles(db: Session, *, org_id: int, roles: list[UserRole]) ->
 
 
 def list_by_ids(db: Session, *, org_id: int, user_ids: list[int]) -> list[User]:
-    """List selected non-deleted users, restricted to a single organization."""
+    """Resolve selected IDs without allowing cross-organization recipients."""
     return (
         db.query(User)
         .filter(
@@ -80,7 +89,7 @@ def list_by_ids(db: Session, *, org_id: int, user_ids: list[int]) -> list[User]:
 
 
 def soft_delete(db: Session, user: User) -> None:
-    """Deactivate a user while preserving historical references."""
+    """Deactivate login/list visibility while preserving historical references."""
     user.deleted_at = datetime.now(timezone.utc)
     db.flush()
 

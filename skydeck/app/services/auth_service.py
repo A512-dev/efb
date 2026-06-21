@@ -1,7 +1,11 @@
-"""Business logic for authentication, token refresh, and logout.
+"""Business workflows for signup, login, token refresh, and logout.
 
 Every successful login creates a row in the ``sessions`` table.
 The raw refresh token is never stored — only its SHA-256 hash.
+
+This module is the transaction boundary for authentication. Repository helpers
+flush individual rows, while public service functions commit complete workflows
+such as user + session + audit record together.
 """
 
 from __future__ import annotations
@@ -46,7 +50,7 @@ def signup(
     actor_user_id: Optional[int] = None,
     ip: Optional[str] = None,
 ) -> dict:
-    """Register a new account.
+    """Register a user, create their first session, and return token credentials.
 
     Raises ``ConflictError`` if the email is already registered.
     """
@@ -71,6 +75,7 @@ def signup(
         license_expires_at=_add_years(now, 1),
     )
     db.add(user)
+    # The generated primary key becomes the MVP's initial employee number.
     db.flush()
     user.employee_no = str(user.id)
     db.flush()
@@ -105,7 +110,11 @@ def login(
     ip: Optional[str] = None,
     device_info: Optional[dict] = None,
 ) -> dict:
-    """Authenticate a user and return token pair + user info."""
+    """Authenticate a user, record the attempt, and create a session.
+
+    Both unknown-email and wrong-password failures return the same message and
+    incur a bcrypt comparison, reducing account-enumeration and timing signals.
+    """
     user = user_repo.get_by_email(db, email)
 
     if user is None:
@@ -149,12 +158,18 @@ def login(
 
 
 def refresh(db: DbSession, *, raw_refresh_token: str) -> dict:
-    """Validate a refresh token and return a new access token."""
+    """Validate JWT and persisted session state, then issue a new access token.
+
+    Signature/type/expiry validation alone is insufficient: the matching
+    database session must still exist, be unrevoked, agree with the JWT session
+    ID, and belong to an active user.
+    """
     try:
         payload = decode_refresh_token(raw_refresh_token)
     except JWTError as exc:
         raise AuthenticationError("Invalid or expired refresh token") from exc
 
+    # Hash the presented credential to find the row without storing raw tokens.
     token_hash = hash_token(raw_refresh_token)
     sess = session_repo.get_by_token_hash(db, token_hash)
 
@@ -170,6 +185,8 @@ def refresh(db: DbSession, *, raw_refresh_token: str) -> dict:
     if expires_aware < datetime.now(timezone.utc):
         raise AuthenticationError("Session expired")
 
+    # This cross-check prevents a valid JWT from being paired with another
+    # session row even if storage metadata were corrupted.
     session_id_from_token = payload.get("sid")
     if session_id_from_token != sess.id:
         raise AuthenticationError("Token / session mismatch")
@@ -186,7 +203,11 @@ def refresh(db: DbSession, *, raw_refresh_token: str) -> dict:
 
 
 def logout(db: DbSession, *, raw_refresh_token: str) -> None:
-    """Revoke the session associated with the given refresh token."""
+    """Idempotently revoke the session associated with a refresh token.
+
+    Unknown/already-revoked tokens are treated as logged out, avoiding an
+    endpoint that reveals token validity.
+    """
     token_hash = hash_token(raw_refresh_token)
     sess = session_repo.get_by_token_hash(db, token_hash)
     if sess is not None:
@@ -204,7 +225,12 @@ def _create_session(
     ip: Optional[str] = None,
     device_info: Optional[dict] = None,
 ) -> dict:
-    """Create persisted refresh-token state and return raw tokens to the caller."""
+    """Create persisted refresh state and return raw tokens exactly once.
+
+    A temporary hash value is necessary because the refresh JWT embeds the
+    generated session ID. The row is flushed to obtain that ID, then updated
+    with the final token digest before the outer transaction commits.
+    """
     access_token = create_access_token(user.id, user.role.value)
     expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
@@ -277,7 +303,11 @@ def _record_failure(
     ip: Optional[str],
     device_info: Optional[dict],
 ) -> None:
-    """Persist a failed login attempt and commit it before raising auth errors."""
+    """Commit failed-attempt evidence before the caller raises a 401.
+
+    Failure paths do not proceed to a larger success transaction, so this
+    helper commits explicitly to ensure the security record is retained.
+    """
     session_repo.record_login_attempt(
         db,
         email=email,
