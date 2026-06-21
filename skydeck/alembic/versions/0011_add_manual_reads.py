@@ -1,4 +1,7 @@
-"""add manual reads
+"""Add accumulated per-user read state for manuals.
+
+Unlike append-only access logs, this table keeps one user/manual row with first
+read, latest read, and count fields for efficient user/admin reporting.
 
 Revision ID: 0011
 Revises: 0010
@@ -19,6 +22,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Create manual_reads with uniqueness and reporting indexes."""
     op.create_table(
         "manual_reads",
         sa.Column("id", sa.BigInteger, sa.Identity(always=True), primary_key=True),
@@ -53,6 +57,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Drop manual-read indexes and accumulated state."""
     op.drop_index("idx_manual_reads_last_read_at", table_name="manual_reads")
     op.drop_index("idx_manual_reads_user_id", table_name="manual_reads")
     op.drop_index("idx_manual_reads_manual_id", table_name="manual_reads")

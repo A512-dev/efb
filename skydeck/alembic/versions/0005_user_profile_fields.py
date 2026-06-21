@@ -1,4 +1,8 @@
-"""user profile fields
+"""Add operational profile and credential-expiry fields to users.
+
+Columns begin nullable so existing rows can be backfilled from IDs, roles, and
+creation timestamps. Only after every row has values are the fields made
+required.
 
 Revision ID: 0005
 Revises: 0004
@@ -18,6 +22,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Add, backfill, and make required the new user profile columns."""
     op.add_column("users", sa.Column("employee_no", sa.Text(), nullable=True))
     op.add_column("users", sa.Column("position", sa.Text(), nullable=True))
     op.add_column("users", sa.Column("aircraft_type", sa.Text(), nullable=True))
@@ -78,6 +83,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Remove user profile columns in reverse creation order."""
     op.drop_column("users", "license_expires_at")
     op.drop_column("users", "passport_expires_at")
     op.drop_column("users", "medical_expires_at")

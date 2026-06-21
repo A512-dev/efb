@@ -1,4 +1,7 @@
-"""manual update reads
+"""Add per-user read markers for shared manual-update feed events.
+
+One unique user/event row means read; absence means unread. Cascading foreign
+keys remove obsolete markers with their tenant, user, or event.
 
 Revision ID: 0006
 Revises: 0005
@@ -18,6 +21,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Create manual_update_reads and its lookup indexes."""
     op.create_table(
         "manual_update_reads",
         sa.Column("id", sa.BigInteger, sa.Identity(always=True), primary_key=True),
@@ -56,6 +60,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Drop read-marker indexes and table."""
     op.drop_index("idx_manual_update_reads_event_id", table_name="manual_update_reads")
     op.drop_index("idx_manual_update_reads_user_id", table_name="manual_update_reads")
     op.drop_index("idx_manual_update_reads_org_id", table_name="manual_update_reads")

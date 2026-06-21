@@ -1,4 +1,9 @@
-"""initial schema
+"""Create the original SkyDeck schema and PostgreSQL enum/extension types.
+
+This baseline revision establishes tenant, authentication, manual, form,
+submission, and audit tables. Later revisions evolve or retire several of
+these features; a fresh database still replays this historical starting point
+before applying those changes.
 
 Revision ID: 0001
 Revises:
@@ -18,6 +23,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Create the complete baseline schema in foreign-key dependency order."""
     # ── extensions ─────────────────────────────────────────
     op.execute("CREATE EXTENSION IF NOT EXISTS citext")
 
@@ -231,6 +237,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Remove baseline tables in reverse dependency order, then enum types."""
     op.drop_table("audit_logs")
     op.drop_table("submission_attachments")
     op.drop_table("submissions")

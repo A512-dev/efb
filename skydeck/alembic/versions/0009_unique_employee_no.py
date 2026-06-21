@@ -1,4 +1,7 @@
-"""unique employee numbers per organization
+"""Enforce active employee-number uniqueness within each organization.
+
+The partial functional index ignores soft-deleted users and compares trimmed,
+lowercased values, matching repository-level collision checks.
 
 Revision ID: 0009
 Revises: 0008
@@ -17,6 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Create the active, tenant-scoped normalized employee-number index."""
     op.execute(
         """
         CREATE UNIQUE INDEX uq_users_org_employee_no_active
@@ -27,4 +31,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Remove employee-number uniqueness enforcement."""
     op.execute("DROP INDEX uq_users_org_employee_no_active")

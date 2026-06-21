@@ -1,6 +1,8 @@
-"""Auth endpoint tests – login, refresh, logout, /me, error cases.
+"""Integration tests for login, signup, refresh, logout, and authenticated /me.
 
 Runs against the seeded dev database (SkyWest Regional Airlines).
+The suite intentionally checks generic failure messages and status envelopes as
+well as happy paths because authentication must not reveal account existence.
 """
 
 from __future__ import annotations
@@ -13,10 +15,12 @@ from tests.conftest import SEED_EMAIL, SEED_PASSWORD
 
 
 def _auth_header(token: str) -> dict:
+    """Build the Bearer header used by protected test requests."""
     return {"Authorization": f"Bearer {token}"}
 
 
 def _login(client: TestClient, email: str = SEED_EMAIL, password: str = SEED_PASSWORD) -> str:
+    """Login through the public endpoint and return an access token."""
     resp = client.post("/api/v1/auth/login", json={"email": email, "password": password})
     assert resp.status_code == 200, resp.text
     return resp.json()["access_token"]
@@ -26,7 +30,10 @@ def _login(client: TestClient, email: str = SEED_EMAIL, password: str = SEED_PAS
 
 
 class TestLogin:
+    """Credential validation, token response, and enumeration-safety behavior."""
+
     def test_login_success(self, client: TestClient):
+        """Valid seeded credentials return both tokens and safe user details."""
         resp = client.post(
             "/api/v1/auth/login",
             json={"email": SEED_EMAIL, "password": SEED_PASSWORD},
@@ -44,6 +51,7 @@ class TestLogin:
         assert user["role"] == "admin"
 
     def test_login_wrong_password(self, client: TestClient):
+        """A wrong password returns the standard generic 401 envelope."""
         resp = client.post(
             "/api/v1/auth/login",
             json={"email": SEED_EMAIL, "password": "wrong"},
@@ -54,6 +62,7 @@ class TestLogin:
         assert body["code"] == 401
 
     def test_login_unknown_email(self, client: TestClient):
+        """An unknown email is indistinguishable from other bad credentials."""
         resp = client.post(
             "/api/v1/auth/login",
             json={"email": "nobody@example.com", "password": "whatever"},
@@ -63,6 +72,7 @@ class TestLogin:
         assert body["code"] == 401
 
     def test_login_case_insensitive_email(self, client: TestClient):
+        """PostgreSQL CITEXT permits differently cased email input."""
         resp = client.post(
             "/api/v1/auth/login",
             json={"email": "S.MITCHELL@SKYWEST-AIR.COM", "password": SEED_PASSWORD},
@@ -71,6 +81,7 @@ class TestLogin:
         assert resp.json()["user"]["name"] == "Sarah Mitchell"
 
     def test_login_with_device_info(self, client: TestClient):
+        """Optional structured device metadata does not break authentication."""
         resp = client.post(
             "/api/v1/auth/login",
             json={
@@ -84,7 +95,10 @@ class TestLogin:
 
 
 class TestSignup:
+    """Administrator-only account creation and role-validation behavior."""
+
     def test_admin_can_create_non_pilot_user(self, client: TestClient):
+        """An admin can create, authenticate, and clean up a safety user."""
         admin_token = _login(client)
         password = "SkyDeck@2026!"
         email = f"safety-{uuid4().hex[:12]}@example.com"
@@ -119,6 +133,7 @@ class TestSignup:
         assert delete_resp.status_code == 200, delete_resp.text
 
     def test_signup_defaults_to_pilot_role(self, client: TestClient):
+        """Omitting role follows the least-privileged pilot default."""
         admin_token = _login(client)
         email = f"pilot-{uuid4().hex[:12]}@example.com"
 
@@ -142,6 +157,7 @@ class TestSignup:
         assert delete_resp.status_code == 200, delete_resp.text
 
     def test_signup_requires_admin(self, client: TestClient):
+        """An unauthenticated caller cannot create accounts."""
         resp = client.post(
             "/api/v1/auth/signup",
             json={
@@ -155,6 +171,7 @@ class TestSignup:
         assert resp.status_code == 401
 
     def test_signup_rejects_unknown_role(self, client: TestClient):
+        """Pydantic rejects role values outside the persisted enum."""
         admin_token = _login(client)
 
         resp = client.post(
@@ -175,7 +192,10 @@ class TestSignup:
 
 
 class TestRefresh:
+    """Refresh-token exchange success and malformed-token rejection."""
+
     def test_refresh_success(self, client: TestClient, auth_tokens: dict):
+        """A live persisted refresh session yields a new access token."""
         resp = client.post(
             "/api/v1/auth/refresh",
             json={"refresh_token": auth_tokens["refresh_token"]},
@@ -186,6 +206,7 @@ class TestRefresh:
         assert body["token_type"] == "bearer"
 
     def test_refresh_invalid_token(self, client: TestClient):
+        """Malformed refresh credentials return a 401."""
         resp = client.post(
             "/api/v1/auth/refresh",
             json={"refresh_token": "garbage.token.value"},
@@ -198,7 +219,10 @@ class TestRefresh:
 
 
 class TestUsersMe:
+    """Authentication requirements and safe current-user serialization."""
+
     def test_me_authenticated(self, client: TestClient, auth_tokens: dict):
+        """A valid access token exposes the expected safe profile fields."""
         resp = client.get(
             "/api/v1/users/me",
             headers={"Authorization": f"Bearer {auth_tokens['access_token']}"},
@@ -212,11 +236,13 @@ class TestUsersMe:
         assert "created_at" in body
 
     def test_me_no_token(self, client: TestClient):
+        """The current-user route requires a Bearer token."""
         resp = client.get("/api/v1/users/me")
         assert resp.status_code == 401
         assert resp.json()["code"] == 401
 
     def test_me_bad_token(self, client: TestClient):
+        """A malformed access token cannot establish an identity."""
         resp = client.get(
             "/api/v1/users/me",
             headers={"Authorization": "Bearer invalid.jwt.token"},
@@ -228,7 +254,10 @@ class TestUsersMe:
 
 
 class TestLogout:
+    """Session revocation and intentionally idempotent logout behavior."""
+
     def test_logout_revokes_session(self, client: TestClient):
+        """Logout makes the same refresh token unusable afterward."""
         login_resp = client.post(
             "/api/v1/auth/login",
             json={"email": SEED_EMAIL, "password": SEED_PASSWORD},
@@ -249,6 +278,7 @@ class TestLogout:
         assert refresh_resp.status_code == 401
 
     def test_logout_with_invalid_token_is_safe(self, client: TestClient):
+        """Logout is idempotent and does not reveal token validity."""
         resp = client.post(
             "/api/v1/auth/logout",
             json={"refresh_token": "garbage"},

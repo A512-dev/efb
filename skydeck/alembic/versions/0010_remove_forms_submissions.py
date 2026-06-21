@@ -1,4 +1,8 @@
-"""remove forms and submissions
+"""Remove the retired forms/submissions feature from the live schema.
+
+The downgrade fully recreates the historical tables and ``submission_status``
+enum so the revision remains reversible, but it cannot recover rows discarded
+by the upgrade.
 
 Revision ID: 0010
 Revises: 0009
@@ -20,6 +24,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Drop attachment/submission/form tables in child-to-parent order."""
     op.drop_table("submission_attachments")
     op.drop_table("submissions")
     op.drop_table("form_versions")
@@ -28,6 +33,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Recreate the empty historical forms/submissions schema."""
     submission_status = postgresql.ENUM(
         "pending",
         "submitted",

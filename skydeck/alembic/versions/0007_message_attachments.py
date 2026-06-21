@@ -1,4 +1,8 @@
-"""message attachments
+"""Add encrypted message-attachment metadata.
+
+Ciphertext remains in external storage. The table records its path, trusted
+plaintext metadata, digest, and envelope-encryption fields required to unwrap
+the per-file data key.
 
 Revision ID: 0007
 Revises: 0006
@@ -18,6 +22,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Create attachment metadata with tenant/message lookup indexes."""
     op.create_table(
         "message_attachments",
         sa.Column("id", sa.BigInteger, sa.Identity(always=True), primary_key=True),
@@ -55,6 +60,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Drop attachment indexes and metadata table; external files are untouched."""
     op.drop_index("idx_message_attachments_message_id", table_name="message_attachments")
     op.drop_index("idx_message_attachments_org_id", table_name="message_attachments")
     op.drop_table("message_attachments")

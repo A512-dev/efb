@@ -1,4 +1,9 @@
-"""Smoke test for the public health endpoint."""
+"""Minimal smoke test for the unauthenticated process-health endpoint.
+
+This module owns its own client because it does not need seeded login fixtures;
+it verifies that the application can be imported and its public liveness route
+is mounted.
+"""
 
 from fastapi.testclient import TestClient
 

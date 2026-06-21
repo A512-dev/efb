@@ -1,4 +1,7 @@
-"""add messages
+"""Add organization-scoped direct messages and mailbox indexes.
+
+Each row represents one sender-to-recipient delivery. Nullable user foreign
+keys preserve conversation history if either account is deleted.
 
 Revision ID: 0002
 Revises: 0001
@@ -17,6 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Create the messages table and indexes for inbox/sent/unread queries."""
     op.create_table(
         "messages",
         sa.Column("id", sa.BigInteger, sa.Identity(always=True), primary_key=True),
@@ -57,6 +61,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Drop message indexes and the messages table."""
     op.drop_index("idx_messages_unread", table_name="messages")
     op.drop_index("idx_messages_sender_created", table_name="messages")
     op.drop_index("idx_messages_recipient_created", table_name="messages")

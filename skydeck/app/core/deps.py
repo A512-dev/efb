@@ -70,6 +70,7 @@ def require_roles(*allowed: UserRole) -> Callable[..., User]:
     allowed_set = set(allowed)
 
     def _check(current_user: User = Depends(get_current_user)) -> User:
+        """Return the authenticated user only when their role is allowed."""
         # FastAPI calls this inner dependency per request after get_current_user succeeds.
         if current_user.role not in allowed_set:
             raise AuthorisationError(

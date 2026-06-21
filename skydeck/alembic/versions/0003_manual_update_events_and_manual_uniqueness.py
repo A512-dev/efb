@@ -1,4 +1,8 @@
-"""manual update events and manual uniqueness
+"""Add the manual-update feed and change manual uniqueness semantics.
+
+The original schema made PDF checksums globally unique. This revision allows
+identical bytes under different titles and instead enforces one active
+case-insensitive title per organization.
 
 Revision ID: 0003
 Revises: 0002
@@ -17,6 +21,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Create update events and replace checksum uniqueness with active titles."""
     op.create_table(
         "manual_update_events",
         sa.Column("id", sa.BigInteger, sa.Identity(always=True), primary_key=True),
@@ -73,6 +78,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Restore checksum uniqueness and remove the manual-update event table."""
     op.execute("DROP INDEX IF EXISTS uq_manuals_active_org_title")
     op.create_unique_constraint("manuals_sha256_key", "manuals", ["sha256"])
 

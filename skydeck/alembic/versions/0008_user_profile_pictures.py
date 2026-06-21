@@ -1,4 +1,7 @@
-"""user profile pictures
+"""Add encrypted profile-picture metadata and current-picture user link.
+
+Pictures use external encrypted storage. ``users.profile_picture_id`` points to
+the currently selected metadata row and becomes null if that row is removed.
 
 Revision ID: 0008
 Revises: 0007
@@ -18,6 +21,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Create picture metadata, then add the nullable current-picture reference."""
     op.create_table(
         "user_profile_pictures",
         sa.Column("id", sa.BigInteger, sa.Identity(always=True), primary_key=True),
@@ -62,6 +66,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Remove the user reference before dropping picture metadata."""
     op.drop_index("idx_users_profile_picture_id", table_name="users")
     op.drop_constraint(
         "fk_users_profile_picture_id_user_profile_pictures",

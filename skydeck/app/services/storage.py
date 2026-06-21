@@ -70,6 +70,7 @@ class LocalStorage(StorageProvider):
     """Persist files on the local filesystem under ``base_dir``."""
 
     def __init__(self, base_dir: str) -> None:
+        """Create the base directory eagerly and retain it as a Path."""
         self._base = Path(base_dir)
         self._base.mkdir(parents=True, exist_ok=True)
 

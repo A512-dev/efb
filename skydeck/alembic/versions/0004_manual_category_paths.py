@@ -1,4 +1,8 @@
-"""manual category paths
+"""Add hierarchical organization-scoped categories to the manual library.
+
+The migration creates and seeds a two-level default tree for every existing
+organization, assigns all existing manuals to ``Iranair / General``, then makes
+``manuals.category_id`` required.
 
 Revision ID: 0004
 Revises: 0003
@@ -78,6 +82,7 @@ _CATEGORY_TREE = [
 
 
 def _seed_categories(connection) -> None:
+    """Seed default roots/children and backfill existing manual category IDs."""
     org_ids = [row[0] for row in connection.execute(sa.text("SELECT id FROM orgs ORDER BY id"))]
 
     for org_id in org_ids:
@@ -147,6 +152,7 @@ def _seed_categories(connection) -> None:
 
 
 def upgrade() -> None:
+    """Create the category tree, seed it, and require a manual leaf category."""
     op.create_table(
         "manual_categories",
         sa.Column("id", sa.BigInteger, sa.Identity(always=True), primary_key=True),
@@ -208,6 +214,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Remove manual category references and then the category tree."""
     op.drop_index("idx_manuals_category_id", table_name="manuals")
     op.drop_constraint("fk_manuals_category_id_manual_categories", "manuals", type_="foreignkey")
     op.drop_column("manuals", "category_id")
