@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Resolve from this file so settings work no matter where the process starts.
@@ -78,6 +78,18 @@ class Settings(BaseSettings):
 
     # ── seed ───────────────────────────────────────────────
     RUN_SEED: bool = False
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug_mode(cls, value):
+        """Accept common environment names in addition to boolean strings."""
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"release", "production", "prod"}:
+                return False
+            if normalized in {"development", "dev"}:
+                return True
+        return value
 
     @model_validator(mode="after")
     def assemble_database_url(self) -> Settings:
