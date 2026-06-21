@@ -1,4 +1,9 @@
-"""FastAPI dependencies for request-scoped auth and RBAC."""
+"""FastAPI dependencies for request-scoped authentication and RBAC.
+
+Routes declare these functions with ``Depends``. FastAPI then runs token
+validation before the route body and passes the resulting ORM ``User`` through
+the rest of the dependency graph.
+"""
 
 from __future__ import annotations
 
@@ -16,6 +21,8 @@ from app.models.enums import UserRole
 from app.models.user import User
 from app.repositories import user_repo
 
+# ``auto_error=False`` lets the application raise its own AppError and preserve
+# the standard {"error", "code"} response envelope for missing credentials.
 _bearer_scheme = HTTPBearer(auto_error=False)
 
 
@@ -33,10 +40,14 @@ def get_current_user(
         raise AuthenticationError("Missing authentication token")
 
     try:
+        # JWT verification checks the signature and expiration before returning
+        # claims. decode_access_token additionally rejects refresh tokens.
         payload = decode_access_token(credentials.credentials)
     except JWTError as exc:
         raise AuthenticationError("Invalid or expired token") from exc
 
+    # The token stores ``sub`` as a string to follow JWT conventions; database
+    # primary keys are integers.
     user_id = int(payload["sub"])
     user = user_repo.get_by_id(db, user_id)
 
@@ -55,6 +66,7 @@ def require_roles(*allowed: UserRole) -> Callable[..., User]:
         def upload(user: User = Depends(require_roles(UserRole.admin))):
             ...
     """
+    # Convert once when the dependency is configured, not on every request.
     allowed_set = set(allowed)
 
     def _check(current_user: User = Depends(get_current_user)) -> User:

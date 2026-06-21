@@ -1,5 +1,9 @@
-"""
-Seed script for SkyDeck development database.
+"""Seed script for the SkyDeck development database.
+
+The seed is intentionally idempotent at database level: if any organization
+already exists, it assumes the database has been initialized and exits without
+adding duplicate demo records. All inserts share one transaction, so a failure
+rolls back the complete seed rather than leaving a partially populated system.
 
 Usage:
     python -m app.seed
@@ -46,10 +50,18 @@ def _default_position(name: str, role: UserRole) -> str:
 
 
 def seed() -> None:
-    """Populate an empty development database with demo aviation data."""
+    """Populate an empty development database with demo aviation data.
+
+    The order matters because later rows need primary keys from earlier rows:
+    organization -> users -> manuals -> audit log. ``flush`` sends pending
+    inserts to PostgreSQL without committing, making generated IDs available
+    while preserving one atomic transaction.
+    """
     db = SessionLocal()
 
     try:
+        # This coarse guard is appropriate for development data: a non-empty
+        # organization table means another seed or real setup already ran.
         existing = db.execute(text("SELECT count(*) FROM orgs")).scalar()
         if existing and existing > 0:
             print("[seed] Database already contains data - skipping.")
@@ -67,9 +79,12 @@ def seed() -> None:
             },
         )
         db.add(org)
+        # Obtain org.id for all child rows while keeping the transaction open.
         db.flush()
         print(f"[seed] Created org: {org.name} (id={org.id})")
 
+        # Demo users share one known password, but only its bcrypt hash reaches
+        # the database.
         password_hash = _hash_password("SkyDeck@2026!")
         users_data = [
             {
@@ -119,6 +134,8 @@ def seed() -> None:
             db.add(user)
             users.append(user)
 
+        # First flush allocates user IDs. Those IDs double as the initial
+        # employee numbers, so a second flush persists the derived values.
         db.flush()
         for user in users:
             user.employee_no = str(user.id)
@@ -191,10 +208,13 @@ def seed() -> None:
         )
         db.add(audit)
 
+        # Nothing becomes visible to other transactions until every seed object
+        # has been created successfully.
         db.commit()
         print("\n[seed] Database seeded successfully.")
 
     except Exception:
+        # A failed seed should leave the database exactly as it was before.
         db.rollback()
         raise
     finally:

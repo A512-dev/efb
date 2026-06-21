@@ -1,4 +1,9 @@
-"""FastAPI application assembly and router registration."""
+"""FastAPI application assembly and router registration.
+
+This is the backend's composition root: it creates the application, installs
+global error handling, and mounts each feature router. Running
+``uvicorn app.main:app`` imports this module and exposes the ``app`` object.
+"""
 
 from contextlib import asynccontextmanager
 
@@ -17,7 +22,15 @@ from app.core.errors import register_error_handlers
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
-    """Verify database connectivity once at startup."""
+    """Verify database connectivity once at startup.
+
+    FastAPI enters this context before accepting requests. A tiny ``SELECT 1``
+    fails early with a useful configuration message instead of allowing the
+    first real API request to discover a broken database connection.
+
+    ``application`` is required by FastAPI's lifespan protocol even though
+    this implementation does not need to mutate the application instance.
+    """
     from sqlalchemy import text
 
     from app.db.session import engine
@@ -33,9 +46,14 @@ async def lifespan(application: FastAPI):
             f"Check your .env file and ensure PostgreSQL is running."
         ) from exc
 
+    # Control returns to FastAPI while the server is alive. Code placed after
+    # this yield would run during shutdown; there is currently no app-wide
+    # resource to release because request sessions close themselves.
     yield
 
 
+# Creating the object at import time is conventional for ASGI servers: Uvicorn
+# imports ``app.main`` and looks up this module-level name.
 app = FastAPI(
     title="SkyDeck API",
     description="Aviation Safety System MVP",
@@ -45,6 +63,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Translate domain-level AppError exceptions into one consistent JSON shape.
 register_error_handlers(app)
 
 # All public API routes currently live under the versioned /api/v1 prefix.

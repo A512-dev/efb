@@ -4,6 +4,11 @@ Token types:
     - access: short-lived, carries user_id + role in the payload.
     - refresh: long-lived, carries session_id. Stored as a SHA-256
       hash in the sessions table for revocation lookups.
+
+Raw passwords and refresh tokens must never be persisted. Passwords use
+bcrypt's intentionally expensive one-way hashing, while refresh tokens use
+SHA-256 because they already contain high-entropy signed data and must be
+looked up efficiently.
 """
 
 from __future__ import annotations
@@ -18,6 +23,8 @@ from jose import JWTError, jwt
 
 from app.core.config import settings
 
+# Bind configuration once at import time. Changing these settings requires a
+# process restart and changing SECRET_KEY invalidates all existing JWTs.
 _ALGORITHM = settings.ALGORITHM
 _SECRET = settings.SECRET_KEY
 
@@ -31,6 +38,7 @@ def create_access_token(
     expires_delta: Optional[timedelta] = None,
 ) -> str:
     """Create the short-lived JWT sent on authenticated API requests."""
+    # JWT timestamps are always UTC-aware to avoid local-time/DST ambiguity.
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
@@ -40,6 +48,7 @@ def create_access_token(
         "type": "access",
         "exp": expire,
     }
+    # python-jose serializes the datetime ``exp`` claim to a NumericDate.
     return jwt.encode(payload, _SECRET, algorithm=_ALGORITHM)
 
 
@@ -61,6 +70,7 @@ def create_refresh_token(session_id: int) -> str:
 
 def decode_access_token(token: str) -> dict[str, Any]:
     """Decode and validate an access token. Raises ``JWTError`` on failure."""
+    # Decoding verifies both the signature and standard ``exp`` claim.
     payload = jwt.decode(token, _SECRET, algorithms=[_ALGORITHM])
     if payload.get("type") != "access":
         raise JWTError("Token type is not 'access'")
@@ -92,5 +102,9 @@ def hash_password(plain: str) -> str:
 
 
 def hash_token(token: str) -> str:
-    """SHA-256 hash used to store/look-up refresh tokens in the DB."""
+    """Return the deterministic digest stored for a refresh token.
+
+    Determinism allows an incoming raw token to be hashed and matched to its
+    session row without retaining the credential itself.
+    """
     return hashlib.sha256(token.encode()).hexdigest()

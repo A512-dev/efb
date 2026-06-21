@@ -1,4 +1,10 @@
-"""Application settings loaded from environment variables and .env."""
+"""Application settings loaded from environment variables and ``.env``.
+
+Importers use the module-level :data:`settings` singleton. Pydantic validates
+and converts strings such as ports, booleans, lists, and optional values as the
+object is created, so the rest of the application receives typed configuration
+rather than repeatedly parsing raw environment variables.
+"""
 
 from __future__ import annotations
 
@@ -8,7 +14,8 @@ from typing import Optional
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Resolve from this file so settings work no matter where the process starts.
+# ``config.py`` is app/core/config.py, so three parents reaches ``skydeck``.
+# Resolving from this file makes settings independent of the current directory.
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 _ENV_FILE = _PROJECT_ROOT / ".env"
 
@@ -82,7 +89,11 @@ class Settings(BaseSettings):
     @field_validator("DEBUG", mode="before")
     @classmethod
     def parse_debug_mode(cls, value):
-        """Accept common environment names in addition to boolean strings."""
+        """Accept deployment-mode names in addition to boolean strings.
+
+        A ``before`` validator receives the raw environment value. Returning
+        unrecognized input delegates normal parsing and errors back to Pydantic.
+        """
         if isinstance(value, str):
             normalized = value.strip().lower()
             if normalized in {"release", "production", "prod"}:
@@ -104,11 +115,15 @@ class Settings(BaseSettings):
         the driver that is actually installed.
         """
         if self.DATABASE_URL is None:
+            # Convenient for local/Docker setups where connection components
+            # are supplied as separate environment variables.
             self.DATABASE_URL = (
                 f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
                 f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
             )
         else:
+            # Hosting providers commonly expose one of these generic schemes;
+            # SQLAlchemy needs the explicit installed driver name.
             url = self.DATABASE_URL
             if url.startswith("postgresql://"):
                 self.DATABASE_URL = "postgresql+psycopg2://" + url[len("postgresql://") :]
@@ -117,4 +132,6 @@ class Settings(BaseSettings):
         return self
 
 
+# Fail fast during import if configuration cannot be validated. Every module
+# imports this same object, so all components observe identical values.
 settings = Settings()
