@@ -8,7 +8,10 @@ global error handling, and mounts each feature router. Running
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from sqladmin import Admin
 
+from app.admin.auth import AdminAuth
+from app.admin.user_admin import UserAdmin
 from app.api.v1.auth import router as auth_router
 from app.api.v1.manual_categories import router as manual_categories_router
 from app.api.v1.manual_reads import router as manual_reads_router
@@ -18,6 +21,7 @@ from app.api.v1.messages import router as messages_router
 from app.api.v1.users import router as users_router
 from app.core.config import settings
 from app.core.errors import register_error_handlers
+from app.db.session import engine
 
 
 @asynccontextmanager
@@ -80,3 +84,20 @@ app.include_router(messages_router, prefix="/api/v1")
 def health_check() -> dict:
     """Lightweight liveness endpoint for deployments and smoke tests."""
     return {"status": "ok", "app": settings.APP_NAME}
+
+
+admin_auth = AdminAuth(
+    secret_key=settings.SECRET_KEY,
+    session_cookie="skydeck_admin",
+    max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+    same_site="strict",
+    https_only=not settings.DEBUG,
+    path="/admin",
+)
+
+admin = Admin(
+    app,
+    engine,
+    authentication_backend=admin_auth,
+)
+admin.add_view(UserAdmin)
