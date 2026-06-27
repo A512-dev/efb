@@ -346,22 +346,6 @@ const CrewProfile = () => {
     return manual?.title || `Manual #${manualId}`;
   };
 
-  useEffect(() => {
-    if (!selectedPilot) return;
-
-    const loadReads = async () => {
-      try {
-        const userId = selectedPilot.id || selectedPilot.user_id;
-        const data = await getUserManualReads(userId);
-        const items = Array.isArray(data) ? data : data?.items || [];
-        setUserReads(items);
-      } catch (err) {
-        console.error("Error loading user reads:", err);
-      }
-    };
-
-    loadReads();
-  }, [selectedPilot]);
 
   useEffect(() => {
     const loadUsers = async () => {
