@@ -268,3 +268,202 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+.profileManualReads {
+  margin-top: 24px;
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  width: 80%;
+  margin-left: auto;
+}
+
+.profileManualHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.profileManualHeader h3 {
+  font-size: 16px;
+  color: var(--text);
+  margin: 0;
+}
+
+.manualCount {
+  background: var(--bgSideBar);
+  color: #fff;
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.noManuals {
+  font-size: 13px;
+  opacity: 0.7;
+  margin: 0;
+}
+
+.readManualList {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.readManualRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 11px;
+  background: var(--bg_input);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+}
+
+.manualTitle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.manualTitle span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manualCheck {
+  color: #22c55e;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.manualDate {
+  font-size: 11px;
+  opacity: 0.7;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.viewReadsBtn {
+  position: absolute;
+  right: 540px;
+  margin-top: 35 0px;
+  padding: 10px 20px;
+  border: 1px solid var(--accent);
+  color: #e74c3c;
+  background: var(--firoozepor);
+  color: white;
+  box-shadow: var(--boxshadow_3d);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.25s;
+}
+.viewReadsBtn:hover {
+  transform: translateY(-2px);
+}
+.adminReadList {
+  display: flex;
+  flex-direction: column;
+  color: white;
+}
+
+.adminReadRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.adminReadRow:last-child {
+  border-bottom: none;
+}
+/* READ MANUALS MODAL */
+
+.readsModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+
+.readsModalBox {
+  position: relative;
+  width: 520px;
+  max-width: 92%;
+  max-height: 70vh;
+  overflow-y: auto;
+
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 20px;
+
+  box-shadow: var(--shadow);
+}
+
+.readsModalTitle {
+  font-size: 16px;
+  margin-bottom: 14px;
+  color: var(--text);
+}
+
+.readsModalClose {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.readsModalClose img {
+  width: 18px;
+  height: 18px;
+}
+
+/* list */
+
+.readsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.readsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 8px 10px;
+
+  background: var(--bg_input);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+}
+
+.readsRow span {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.readsRow small {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.modal-content {
+  margin-left: 200px;
+}
+.modal-content h3 {
+  color: white;
+}

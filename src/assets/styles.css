@@ -58,7 +58,7 @@ h3 {
   cursor: pointer;
 }
 .nav-item:hover,
-.nav-item.active {
+.nav-item:active {
   background: #333;
   color: #00d8ff;
 }

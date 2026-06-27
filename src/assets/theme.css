@@ -1126,7 +1126,7 @@ h5 {
 .deleteProfile {
   position: absolute;
   right: 540px;
-  margin-top: 400px;
+  margin-top: 350px;
   padding: 10px 20px;
   border: 1px solid #e74c3c;
   color: #e74c3c;
@@ -1177,6 +1177,14 @@ h5 {
   line-height: 1;
   position: absolute;
   right: 10px;
+}
+.disabled-link {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.readAndSignButton {
+  position: absolute;
+  right: 60px;
 }
 .manual-updates-panel {
   width: 95%;

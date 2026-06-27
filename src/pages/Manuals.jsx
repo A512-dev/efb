@@ -151,13 +151,49 @@ import { downloadManual } from "../services/apiService";
 import backIcon from '../assets/icons/arrowback .svg'
 import bookmarkAddIcon from "../assets/icons/bookmarkadd.svg";
 import bookmarkRemoveIcon from "../assets/icons/bookmarkpor.svg";
-
+import { useNotifications } from "../Context/NotificationContext";
+import { useNavigate } from "react-router-dom";
+import { getMyManualReads } from "../services/apiService";
+import { markManualRead } from "../services/apiService";
 const Manuals = () => {
   const { categoryId } = useParams();
 
   const { categories, currentCategory, loading: categoriesLoading } = useManualCategories(categoryId || null);
+const { updates, seenIds } = useNotifications();
 
-  
+const [readManuals, setReadManuals] = useState([]);
+
+useEffect(() => {
+  const fetchReads = async () => {
+    try {
+      const data = await getMyManualReads();
+      const items = Array.isArray(data) ? data : data?.items || [];
+      const ids = items.map((item) => item.manual_id);
+
+      setReadManuals(ids);
+    } catch (err) {
+      console.error("Error fetching read manuals", err);
+    }
+  };
+
+  fetchReads();
+}, []);
+
+const handleRead = async (manualId) => {
+  try {
+    if (readManuals.includes(manualId)) return;
+
+    await markManualRead(manualId);
+
+    setReadManuals((prev) =>
+      prev.includes(manualId) ? prev : [...prev, manualId]
+    );
+  } catch (err) {
+    console.error("Error marking manual as read", err);
+  }
+};
+
+
 const getProcessedCategories = () => {
   if (!categories) return [];
   
@@ -167,7 +203,7 @@ const getProcessedCategories = () => {
   const isInsideIranAir = currentCategory?.name === "Iranair";
   const isInsideTraining = currentCategory?.name === "Training and resources";
 
-  // ✅ داخل IranAir
+  
   if (isInsideIranAir) {
     if (categories.length > 0) {
       finalCategories.push({
@@ -178,7 +214,7 @@ const getProcessedCategories = () => {
     return finalCategories;
   }
 
-  // ✅ داخل Training and resources
+  
   if (isInsideTraining) {
 
     const firstChild = categories[0];
@@ -201,7 +237,7 @@ const getProcessedCategories = () => {
     return finalCategories;
   }
 
-  // ✅ صفحه اصلی
+
   categories.forEach((category) => {
 
     const specialNames = ["REPORTS", "sms", "training"];
@@ -229,25 +265,42 @@ const getProcessedCategories = () => {
   const { manuals, loading } = useManuals(
     isLeafCategory ? categoryId || null : null
   );
+  const unreadManualIds = new Set(
+  updates
+    .filter((item) => !seenIds.includes(String(item.id)))
+    .map((item) => String(item.manual_id))
+);
+
+const visibleManuals = manuals.filter(
+  (manual) => !unreadManualIds.has(String(manual.id))
+);
+
 
   const { toggleClipboardItem, isDocumentBookmarked } = useBookmark();
   const [openDoc, setOpenDoc] = useState(null);
+const [openedManualId, setOpenedManualId] = useState(null);
+
 
   const openManual = async (manual) => {
-    try {
-      const blob = await downloadManual(manual.id);
-      const url = URL.createObjectURL(blob);
-      setOpenDoc(url);
-    } catch (err) {
-      console.error("Error opening PDF:", err);
-    }
-  };
+  try {
+    const blob = await downloadManual(manual.id);
+    const url = URL.createObjectURL(blob);
+
+    setOpenDoc(url);
+    setOpenedManualId(manual.id);
+  } catch (err) {
+    console.error("Error opening PDF:", err);
+  }
+};
+
 
   useEffect(() => {
-    if (!isLeafCategory) {
-      setOpenDoc(null);
-    }
-  }, [isLeafCategory, categoryId]);
+  if (!isLeafCategory) {
+    setOpenDoc(null);
+    setOpenedManualId(null);
+  }
+}, [isLeafCategory, categoryId]);
+
 
   useEffect(() => {
     return () => {
@@ -284,8 +337,8 @@ if (currentCategory.id === 23) {
   return currentCategory.name;
 };
 
-console.log("currentCategory:", currentCategory);
-console.log("categories:", categories);
+
+
 
   return (
     <PageWrapper>
@@ -331,8 +384,10 @@ console.log("categories:", categories);
             </NavLink>
           ))}
 
+
         {isLeafCategory &&
-          manuals.map((manual) => (
+  visibleManuals.map((manual) => (
+
             <div
               key={manual.id}
               className="headersForManuals"
@@ -352,6 +407,13 @@ console.log("categories:", categories);
               >
                 {manual.title}
               </span>
+<input
+  type="checkbox"
+  className="readAndSignButton"
+  checked={readManuals.includes(manual.id)}
+  disabled={openedManualId !== manual.id || readManuals.includes(manual.id)}
+  onChange={() => handleRead(manual.id)}
+/>
 
               <div style={{ display: "flex", gap: "2px", position: 'absolute', right: '20px' }}>
                 <img
