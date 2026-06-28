@@ -8,7 +8,9 @@ global error handling, and mounts each feature router. Running
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+
 from sqladmin import Admin
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.admin.auth import AdminAuth
 from app.admin.user_admin import UserAdmin
@@ -67,6 +69,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SECRET_KEY,
+    session_cookie="skydeck_admin",
+    max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+    same_site="strict",
+    https_only=not settings.DEBUG,
+    path="/admin",
+)
+
+
+
 # Translate domain-level AppError exceptions into one consistent JSON shape.
 register_error_handlers(app)
 
@@ -86,14 +101,7 @@ def health_check() -> dict:
     return {"status": "ok", "app": settings.APP_NAME}
 
 
-admin_auth = AdminAuth(
-    secret_key=settings.SECRET_KEY,
-    session_cookie="skydeck_admin",
-    max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-    same_site="strict",
-    https_only=not settings.DEBUG,
-    path="/admin",
-)
+admin_auth = AdminAuth(secret_key=settings.SECRET_KEY)
 
 admin = Admin(
     app,
