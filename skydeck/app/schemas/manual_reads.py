@@ -5,6 +5,7 @@ manual display names assembled by the API layer.
 """
 
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -19,6 +20,8 @@ class ManualReadOut(BaseModel):
     read_at: datetime
     last_read_at: datetime
     read_count: int
+    is_read: bool
+    unread_at: Optional[datetime]
     created_at: datetime
     user_name: str
     manual_title: str

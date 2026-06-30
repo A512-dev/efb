@@ -1,9 +1,8 @@
 """HTTP endpoints for accumulated manual-read state.
 
 Users can inspect and update their own state; administrators can inspect the
-organization-wide matrix. Downloading a manual also marks it read in
-``manuals.py``, while the explicit POST supports clients that record reading
-through another UI flow.
+organization-wide matrix. A row can be marked unread without deletion so
+historical read evidence remains available after PDF replacement or user action.
 """
 
 from fastapi import APIRouter, Depends
@@ -43,9 +42,11 @@ def _read_out(read: ManualRead) -> ManualReadOut:
         read_at=read.read_at,
         last_read_at=read.last_read_at,
         read_count=read.read_count,
+        is_read=read.is_read,
+        unread_at=read.unread_at,
         created_at=read.created_at,
         user_name=read.user.name,
-        manual_title=read.manual.title,
+        manual_title=read.manual_title or read.manual.title,
     )
 
 
@@ -104,6 +105,7 @@ def mark_manual_read(
         org_id=current_user.org_id,
         user_id=current_user.id,
         manual_id=manual.id,
+        manual_title=manual.title,
     )
     audit_service.record(
         db,
@@ -115,6 +117,44 @@ def mark_manual_read(
     )
     # The read counter and audit row should either both persist or both roll
     # back. Refresh reloads server-generated timestamps/relationships.
+    db.commit()
+    db.refresh(read)
+    return _read_out(read)
+
+
+@router.post(
+    "/{manual_id}/unread",
+    response_model=ManualReadOut,
+    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    summary="Mark a manual as unread",
+)
+def mark_manual_unread(
+    manual_id: int,
+    current_user: User = Depends(_ALL_ROLES),
+    db: DbSession = Depends(get_db),
+):
+    """Clear current-read state while preserving the user's read history."""
+    manual = manual_repo.get_by_id(db, manual_id)
+    if manual is None or manual.org_id != current_user.org_id:
+        raise NotFoundError("Manual not found")
+
+    read = manual_reads_repo.mark_unread(
+        db,
+        org_id=current_user.org_id,
+        user_id=current_user.id,
+        manual_id=manual.id,
+    )
+    if read is None:
+        raise NotFoundError("Manual read state not found")
+
+    audit_service.record(
+        db,
+        action="manual.unread",
+        target_type="manual",
+        target_id=manual.id,
+        user_id=current_user.id,
+        org_id=current_user.org_id,
+    )
     db.commit()
     db.refresh(read)
     return _read_out(read)

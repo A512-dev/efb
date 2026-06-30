@@ -2,21 +2,25 @@
 
 The unique user/manual pair makes this a compact state table rather than an
 event stream. Repeated reads update ``last_read_at`` and ``read_count`` while
-``read_at`` preserves the first read timestamp.
+``read_at`` preserves the first read timestamp. ``is_read`` describes whether
+the current manual file is read; historical rows stay in place when a user or
+replacement PDF makes the current file unread.
 """
 
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     DateTime,
     ForeignKey,
     Identity,
     Index,
     Integer,
+    Text,
     UniqueConstraint,
     func,
 )
@@ -60,6 +64,9 @@ class ManualRead(Base):
         DateTime(timezone=True), server_default=func.now()
     )
     read_count: Mapped[int] = mapped_column(Integer, default=1, server_default="1", nullable=False)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    unread_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    manual_title: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     manual: Mapped[Manual] = relationship(back_populates="reads")
