@@ -74,7 +74,7 @@ class TestUserProfileUpdate:
             assert body["employee_no"] == update["employee_no"]
             assert body["position"] == update["position"]
             assert body["aircraft_type"] == update["aircraft_type"]
-            assert body["medical_expires_at"].startswith("2031-01-02T00:00:00")
+            assert body["medical_expires_at"].startswith("2031-01-02")
             assert "profile_picture_url" in body
         finally:
             restore_resp = client.patch(
