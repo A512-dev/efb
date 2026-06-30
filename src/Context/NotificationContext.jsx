@@ -126,9 +126,9 @@ export const NotificationProvider = ({ children }) => {
       const data = await getManualUpdates();
       const items = data?.items || data?.results || data?.data || [];
 
-      // ✅ read status از backend می‌آید
+      
       const seen = items
-        .filter((u) => u.is_read) // اگر اسم فیلد چیز دیگری است، اینجا تغییر بده
+        .filter((u) => u.is_read)
         .map((u) => String(u.id));
 
       setUpdates(items);
@@ -144,7 +144,7 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     refreshUpdates();
 
-    const interval = setInterval(refreshUpdates, 30000); // هر ۳۰ ثانیه
+    const interval = setInterval(refreshUpdates, 30000);
 
     return () => clearInterval(interval);
   }, [user]);
@@ -157,7 +157,7 @@ export const NotificationProvider = ({ children }) => {
     try {
       await markManualUpdateRead(id);
 
-      // ✅ optimistic update
+      
       const newSeen = [...seenIds, idStr];
       setSeenIds(newSeen);
       setUpdateCount(updates.length - newSeen.length);

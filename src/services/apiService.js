@@ -224,3 +224,23 @@ export const deleteUser = async (userId) => {
   const response = await apiClient.delete(`/users/${userId}`);
   return response.data;
 };
+export const markManualRead = async (manualId) => {
+  const response = await apiClient.post(`/manuals/${manualId}/read`);
+  return response.data;
+};
+
+export const getMyManualReads = async () => {
+  const response = await apiClient.get(`/manuals/reads/me`);
+  return response.data;
+};
+
+export const getUserManualReads = async (userId) => {
+  const response = await apiClient.get(`/manuals/reads`, {
+    params: { user_id: userId },
+  });
+  return response.data;
+};
+export const getAllManualReads = async () => {
+  const response = await apiClient.get("/manuals/reads");
+  return response.data;
+};

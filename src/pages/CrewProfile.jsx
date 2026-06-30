@@ -311,10 +311,17 @@
 // export default CrewProfile;
 import { useEffect, useMemo, useState } from "react";
 import PageWrapper from "../components/PageWrapper";
-import { getAllUsers, downloadUserProfilePicture } from "../services/apiService";
+import {
+  getAllUsers,
+  downloadUserProfilePicture,
+  deleteUser,
+  getUserManualReads,
+} from "../services/apiService";
 import CrewCard from "../components/CrewCard";
-import crossMarkIcon from '../assets/icons/Delete-1--Streamline-Sharp.svg'
-import { deleteUser } from "../services/apiService";
+import crossMarkIcon from "../assets/icons/Delete-1--Streamline-Sharp.svg";
+import { useManuals } from "../hooks/useManuals";
+import { getAllManualReads } from "../services/apiService";
+
 const CrewProfile = () => {
   const [users, setUsers] = useState([]);
   const [selectedPilot, setSelectedPilot] = useState(null);
@@ -322,6 +329,22 @@ const CrewProfile = () => {
   const [fleetFilter, setFleetFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
+  const [userReads, setUserReads] = useState([]);
+  const [showReadsModal, setShowReadsModal] = useState(false);
+
+  const { manuals } = useManuals(null);
+
+  const getManualTitle = (item) => {
+    const manualId = item.manual_id || item.manualId || item.manual?.id;
+
+    if (item.manual?.title) return item.manual.title;
+
+    const manual = manuals.find(
+      (m) => String(m.id) === String(manualId)
+    );
+
+    return manual?.title || `Manual #${manualId}`;
+  };
 
 
   useEffect(() => {
@@ -344,15 +367,37 @@ const CrewProfile = () => {
       (user) => user.position === "P1" || user.position === "P2"
     );
   }, [users]);
-const aircraftLabels = {
-  A300_600: "A300-600 / A310",
-  A320: "A320"
-};
+
+  const aircraftLabels = {
+    A300_600: "A300-600 / A310",
+    A320: "A320",
+  };
 
   const fleetOptions = useMemo(() => {
     const fleets = pilots.map((p) => p.aircraft_type).filter(Boolean);
     return [...new Set(fleets)];
   }, [pilots]);
+useEffect(() => {
+  if (!selectedPilot) return;
+
+  const loadReads = async () => {
+    try {
+      const userId = selectedPilot.id || selectedPilot.user_id;
+      const data = await getAllManualReads();
+      const items = Array.isArray(data) ? data : data?.items || [];
+
+      const filtered = items.filter(
+        (r) => String(r.user_id) === String(userId)
+      );
+
+      setUserReads(filtered);
+    } catch (err) {
+      console.error("Error loading user reads:", err);
+    }
+  };
+
+  loadReads();
+}, [selectedPilot]);
 
   useEffect(() => {
     if (!selectedPilot) return;
@@ -364,7 +409,6 @@ const aircraftLabels = {
     const loadImage = async () => {
       try {
         const userId = selectedPilot.id || selectedPilot.user_id;
-
         const blob = await downloadUserProfilePicture(userId);
 
         if (blob) {
@@ -379,9 +423,7 @@ const aircraftLabels = {
     loadImage();
 
     return () => {
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [selectedPilot]);
 
@@ -398,27 +440,28 @@ const aircraftLabels = {
   }, [pilots, crewType, fleetFilter]);
 
   const handleDeleteUser = async () => {
-  if (!selectedPilot) return;
+    if (!selectedPilot) return;
 
-  const confirmDelete = window.confirm("Are you sure you want to delete this user?");
-  if (!confirmDelete) return;
-
-  try {
-    const userId = selectedPilot.id || selectedPilot.user_id;
-
-    await deleteUser(userId);
-
-    setUsers((prev) =>
-      prev.filter((u) => (u.id || u.user_id) !== userId)
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this user?"
     );
+    if (!confirmDelete) return;
 
-    setSelectedPilot(null);
+    try {
+      const userId = selectedPilot.id || selectedPilot.user_id;
 
-  } catch (err) {
-    console.error("Delete error:", err);
-    alert("Failed to delete user");
-  }
-};
+      await deleteUser(userId);
+
+      setUsers((prev) =>
+        prev.filter((u) => (u.id || u.user_id) !== userId)
+      );
+
+      setSelectedPilot(null);
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Failed to delete user");
+    }
+  };
 
   return (
     <PageWrapper>
@@ -427,18 +470,17 @@ const aircraftLabels = {
 
         <div className="dashboard-filters">
           <select
-  value={fleetFilter}
-  onChange={(e) => setFleetFilter(e.target.value)}
->
-  <option value="all">All Fleets</option>
+            value={fleetFilter}
+            onChange={(e) => setFleetFilter(e.target.value)}
+          >
+            <option value="all">All Fleets</option>
 
-  {fleetOptions.map((fleet) => (
-    <option key={fleet} value={fleet}>
-      {aircraftLabels[fleet] || fleet}
-    </option>
-  ))}
-</select>
-
+            {fleetOptions.map((fleet) => (
+              <option key={fleet} value={fleet}>
+                {aircraftLabels[fleet] || fleet}
+              </option>
+            ))}
+          </select>
 
           <select
             value={crewType}
@@ -481,16 +523,72 @@ const aircraftLabels = {
                 className="modal-close"
                 onClick={() => setSelectedPilot(null)}
               >
-                <img src={crossMarkIcon}  alt="" />
+                <img src={crossMarkIcon} alt="" />
               </button>
 
               <CrewCard
                 user={selectedPilot}
                 profileImage={profileImage}
               />
+
+              <button
+                className="viewReadsBtn"
+                onClick={() => setShowReadsModal(true)}
+              >
+                View Read Manuals
+              </button>
             </div>
 
-<button onClick={handleDeleteUser} className="deleteBtn deleteProfile"> Delete </button>
+            <button
+              onClick={handleDeleteUser}
+              className="deleteBtn deleteProfile"
+            >
+              Delete
+            </button>
+          </div>
+        )}
+
+        {showReadsModal && (
+          <div
+            className="modal-overlay"
+            onClick={() => setShowReadsModal(false)}
+          >
+            <div
+              className="modal-content"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="modal-close"
+                onClick={() => setShowReadsModal(false)}
+              >
+                <img src={crossMarkIcon} alt="" />
+              </button>
+
+              <h3 style={{ marginBottom: "12px" }}>
+                {selectedPilot?.name} — Read Manuals
+              </h3>
+
+              {userReads.length === 0 ? (
+                <p>No manuals read</p>
+              ) : (
+                <div className="adminReadList">
+                  {userReads.map((r) => (
+                    <div
+                      key={r.id || r.manual_id}
+                      className="adminReadRow"
+                    >
+                      <span>{getManualTitle(r)}</span>
+
+                      {r.read_at && (
+                        <small>
+                          {new Date(r.read_at).toLocaleDateString()}
+                        </small>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </section>
