@@ -1,3 +1,4 @@
+#skydeck\app\main.py
 """FastAPI application assembly and router registration.
 
 This is the backend's composition root: it creates the application, installs

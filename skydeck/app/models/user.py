@@ -92,3 +92,9 @@ class User(Base):
         if self.profile_picture_id is None:
             return None
         return f"/api/v1/users/{self.id}/profile-picture"
+
+
+    @property
+    def password(self):
+        # Dummy property to satisfy sqladmin's form_columns check
+        return None

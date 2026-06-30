@@ -1,17 +1,17 @@
-from wtforms import StringField
 from sqladmin import ModelView
+from wtforms import PasswordField, StringField
 
+from app.core.security import hash_password
 from app.models.user import User
-from passlib.hash import bcrypt
 
 class UserAdmin(ModelView, model=User):
+
     column_list = [User.id, User.email, User.name]
 
     form_columns = [
         "org",
         "name",
         "email",
-        "password_hash",   # virtual field
         "role",
         "employee_no",
         "position",
@@ -22,17 +22,23 @@ class UserAdmin(ModelView, model=User):
     ]
 
     form_overrides = {
-        "email": StringField
+        "email": StringField,
     }
 
+    # 2. Override scaffold_form to inject the custom field
+    async def scaffold_form(self, *args, **kwargs):
+        # Let sqladmin build the base form using the safe form_columns above
+        BaseForm = await super().scaffold_form(*args, **kwargs)
+        
+        # Subclass the generated form to add our virtual field
+        class CustomUserForm(BaseForm):
+            password = PasswordField("Password")
+            
+        return CustomUserForm
 
-    # from wtforms import PasswordField
-    # form_extra_fields = {
-    #     "password": PasswordField("Password")
-    # }
-    
-    # async def on_model_change(self, data, model, is_created, request):
-    #     password = data.get("password")
-
-    #     if password:
-    #         model.password_hash = bcrypt.hash(password)
+    # 3. Handle the hashing before saving
+    async def on_model_change(self, data, model, is_created, request):
+        password = data.pop("password", None)
+        
+        if password:
+            data["password_hash"] = hash_password(password) # Use your hashing utility here
