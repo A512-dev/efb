@@ -26,7 +26,7 @@ from app.core.security import (
     hash_token,
     verify_password,
 )
-from app.models.enums import UserRole
+from app.models.enums import AircraftType, UserRole, normalize_aircraft_type
 from app.models.user import User
 from app.repositories import session_repo, user_repo
 from app.services import audit_service
@@ -45,9 +45,9 @@ def signup(
     name: str,
     email: str,
     password: str,
-    role: UserRole = UserRole.pilot,
-    position: str,           # Add this
-    aircraft_type: str,      # Add this
+    role: UserRole,
+    position: str,
+    aircraft_type: AircraftType | str,
     org_id: Optional[int] = None,
     actor_user_id: Optional[int] = None,
     ip: Optional[str] = None,
@@ -62,6 +62,10 @@ def signup(
 
     org = _get_org_by_id(db, org_id) if org_id is not None else _get_or_create_default_org(db)
     now = datetime.now(timezone.utc)
+    stored_aircraft_type = normalize_aircraft_type(
+        aircraft_type,
+        allow_non_fleet=role not in {UserRole.pilot, UserRole.chief_pilot},
+    )
 
     user = User(
         org_id=org.id,
@@ -70,8 +74,8 @@ def signup(
         password_hash=hash_password(password),
         role=role,
         employee_no="pending",
-        position=position,         
-        aircraft_type=aircraft_type, 
+        position=position,
+        aircraft_type=stored_aircraft_type,
         medical_expires_at=_add_years(now, 1),
         passport_expires_at=_add_years(now, 5),
         license_expires_at=_add_years(now, 1),

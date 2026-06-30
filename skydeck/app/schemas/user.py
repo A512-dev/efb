@@ -12,6 +12,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.models.enums import AircraftType, normalize_aircraft_type
+
 
 class UserProfileUpdateRequest(BaseModel):
     """Partial profile update accepted from the current authenticated user."""
@@ -60,17 +62,26 @@ class AdminUserProfileUpdateRequest(BaseModel):
     """Partial profile update accepted from the current authenticated admin."""
 
     position: Optional[str] = Field(default=None, min_length=1, max_length=200)
-    aircraft_type: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    aircraft_type: Optional[AircraftType] = None
 
-    @field_validator("position", "aircraft_type", mode="before")
+    @field_validator("position", mode="before")
     @classmethod
-    def _strip_required_text(cls, value: object) -> object:
+    def _strip_position(cls, value: object) -> object:
         """Reject explicit nulls and normalize surrounding whitespace."""
         if value is None:
             raise ValueError("Field cannot be null")
         if isinstance(value, str):
             return value.strip()
         return value
+
+    @field_validator("aircraft_type", mode="before")
+    @classmethod
+    def _normalize_aircraft_type(cls, value: object) -> object:
+        """Accept legacy labels while storing a canonical aircraft type."""
+        if value is None:
+            raise ValueError("Field cannot be null")
+        return normalize_aircraft_type(value)
+
     # Reject misspelled/unknown fields instead of silently ignoring a client's
     # intended update.
     model_config = {"extra": "forbid"}
@@ -86,7 +97,7 @@ class UserMeResponse(BaseModel):
     role: str
     employee_no: str
     position: str
-    aircraft_type: str
+    aircraft_type: AircraftType
     medical_expires_at: datetime
     passport_expires_at: datetime
     license_expires_at: datetime
@@ -108,7 +119,7 @@ class UserListItemResponse(BaseModel):
     role: str
     employee_no: str
     position: str
-    aircraft_type: str
+    aircraft_type: AircraftType
     medical_expires_at: datetime
     passport_expires_at: datetime
     license_expires_at: datetime

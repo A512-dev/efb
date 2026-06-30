@@ -154,8 +154,9 @@ def update_user_designation(
     if "position" in updates and updates["position"] != target_user.position:
         target_user.position = updates["position"]
         changed_fields.append("position")
-    if "aircraft_type" in updates and updates["aircraft_type"] != target_user.aircraft_type:
-        target_user.aircraft_type = updates["aircraft_type"]
+    aircraft_type = updates["aircraft_type"].value if "aircraft_type" in updates else None
+    if aircraft_type is not None and aircraft_type != target_user.aircraft_type:
+        target_user.aircraft_type = aircraft_type
         changed_fields.append("aircraft_type")
 
     if changed_fields:

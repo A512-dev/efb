@@ -64,7 +64,7 @@ def signup(
         email=body.email,
         password=body.password,
         role=body.role,
-        position=body.position,           
+        position=body.position,
         aircraft_type=body.aircraft_type,
         org_id=current_user.org_id,
         actor_user_id=current_user.id,

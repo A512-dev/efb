@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from app.models.enums import UserRole
+from app.models.enums import AircraftType, UserRole, normalize_aircraft_type
 
 # ── requests ──────────────────────────────────────────────────
 
@@ -41,34 +41,45 @@ class SignupRequest(BaseModel):
     path. Authorization for who may call signup is enforced by the route.
     """
 
-    name: str = Field(..., min_length=1)
+    name: str = Field(..., min_length=1, max_length=200)
     email: EmailStr
-    password: str = Field(..., min_length=8)
+    password: str = Field(..., min_length=8, max_length=128)
     role: UserRole
     position: str = Field(..., min_length=1, max_length=200)
-    aircraft_type: str = Field(..., min_length=1, max_length=100)
-    
+    aircraft_type: AircraftType
+
+    @field_validator("name", "position", mode="before")
     @classmethod
     def _strip_required_text(cls, value: object) -> object:
+        """Reject null text and normalize surrounding whitespace."""
         if value is None:
             raise ValueError("Field cannot be null")
         if isinstance(value, str):
             return value.strip()
         return value
-    
+
+    @field_validator("aircraft_type", mode="before")
+    @classmethod
+    def _normalize_aircraft_type(cls, value: object) -> object:
+        """Accept known legacy labels while storing a canonical fleet value."""
+        if value is None:
+            raise ValueError("Field cannot be null")
+        return normalize_aircraft_type(value)
+
+
 class PasswordChangeRequest(BaseModel):
     """Schema for new users to set their password using signup key."""
-    
+
     email: EmailStr
     signup_key: str = Field(..., min_length=1)
     new_password: str = Field(..., min_length=8)
-    
+
     model_config = {"extra": "forbid"}
 
 
 class PasswordChangeResponse(BaseModel):
     """Response for successful password change."""
-    
+
     message: str = "Password changed successfully"
 
 
