@@ -70,11 +70,12 @@ class TestUpload:
     def test_admin_upload_success(self, client: TestClient):
         """An admin can persist a valid PDF and receive trusted metadata."""
         token = _login(client, SEED_EMAIL, SEED_PASSWORD)
+        title = f"Pytest Upload Manual {uuid4().hex[:12]}"
         pdf = _make_pdf("admin upload test")
         resp = client.post(
             "/api/v1/manuals/upload",
             data={
-                "title": "Pytest Upload Manual",
+                "title": title,
                 "category_id": str(_leaf_category_id(client, token)),
             },
             files={"file": ("test_manual.pdf", pdf, "application/pdf")},
@@ -82,7 +83,7 @@ class TestUpload:
         )
         assert resp.status_code == 201
         body = resp.json()
-        assert body["title"] == "Pytest Upload Manual"
+        assert body["title"] == title
         assert body["original_filename"] == "test_manual.pdf"
         assert body["file_size"] > 0
         assert len(body["sha256"]) == 64
@@ -250,17 +251,19 @@ class TestDownload:
     def test_download_returns_pdf(self, client: TestClient):
         """Download returns PDF bytes and a 16-character forensic hash."""
         token = _login(client, SEED_EMAIL, SEED_PASSWORD)
+        title = f"Watermark Test {uuid4().hex[:12]}"
 
         pdf = _make_pdf("watermark test content")
         upload_resp = client.post(
             "/api/v1/manuals/upload",
             data={
-                "title": "Watermark Test",
+                "title": title,
                 "category_id": str(_leaf_category_id(client, token)),
             },
             files={"file": ("wm_test.pdf", pdf, "application/pdf")},
             headers=_auth_header(token),
         )
+        assert upload_resp.status_code == 201, upload_resp.text
         manual_id = upload_resp.json()["id"]
 
         resp = client.get(
@@ -277,16 +280,18 @@ class TestDownload:
     def test_pilot_download(self, client: TestClient):
         """A pilot can download an admin-uploaded manual."""
         admin_token = _login(client, SEED_EMAIL, SEED_PASSWORD)
+        title = f"Pilot DL Test {uuid4().hex[:12]}"
         pdf = _make_pdf("pilot download test")
         upload_resp = client.post(
             "/api/v1/manuals/upload",
             data={
-                "title": "Pilot DL Test",
+                "title": title,
                 "category_id": str(_leaf_category_id(client, admin_token)),
             },
             files={"file": ("pilot_dl.pdf", pdf, "application/pdf")},
             headers=_auth_header(admin_token),
         )
+        assert upload_resp.status_code == 201, upload_resp.text
         manual_id = upload_resp.json()["id"]
 
         pilot_token = _login(client, PILOT_EMAIL, PILOT_PASSWORD)
@@ -322,17 +327,19 @@ class TestDelete:
     def test_admin_delete_success(self, client: TestClient):
         """An admin deletion makes a previously uploaded manual unavailable."""
         token = _login(client, SEED_EMAIL, SEED_PASSWORD)
+        title = f"To Be Deleted {uuid4().hex[:12]}"
 
         pdf = _make_pdf("delete me")
         upload_resp = client.post(
             "/api/v1/manuals/upload",
             data={
-                "title": "To Be Deleted",
+                "title": title,
                 "category_id": str(_leaf_category_id(client, token)),
             },
             files={"file": ("delete_me.pdf", pdf, "application/pdf")},
             headers=_auth_header(token),
         )
+        assert upload_resp.status_code == 201, upload_resp.text
         manual_id = upload_resp.json()["id"]
 
         resp = client.delete(
