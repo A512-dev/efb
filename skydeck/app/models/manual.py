@@ -21,6 +21,7 @@ from sqlalchemy import (
     Integer,
     Text,
     event,
+    exists,
     func,
     select,
     text,
@@ -117,22 +118,42 @@ def _assign_fallback_category(_mapper, connection, target: Manual) -> None:
             ManualCategory.org_id == target.org_id,
             ManualCategory.parent_id.is_(None),
             ManualCategory.slug == "iranair",
+            ManualCategory.is_active.is_(True),
         )
     ).scalar_one_or_none()
 
-    if root_id is None:
-        raise ValueError("Default manual category Iranair was not created for this organisation")
-
-    category_id = connection.execute(
-        select(ManualCategory.id).where(
-            ManualCategory.org_id == target.org_id,
-            ManualCategory.parent_id == root_id,
-            ManualCategory.slug == "general",
-        )
-    ).scalar_one_or_none()
+    category_id = None
+    if root_id is not None:
+        category_id = connection.execute(
+            select(ManualCategory.id).where(
+                ManualCategory.org_id == target.org_id,
+                ManualCategory.parent_id == root_id,
+                ManualCategory.slug == "general",
+                ManualCategory.is_active.is_(True),
+            )
+        ).scalar_one_or_none()
 
     if category_id is None:
-        raise ValueError("Default manual category Iranair / General was not created")
+        category_table = ManualCategory.__table__
+        child_table = category_table.alias("child")
+        category_id = connection.execute(
+            select(category_table.c.id)
+            .where(
+                category_table.c.org_id == target.org_id,
+                category_table.c.is_active.is_(True),
+                ~exists(
+                    select(child_table.c.id).where(
+                        child_table.c.parent_id == category_table.c.id,
+                        child_table.c.is_active.is_(True),
+                    )
+                ),
+            )
+            .order_by(category_table.c.sort_order.asc(), category_table.c.name.asc())
+            .limit(1)
+        ).scalar_one_or_none()
+
+    if category_id is None:
+        raise ValueError("No active manual category leaf was found for this organisation")
 
     # Assigning on the target before INSERT makes SQLAlchemy include the found
     # category in the same statement that creates the manual.

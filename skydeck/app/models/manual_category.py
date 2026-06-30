@@ -38,7 +38,7 @@ class ManualCategory(Base):
             "org_id",
             "slug",
             unique=True,
-            postgresql_where=text("parent_id IS NULL"),
+            postgresql_where=text("parent_id IS NULL AND is_active IS TRUE"),
         ),
         Index(
             "uq_manual_categories_child_slug",
@@ -46,7 +46,7 @@ class ManualCategory(Base):
             "parent_id",
             "slug",
             unique=True,
-            postgresql_where=text("parent_id IS NOT NULL"),
+            postgresql_where=text("parent_id IS NOT NULL AND is_active IS TRUE"),
         ),
     )
 
