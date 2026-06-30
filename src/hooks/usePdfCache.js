@@ -1,112 +1,53 @@
-// import { useEffect } from "react";
-// import { downloadManual } from "../services/apiService";
-
-// import {
-//   getCachedPdf,
-//   addPdf,
-//   hasPendingDownload,
-//   getPendingDownload,
-//   setPendingDownload,
-//   clearPendingDownload,
-//   clearPdfCache,
-// } from "../services/pdfCache";
-
-// export default function usePdfCache() {
-//   const getPdf = async (manual) => {
-//     const cached = getCachedPdf(manual.id);
-
-//     if (cached) {
-//       return cached;
-//     }
-
-//     if (hasPendingDownload(manual.id)) {
-//       return getPendingDownload(manual.id);
-//     }
-
-//     const promise = downloadManual(manual.id)
-//       .then((blob) => {
-//         const url = URL.createObjectURL(blob);
-
-//         addPdf(manual.id, url);
-
-//         clearPendingDownload(manual.id);
-
-//         return url;
-//       })
-//       .catch((err) => {
-//         clearPendingDownload(manual.id);
-
-//         throw err;
-//       });
-
-//     setPendingDownload(manual.id, promise);
-
-//     return promise;
-//   };
-
-//   useEffect(() => {
-//     return () => {
-//       clearPdfCache();
-//     };
-//   }, []);
-
-//   return {
-//     getPdf,
-//   };
-// }
-
 import { useRef } from "react";
 import { downloadManual } from "../services/apiService";
 
-const MAX_CACHE = 5;
+const MAX_CACHE_SIZE = 8;
+
+const pdfCache = new Map();
+const pendingRequests = new Map();
 
 export default function usePdfCache() {
-  const cache = useRef(new Map());
-  const loading = useRef(new Map());
+  const cacheRef = useRef(pdfCache);
 
   const getPdf = async (manual) => {
     const id = manual.id;
 
-    // 1. return cached
-    if (cache.current.has(id)) {
-      const url = cache.current.get(id);
+    if (cacheRef.current.has(id)) {
+      const url = cacheRef.current.get(id);
 
-      // LRU refresh
-      cache.current.delete(id);
-      cache.current.set(id, url);
+      cacheRef.current.delete(id);
+      cacheRef.current.set(id, url);
 
       return url;
     }
 
-    // 2. prevent duplicate downloads
-    if (loading.current.has(id)) {
-      return loading.current.get(id);
+    if (pendingRequests.has(id)) {
+      return pendingRequests.get(id);
     }
 
     const promise = downloadManual(id)
       .then((blob) => {
         const url = URL.createObjectURL(blob);
 
-        cache.current.set(id, url);
+        cacheRef.current.set(id, url);
 
-        // LRU eviction
-        if (cache.current.size > MAX_CACHE) {
-          const firstKey = cache.current.keys().next().value;
-          const oldUrl = cache.current.get(firstKey);
+        if (cacheRef.current.size > MAX_CACHE_SIZE) {
+          const oldestKey = cacheRef.current.keys().next().value;
+          const oldUrl = cacheRef.current.get(oldestKey);
 
           URL.revokeObjectURL(oldUrl);
-          cache.current.delete(firstKey);
+          cacheRef.current.delete(oldestKey);
         }
 
-        loading.current.delete(id);
+        pendingRequests.delete(id);
         return url;
       })
       .catch((err) => {
-        loading.current.delete(id);
+        pendingRequests.delete(id);
         throw err;
       });
 
-    loading.current.set(id, promise);
+    pendingRequests.set(id, promise);
 
     return promise;
   };

@@ -280,9 +280,9 @@ const visibleManuals = manuals.filter(
 
 
 const openManual = (manual) => {
+  console.log("Clicked manual:", manual);
   setSelectedManual(manual);
-};
-
+};  
 
   useEffect(() => {
   if (!isLeafCategory) {
@@ -323,7 +323,7 @@ if (currentCategory.id === 23) {
 
 
 
-
+console.log(selectedManual);
   return (
     <PageWrapper>
       <div className="manualsContainerLeft">

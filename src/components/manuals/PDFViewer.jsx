@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
+import { useEffect, useState, useRef } from "react";
+// import { Document, Page, pdfjs } from "react-pdf";
+import { pdfjs } from "react-pdf";
 import usePdfCache from "../../hooks/usePdfCache";
+import PDFToolbar from "./PDFToolbar";
+import PDFCanvas from "./PDFCanvas";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -9,11 +12,45 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 
 const PDFViewer = ({ manual }) => {
   const { getPdf } = usePdfCache();
+const [currentPage, setCurrentPage] = useState(1);
+
+  const containerRef = useRef(null);
 
   const [url, setUrl] = useState(null);
   const [numPages, setNumPages] = useState(null);
-  const [scale] = useState(1.2);
 
+  const [zoom, setZoom] = useState(1);
+  const [fitMode, setFitMode] = useState("width"); 
+useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onScroll = () => {
+        const pages = container.querySelectorAll(".pdf-page-wrapper");
+
+        let visible = 1;
+        let minDistance = Infinity;
+
+        pages.forEach((page) => {
+            const rect = page.getBoundingClientRect();
+
+            const distance = Math.abs(rect.top - 120);
+
+            if (distance < minDistance) {
+                minDistance = distance;
+                visible = Number(page.dataset.pageNumber);
+            }
+        });
+
+        setCurrentPage(visible);
+    };
+
+    container.addEventListener("scroll", onScroll);
+
+    onScroll();
+
+    return () => container.removeEventListener("scroll", onScroll);
+}, [numPages]);
   useEffect(() => {
     if (!manual) {
       setUrl(null);
@@ -33,27 +70,64 @@ const PDFViewer = ({ manual }) => {
     };
   }, [manual]);
 
+  
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onWheel = (e) => {
+      if (!e.ctrlKey) return;
+
+      e.preventDefault();
+
+      setZoom((z) => {
+        const next = z - e.deltaY * 0.001;
+        return Math.min(2.5, Math.max(0.6, next));
+      });
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
+  const getScale = (pageWidth) => {
+    if (fitMode === "page") return 1.2;
+
+    if (fitMode === "width" && containerRef.current) {
+      const containerWidth = containerRef.current.offsetWidth;
+      return (containerWidth / pageWidth) * zoom;
+    }
+
+    return zoom;
+  };
+
   if (!manual) return <p>Select a document</p>;
   if (!url) return <p>Loading PDF...</p>;
 
   return (
-    <div
-      style={{
-        height: "100%",
-        overflowY: "auto",
-        padding: "16px",
-        background: "#f5f5f5",
-      }}
-    >
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+
+<PDFToolbar
+    zoom={zoom}
+    setZoom={setZoom}
+    fitMode={fitMode}
+    setFitMode={setFitMode}
+    currentPage={currentPage}
+    numPages={numPages}
+/>
+
+      
       <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "12px",
-        }}
-      >
-        <Document
+  ref={containerRef}
+  style={{
+    flex: 1,
+    overflow: "auto",
+    background: "#eaeaea",
+    padding: "16px",
+  }}
+>
+        {/* <Document
           file={url}
           onLoadSuccess={({ numPages }) => setNumPages(numPages)}
         >
@@ -61,19 +135,27 @@ const PDFViewer = ({ manual }) => {
             <div
               key={i}
               style={{
-                boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-                background: "white",
+                position:'relative',
+                display: "flex",
+                justifyContent: "center",
+                marginBottom: 12,
               }}
             >
               <Page
                 pageNumber={i + 1}
-                scale={scale}
-                renderTextLayer={false}
+                scale={zoom}
+                renderTextLayer={true}
                 renderAnnotationLayer={false}
               />
             </div>
           ))}
-        </Document>
+        </Document> */}
+        <PDFCanvas
+    url={url}
+    zoom={zoom}
+    numPages={numPages}
+    setNumPages={setNumPages}
+/>
       </div>
     </div>
   );
