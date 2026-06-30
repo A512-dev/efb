@@ -97,6 +97,8 @@ GET /api/v1/manual-categories/tree
 
 Returns the entire nested category tree.
 
+Each tree node includes `has_children` and `is_leaf`. For manual upload, the frontend should only submit categories where `is_leaf=true`.
+
 ### Get breadcrumb path
 
 ```http
@@ -111,6 +113,90 @@ Example response:
   {"id": 6, "name": "General", "slug": "general"}
 ]
 ```
+
+## Admin category management
+
+Only admins can mutate the category tree.
+
+### Create category
+
+```http
+POST /api/v1/manual-categories
+```
+
+Body:
+
+```json
+{
+  "name": "New Folder",
+  "parent_id": 123
+}
+```
+
+Use `parent_id: null` or omit it to create a root category.
+
+The backend rejects duplicate active sibling names and rejects creating a child under a category that already contains active manuals.
+
+### Rename category
+
+```http
+PATCH /api/v1/manual-categories/{category_id}
+```
+
+Body:
+
+```json
+{
+  "name": "Renamed Folder"
+}
+```
+
+Rename changes the display name only. The category `slug` stays stable.
+
+### Move category
+
+```http
+PATCH /api/v1/manual-categories/{category_id}/move
+```
+
+Body:
+
+```json
+{
+  "parent_id": 456
+}
+```
+
+Use `parent_id: null` to move the category to the root level.
+
+The backend rejects moves into the category itself or one of its descendants. It also rejects moving under a category that contains active manuals.
+
+### Reorder sibling categories
+
+```http
+PATCH /api/v1/manual-categories/reorder
+```
+
+Body:
+
+```json
+{
+  "parent_id": 123,
+  "category_ids": [7, 5, 6]
+}
+```
+
+`category_ids` must contain every active direct child under `parent_id` exactly once. Use `parent_id: null` for root ordering.
+
+### Delete category
+
+```http
+DELETE /api/v1/manual-categories/{category_id}
+```
+
+Delete is a soft delete: the category subtree is hidden by setting `is_active=false`.
+
+The backend returns `409` if the category or any descendant contains a non-deleted manual. Delete or move those manuals first.
 
 ## Manual upload changes
 
