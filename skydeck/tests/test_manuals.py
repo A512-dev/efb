@@ -11,6 +11,7 @@ database when a prior run left created manuals behind.
 from __future__ import annotations
 
 import io
+from uuid import uuid4
 
 from fastapi.testclient import TestClient
 from reportlab.pdfgen import canvas
@@ -43,6 +44,23 @@ def _auth_header(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
+def _first_leaf_id(node: dict) -> int:
+    """Return the first leaf category id inside a category subtree."""
+    children = node.get("children") or []
+    if not children:
+        return node["id"]
+    return _first_leaf_id(children[0])
+
+
+def _leaf_category_id(client: TestClient, token: str, *, root_slug: str = "general") -> int:
+    """Fetch one uploadable leaf below a root category slug."""
+    resp = client.get("/api/v1/manual-categories/tree", headers=_auth_header(token))
+    assert resp.status_code == 200, resp.text
+    root = next((item for item in resp.json() if item["slug"] == root_slug), None)
+    assert root is not None, f"Root category {root_slug!r} not found"
+    return _first_leaf_id(root)
+
+
 # ── upload ────────────────────────────────────────────────────
 
 
@@ -55,7 +73,10 @@ class TestUpload:
         pdf = _make_pdf("admin upload test")
         resp = client.post(
             "/api/v1/manuals/upload",
-            data={"title": "Pytest Upload Manual"},
+            data={
+                "title": "Pytest Upload Manual",
+                "category_id": str(_leaf_category_id(client, token)),
+            },
             files={"file": ("test_manual.pdf", pdf, "application/pdf")},
             headers=_auth_header(token),
         )
@@ -73,7 +94,10 @@ class TestUpload:
         pdf = _make_pdf("pilot upload attempt")
         resp = client.post(
             "/api/v1/manuals/upload",
-            data={"title": "Should Fail"},
+            data={
+                "title": "Should Fail",
+                "category_id": str(_leaf_category_id(client, _login(client, SEED_EMAIL, SEED_PASSWORD))),
+            },
             files={"file": ("fail.pdf", pdf, "application/pdf")},
             headers=_auth_header(token),
         )
@@ -85,7 +109,10 @@ class TestUpload:
         token = _login(client, SEED_EMAIL, SEED_PASSWORD)
         resp = client.post(
             "/api/v1/manuals/upload",
-            data={"title": "Bad File"},
+            data={
+                "title": "Bad File",
+                "category_id": str(_leaf_category_id(client, token)),
+            },
             files={"file": ("readme.txt", b"hello world", "text/plain")},
             headers=_auth_header(token),
         )
@@ -97,7 +124,7 @@ class TestUpload:
         pdf = _make_pdf()
         resp = client.post(
             "/api/v1/manuals/upload",
-            data={"title": "No Auth"},
+            data={"title": "No Auth", "category_id": "1"},
             files={"file": ("test.pdf", pdf, "application/pdf")},
         )
         assert resp.status_code == 401
@@ -131,6 +158,89 @@ class TestList:
         assert resp.status_code == 401
 
 
+class TestFleetVisibility:
+    """Crew users only see General plus their own aircraft root."""
+
+    def test_pilot_is_restricted_to_own_fleet_and_general(self, client: TestClient):
+        """Direct IDs from another fleet are hidden from list, read, and download."""
+        admin_token = _login(client, SEED_EMAIL, SEED_PASSWORD)
+        suffix = uuid4().hex[:12]
+        email = f"pytest-a320-fleet-{suffix}@example.com"
+        password = "SkyDeck@2026!"
+
+        signup_resp = client.post(
+            "/api/v1/auth/signup",
+            json={
+                "name": "Pytest A320 Pilot",
+                "email": email,
+                "password": password,
+                "role": "pilot",
+                "aircraft_type": "A320",
+            },
+            headers=_auth_header(admin_token),
+        )
+        assert signup_resp.status_code == 201, signup_resp.text
+        user_id = signup_resp.json()["user_id"]
+        pilot_token = signup_resp.json()["access_token"]
+
+        a320_id = None
+        a330_id = None
+        try:
+            a320_resp = client.post(
+                "/api/v1/manuals/upload",
+                data={
+                    "title": f"Pytest A320 Fleet Manual {suffix}",
+                    "category_id": str(_leaf_category_id(client, admin_token, root_slug="a320")),
+                },
+                files={"file": ("a320_fleet.pdf", _make_pdf("a320"), "application/pdf")},
+                headers=_auth_header(admin_token),
+            )
+            assert a320_resp.status_code == 201, a320_resp.text
+            a320_id = a320_resp.json()["id"]
+
+            a330_resp = client.post(
+                "/api/v1/manuals/upload",
+                data={
+                    "title": f"Pytest A330 Fleet Manual {suffix}",
+                    "category_id": str(_leaf_category_id(client, admin_token, root_slug="a330")),
+                },
+                files={"file": ("a330_fleet.pdf", _make_pdf("a330"), "application/pdf")},
+                headers=_auth_header(admin_token),
+            )
+            assert a330_resp.status_code == 201, a330_resp.text
+            a330_id = a330_resp.json()["id"]
+
+            list_resp = client.get("/api/v1/manuals", headers=_auth_header(pilot_token))
+            assert list_resp.status_code == 200, list_resp.text
+            listed_ids = {item["id"] for item in list_resp.json()}
+            assert a320_id in listed_ids
+            assert a330_id not in listed_ids
+
+            allowed_download = client.get(
+                f"/api/v1/manuals/{a320_id}/download",
+                headers=_auth_header(pilot_token),
+            )
+            assert allowed_download.status_code == 200, allowed_download.text
+
+            hidden_download = client.get(
+                f"/api/v1/manuals/{a330_id}/download",
+                headers=_auth_header(pilot_token),
+            )
+            assert hidden_download.status_code == 404
+
+            hidden_read = client.post(
+                f"/api/v1/manuals/{a330_id}/read",
+                headers=_auth_header(pilot_token),
+            )
+            assert hidden_read.status_code == 404
+        finally:
+            if a320_id is not None:
+                client.delete(f"/api/v1/manuals/{a320_id}", headers=_auth_header(admin_token))
+            if a330_id is not None:
+                client.delete(f"/api/v1/manuals/{a330_id}", headers=_auth_header(admin_token))
+            client.delete(f"/api/v1/users/{user_id}", headers=_auth_header(admin_token))
+
+
 # ── download with watermark ───────────────────────────────────
 
 
@@ -144,7 +254,10 @@ class TestDownload:
         pdf = _make_pdf("watermark test content")
         upload_resp = client.post(
             "/api/v1/manuals/upload",
-            data={"title": "Watermark Test"},
+            data={
+                "title": "Watermark Test",
+                "category_id": str(_leaf_category_id(client, token)),
+            },
             files={"file": ("wm_test.pdf", pdf, "application/pdf")},
             headers=_auth_header(token),
         )
@@ -167,7 +280,10 @@ class TestDownload:
         pdf = _make_pdf("pilot download test")
         upload_resp = client.post(
             "/api/v1/manuals/upload",
-            data={"title": "Pilot DL Test"},
+            data={
+                "title": "Pilot DL Test",
+                "category_id": str(_leaf_category_id(client, admin_token)),
+            },
             files={"file": ("pilot_dl.pdf", pdf, "application/pdf")},
             headers=_auth_header(admin_token),
         )
@@ -210,7 +326,10 @@ class TestDelete:
         pdf = _make_pdf("delete me")
         upload_resp = client.post(
             "/api/v1/manuals/upload",
-            data={"title": "To Be Deleted"},
+            data={
+                "title": "To Be Deleted",
+                "category_id": str(_leaf_category_id(client, token)),
+            },
             files={"file": ("delete_me.pdf", pdf, "application/pdf")},
             headers=_auth_header(token),
         )

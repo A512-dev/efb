@@ -84,6 +84,18 @@ class TestUserProfileUpdate:
             )
             assert restore_resp.status_code == 200, restore_resp.text
 
+    def test_invalid_aircraft_type_is_rejected(self, client: TestClient):
+        """Profile aircraft type must match the backend enum choices."""
+        token = _login(client, SEED_EMAIL, SEED_PASSWORD)
+
+        resp = client.patch(
+            "/api/v1/users/me/profile",
+            json={"aircraft_type": "B747"},
+            headers=_auth_header(token),
+        )
+
+        assert resp.status_code == 422
+
     def test_update_to_same_employee_no_succeeds(self, client: TestClient):
         """A user may keep their own employee number without a false conflict."""
         token = _login(client, SEED_EMAIL, SEED_PASSWORD)
@@ -188,6 +200,56 @@ class TestAdminUserManagement:
             json={"email": email, "password": password},
         )
         assert login_resp.status_code == 401
+
+    def test_admin_signup_can_set_aircraft_type(self, client: TestClient):
+        """Admin-created pilots persist supplied enum aircraft types."""
+        admin_token = _login(client, SEED_EMAIL, SEED_PASSWORD)
+        password = "SkyDeck@2026!"
+        email = f"aircraft-{uuid4().hex[:12]}@example.com"
+
+        signup_resp = client.post(
+            "/api/v1/auth/signup",
+            json={
+                "name": "A320 Pilot",
+                "email": email,
+                "password": password,
+                "role": "pilot",
+                "aircraft_type": "A320",
+            },
+            headers=_auth_header(admin_token),
+        )
+        assert signup_resp.status_code == 201, signup_resp.text
+        user_id = signup_resp.json()["user_id"]
+
+        try:
+            list_resp = client.get("/api/v1/users", headers=_auth_header(admin_token))
+            assert list_resp.status_code == 200, list_resp.text
+            created = next(user for user in list_resp.json() if user["id"] == user_id)
+            assert created["aircraft_type"] == "A320"
+        finally:
+            client.delete(f"/api/v1/users/{user_id}", headers=_auth_header(admin_token))
+
+    def test_admin_signup_defaults_pilot_aircraft_type(self, client: TestClient):
+        """Omitted pilot aircraft type defaults to the A300/A310 fleet."""
+        admin_token = _login(client, SEED_EMAIL, SEED_PASSWORD)
+        password = "SkyDeck@2026!"
+        email = f"default-aircraft-{uuid4().hex[:12]}@example.com"
+
+        signup_resp = client.post(
+            "/api/v1/auth/signup",
+            json={"name": "Default Aircraft Pilot", "email": email, "password": password},
+            headers=_auth_header(admin_token),
+        )
+        assert signup_resp.status_code == 201, signup_resp.text
+        user_id = signup_resp.json()["user_id"]
+
+        try:
+            list_resp = client.get("/api/v1/users", headers=_auth_header(admin_token))
+            assert list_resp.status_code == 200, list_resp.text
+            created = next(user for user in list_resp.json() if user["id"] == user_id)
+            assert created["aircraft_type"] == "A300-A600/A310"
+        finally:
+            client.delete(f"/api/v1/users/{user_id}", headers=_auth_header(admin_token))
 
     def test_admin_cannot_delete_self(self, client: TestClient):
         """The final active admin cannot accidentally delete their own session user."""

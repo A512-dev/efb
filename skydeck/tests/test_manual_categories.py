@@ -123,6 +123,24 @@ def test_admin_can_manage_empty_category_tree(client: TestClient):
         _delete_category(client, token, root_id)
 
 
+def test_default_roots_are_fleet_first(client: TestClient):
+    """The first folder level is General plus the supported fleets."""
+    token = _login(client)
+
+    resp = client.get("/api/v1/manual-categories/roots", headers=_auth_header(token))
+
+    assert resp.status_code == 200, resp.text
+    root_slugs = [item["slug"] for item in resp.json()]
+    assert root_slugs == [
+        "general",
+        "a330",
+        "a300-a600-a310",
+        "a320",
+        "f100",
+        "atr72-600",
+    ]
+
+
 def test_duplicate_active_sibling_name_is_rejected(client: TestClient):
     """Active categories cannot share a display name under the same parent."""
     token = _login(client)
