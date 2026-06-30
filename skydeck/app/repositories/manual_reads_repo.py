@@ -13,6 +13,7 @@ from typing import Optional
 from sqlalchemy.orm import Session as DbSession
 from sqlalchemy.orm import joinedload
 
+from app.models.manual import Manual
 from app.models.manual_reads import ManualRead
 
 
@@ -22,7 +23,7 @@ def mark_read(
     org_id: int,
     user_id: int,
     manual_id: int,
-    manual_title: str,
+    manual_title: Optional[str] = None,
 ) -> ManualRead:
     """Create a first-read marker or update latest timestamp and counter.
 
@@ -39,6 +40,9 @@ def mark_read(
         .first()
     )
     now = datetime.now(timezone.utc)
+    if manual_title is None:
+        manual_title = db.query(Manual.title).filter(Manual.id == manual_id).scalar() or ""
+
     if read is None:
         read = ManualRead(
             org_id=org_id,

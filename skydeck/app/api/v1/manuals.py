@@ -426,6 +426,11 @@ def update_manual(
         title=new_title,
         category_id=new_category.id,
     )
+    read_reset_count = manual_reads_repo.mark_manual_unread(
+        db,
+        org_id=current_user.org_id,
+        manual_id=manual.id,
+    )
 
     old_file_deleted = False
     try:
@@ -470,6 +475,7 @@ def update_manual(
             "old_category_path": old_category_path,
             "new_category_path": new_category_path,
             "old_file_deleted": old_file_deleted,
+            "read_reset_count": read_reset_count,
         },
     )
 
