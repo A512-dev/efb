@@ -185,7 +185,7 @@ python -m alembic upgrade head
 The current head is:
 
 ```text
-0008_user_profile_pictures.py
+0012_preserve_manual_read_history.py
 ```
 
 ### 7. Seed Demo Data
@@ -276,6 +276,8 @@ Important security notes:
 | `0008_user_profile_pictures.py` | Encrypted profile pictures and user reference |
 | `0009_unique_employee_no.py` | Active employee number uniqueness per organization |
 | `0010_remove_forms_submissions.py` | Drop removed forms/submissions tables |
+| `0011_add_manual_reads.py` | Accumulated per-user manual read state |
+| `0012_preserve_manual_read_history.py` | Current manual read flag, unread timestamp, and title snapshot |
 
 Check the current database revision:
 
@@ -300,6 +302,7 @@ login_attempts
 manual_categories
 manuals
 manual_access_logs
+manual_reads
 manual_update_events
 manual_update_reads
 messages
@@ -323,6 +326,7 @@ Useful `psql` commands:
 \d user_profile_pictures
 \d messages
 \d message_attachments
+\d manual_reads
 \d manual_update_reads
 ```
 
@@ -769,6 +773,56 @@ Downloads a watermarked PDF. Response includes `X-Watermark-Hash`.
 #### `DELETE /manuals/{manual_id}`
 
 Admin-only soft delete plus physical file delete.
+
+### Manual Reads
+
+Manual reads track one current-state row per user/manual. Rows are not deleted
+when a manual becomes unread, so reports can still show that the user read a
+previous version.
+
+#### `GET /manuals/reads/me`
+
+Lists the current user's manual read history, newest first.
+
+#### `GET /manuals/reads`
+
+Admin-only. Lists all manual read rows in the current organization.
+
+#### `POST /manuals/{manual_id}/read`
+
+Marks the manual read for the current user. If a row already exists, it sets
+`is_read: true`, clears `unread_at`, updates `last_read_at`, increments
+`read_count`, and refreshes the `manual_title` snapshot to the current manual
+title.
+
+#### `POST /manuals/{manual_id}/unread`
+
+Marks the current user's manual row unread without deleting it. This sets
+`is_read: false` and `unread_at` while preserving `read_at`, `last_read_at`,
+`read_count`, and the previous `manual_title` snapshot.
+
+When an admin replaces a manual PDF with `POST /manuals/{manual_id}/update`, all
+current read rows for that manual are also marked unread. This means users who
+read the old PDF remain visible in history, but must read the new PDF again.
+
+Response shape:
+
+```json
+{
+  "id": 10,
+  "org_id": 1,
+  "user_id": 3,
+  "manual_id": 5,
+  "read_at": "2026-06-30T08:00:00+00:00",
+  "last_read_at": "2026-06-30T09:00:00+00:00",
+  "read_count": 2,
+  "is_read": false,
+  "unread_at": "2026-06-30T10:00:00+00:00",
+  "created_at": "2026-06-30T08:00:00+00:00",
+  "user_name": "First Officer Ava Chen",
+  "manual_title": "A310 SOP"
+}
+```
 
 ### Manual Categories
 
