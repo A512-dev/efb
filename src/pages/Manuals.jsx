@@ -147,12 +147,12 @@ import { useManuals } from "../hooks/useManuals";
 import { useManualCategories } from "../hooks/useManualCategories";
 import { useBookmark } from "../Context/BookmarkContext";
 import PageWrapper from "../components/PageWrapper";
-import { downloadManual } from "../services/apiService";
+
 import backIcon from '../assets/icons/arrowback .svg'
 import bookmarkAddIcon from "../assets/icons/bookmarkadd.svg";
 import bookmarkRemoveIcon from "../assets/icons/bookmarkpor.svg";
 import { useNotifications } from "../Context/NotificationContext";
-import { useNavigate } from "react-router-dom";
+import PDFViewer from "../components/manuals/PDFViewer";
 import { getMyManualReads } from "../services/apiService";
 import { markManualRead } from "../services/apiService";
 const Manuals = () => {
@@ -162,7 +162,6 @@ const Manuals = () => {
 const { updates, seenIds } = useNotifications();
 
 const [readManuals, setReadManuals] = useState([]);
-
 useEffect(() => {
   const fetchReads = async () => {
     try {
@@ -277,36 +276,21 @@ const visibleManuals = manuals.filter(
 
 
   const { toggleClipboardItem, isDocumentBookmarked } = useBookmark();
-  const [openDoc, setOpenDoc] = useState(null);
-const [openedManualId, setOpenedManualId] = useState(null);
+  const [selectedManual, setSelectedManual] = useState(null);
 
 
-  const openManual = async (manual) => {
-  try {
-    const blob = await downloadManual(manual.id);
-    const url = URL.createObjectURL(blob);
-
-    setOpenDoc(url);
-    setOpenedManualId(manual.id);
-  } catch (err) {
-    console.error("Error opening PDF:", err);
-  }
+const openManual = (manual) => {
+  setSelectedManual(manual);
 };
 
 
   useEffect(() => {
   if (!isLeafCategory) {
-    setOpenDoc(null);
-    setOpenedManualId(null);
+    setSelectedManual(null);
   }
 }, [isLeafCategory, categoryId]);
 
 
-  useEffect(() => {
-    return () => {
-      if (openDoc) URL.revokeObjectURL(openDoc);
-    };
-  }, [openDoc]);
 
   if (categoriesLoading) return <p>Loading...</p>;
   if (isLeafCategory && loading) return <p>Loading manuals...</p>;
@@ -411,7 +395,10 @@ if (currentCategory.id === 23) {
   type="checkbox"
   className="readAndSignButton"
   checked={readManuals.includes(manual.id)}
-  disabled={openedManualId !== manual.id || readManuals.includes(manual.id)}
+  disabled={
+  selectedManual?.id !== manual.id ||
+  readManuals.includes(manual.id)
+}
   onChange={() => handleRead(manual.id)}
 />
 
@@ -434,18 +421,8 @@ if (currentCategory.id === 23) {
       {isLeafCategory && (
         <div className="manualsContainer">
           <div style={{ width: "100%", height: "100vh" }}>
-            {openDoc ? (
-              <iframe
-                src={openDoc}
-                width="100%"
-                height="100%"
-                style={{ border: "none" }}
-                title="PDF preview"
-              />
-            ) : (
-              <p style={{ padding: "20px" }}>Select a document to preview</p>
-            )}
-          </div>
+  <PDFViewer manual={selectedManual} />
+</div>
         </div>
       )}
     </PageWrapper>
