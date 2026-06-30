@@ -13,6 +13,7 @@ const App = () => {
         <AppRouter />
       </BookmarkProvider>
       </NotificationProvider>
+     
     </AuthProvider>
   );
 };
