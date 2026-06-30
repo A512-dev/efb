@@ -208,7 +208,7 @@
 import PageWrapper from "../components/PageWrapper";
 import { useState, useEffect, useMemo } from "react";
 import { createPilotUser, getAllUsers } from "../services/apiService";
-
+import { createPortal } from "react-dom";
 const SignUp = () => {
 
   const [formData, setFormData] = useState({
@@ -216,11 +216,17 @@ const SignUp = () => {
     email: "",
     role: "pilot",
   });
-
+const [errorModal, setErrorModal] = useState({
+  open: false,
+  message: "",
+});
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [fleetFilter, setFleetFilter] = useState("all");
-
+const [successModal, setSuccessModal] = useState({
+  open: false,
+  email: "",
+});
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -228,27 +234,44 @@ const SignUp = () => {
     });
   };
 
-  const handleCreatePilot = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+const handleCreatePilot = async (e) => {
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      const newUser = await createPilotUser(formData);
-      alert("User created: " + newUser.email);
+  try {
+    const email = formData.email;
 
-      setFormData({
-        name: "",
-        email: "",
-        role: "pilot",
-      });
+    await createPilotUser(formData);
 
-    } catch (err) {
-      console.error(err);
-      alert("ساخت کاربر جدید با خطا مواجه شد");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setSuccessModal({
+      open: true,
+      email,
+    });
+
+    setFormData({
+      name: "",
+      email: "",
+      role: "pilot",
+    });
+  }catch (err) {
+  console.error(err);
+
+  if (err.response?.status === 409) {
+    setErrorModal({
+      open: true,
+      message:
+        "This user already exists.\n\nIf you want to recreate this user, please delete their profile from Crew Profile first.",
+    });
+  } else {
+    setErrorModal({
+      open: true,
+      message: "Failed to create the user. Please try again.",
+    });
+  }
+} finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -368,7 +391,62 @@ const SignUp = () => {
         </div>
 
       </section>
+{createPortal(
+  <>
+    {successModal.open && (
+      <div className="signup-modal-overlay">
+        <div className="signup-modal-content">
+          <h2>User Created Successfully</h2>
 
+          <pt>
+            The user account has been created successfully.
+          </pt>
+
+          <p>
+            <strong>Email:</strong> {successModal.email}
+          </p>
+
+          <button
+            className="signup-modal-button"
+            onClick={() =>
+              setSuccessModal({
+                open: false,
+                email: "",
+              })
+            }
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    )}
+
+    {errorModal.open && (
+      <div className="signup-modal-overlay">
+        <div className="signup-modal-content">
+          <h2 style={{color:'#dc2626'}}>Unable to Create User</h2>
+
+          <p style={{ whiteSpace: "pre-line", borderBottom:'1px solid red', color:'#dc2626' }}>
+            {errorModal.message}
+          </p>
+
+          <button
+            className="signup-modal-button"
+            onClick={() =>
+              setErrorModal({
+                open: false,
+                message: "",
+              })
+            }
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    )}
+  </>,
+  document.body
+)}
     </PageWrapper>
   );
 };
