@@ -11,7 +11,9 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy.orm import Session as DbSession
+from sqlalchemy.orm import joinedload
 
+from app.models.manual import Manual
 from app.models.manual_update_event import ManualUpdateEvent
 from app.models.manual_update_read import ManualUpdateRead
 
@@ -76,7 +78,7 @@ def list_for_org(
     *,
     org_id: int,
     offset: int = 0,
-    limit: int = 20,
+    limit: Optional[int] = 20,
 ) -> tuple[list[ManualUpdateEvent], int]:
     """List manual update events for an organization.
 
@@ -89,9 +91,16 @@ def list_for_org(
     Returns:
         A tuple of the event list and the total event count.
     """
-    query = db.query(ManualUpdateEvent).filter(ManualUpdateEvent.org_id == org_id)
+    query = (
+        db.query(ManualUpdateEvent)
+        .options(joinedload(ManualUpdateEvent.manual).joinedload(Manual.category))
+        .filter(ManualUpdateEvent.org_id == org_id)
+    )
     total = query.count()
-    items = query.order_by(ManualUpdateEvent.created_at.desc()).offset(offset).limit(limit).all()
+    query = query.order_by(ManualUpdateEvent.created_at.desc()).offset(offset)
+    if limit is not None:
+        query = query.limit(limit)
+    items = query.all()
     return items, total
 
 
@@ -104,6 +113,7 @@ def get_for_org(
     """Fetch one manual update event inside an organization."""
     return (
         db.query(ManualUpdateEvent)
+        .options(joinedload(ManualUpdateEvent.manual).joinedload(Manual.category))
         .filter(ManualUpdateEvent.org_id == org_id, ManualUpdateEvent.id == event_id)
         .first()
     )
@@ -167,18 +177,20 @@ def mark_all_read(
     *,
     org_id: int,
     user_id: int,
+    event_ids: Optional[list[int]] = None,
 ) -> int:
     """Create only missing read markers for all current organization events.
 
     The return value counts new markers rather than total events, which lets the
     API report whether this call actually changed state.
     """
-    event_ids = [
-        row[0]
-        for row in db.query(ManualUpdateEvent.id)
-        .filter(ManualUpdateEvent.org_id == org_id)
-        .all()
-    ]
+    if event_ids is None:
+        event_ids = [
+            row[0]
+            for row in db.query(ManualUpdateEvent.id)
+            .filter(ManualUpdateEvent.org_id == org_id)
+            .all()
+        ]
     read_map = get_read_map(db, org_id=org_id, user_id=user_id, event_ids=event_ids)
 
     created_count = 0

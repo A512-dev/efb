@@ -26,7 +26,7 @@ from app.schemas.manual_update_event import (
     ManualUpdateReadResponse,
 )
 from app.schemas.pagination import PaginatedResponse
-from app.services import audit_service
+from app.services import audit_service, manual_visibility_service
 
 router = APIRouter(prefix="/manual-updates", tags=["manual-updates"])
 
@@ -80,12 +80,23 @@ def list_manual_updates(
         limit = 20
 
     offset = (page - 1) * limit
-    items, total = manual_update_event_repo.list_for_org(
-        db,
-        org_id=current_user.org_id,
-        offset=offset,
-        limit=limit,
-    )
+    if manual_visibility_service.allowed_root_slugs(current_user) is None:
+        items, total = manual_update_event_repo.list_for_org(
+            db,
+            org_id=current_user.org_id,
+            offset=offset,
+            limit=limit,
+        )
+    else:
+        all_items, _ = manual_update_event_repo.list_for_org(
+            db,
+            org_id=current_user.org_id,
+            offset=0,
+            limit=None,
+        )
+        visible_items = manual_visibility_service.filter_update_events(current_user, all_items)
+        total = len(visible_items)
+        items = visible_items[offset : offset + limit]
     # Fetch all read markers for this page in one query, then merge in memory.
     read_map = manual_update_event_repo.get_read_map(
         db,
@@ -119,7 +130,7 @@ def mark_manual_update_read(
         org_id=current_user.org_id,
         event_id=event_id,
     )
-    if item is None:
+    if item is None or not manual_visibility_service.can_access_update_event(current_user, item):
         raise NotFoundError("Manual update not found")
 
     read = manual_update_event_repo.mark_read(
@@ -154,10 +165,24 @@ def mark_all_manual_updates_read(
     db: DbSession = Depends(get_db),
 ):
     """Create missing markers for every event currently in the tenant feed."""
+    event_ids = None
+    if manual_visibility_service.allowed_root_slugs(current_user) is not None:
+        all_items, _ = manual_update_event_repo.list_for_org(
+            db,
+            org_id=current_user.org_id,
+            offset=0,
+            limit=None,
+        )
+        event_ids = [
+            item.id
+            for item in manual_visibility_service.filter_update_events(current_user, all_items)
+        ]
+
     marked_count = manual_update_event_repo.mark_all_read(
         db,
         org_id=current_user.org_id,
         user_id=current_user.id,
+        event_ids=event_ids,
     )
     audit_service.record(
         db,

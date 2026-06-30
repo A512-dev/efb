@@ -27,7 +27,7 @@ from app.schemas.manual_category import (
     ManualCategoryReorder,
     ManualCategoryTreeOut,
 )
-from app.services import audit_service
+from app.services import audit_service, manual_visibility_service
 
 router = APIRouter(prefix="/manual-categories", tags=["manual-categories"])
 
@@ -168,6 +168,7 @@ def list_root_categories(
 ):
     """List root categories available to the caller's organization."""
     categories = manual_category_repo.list_roots(db, org_id=current_user.org_id)
+    categories = manual_visibility_service.filter_categories(current_user, categories)
     return [_category_out(db, category) for category in categories]
 
 
@@ -183,6 +184,7 @@ def get_category_tree(
 ):
     """Return the full active category tree for navigation screens."""
     roots = manual_category_repo.list_roots(db, org_id=current_user.org_id)
+    roots = manual_visibility_service.filter_categories(current_user, roots)
     return [_tree_node(root) for root in roots]
 
 
@@ -465,7 +467,9 @@ def list_category_children(
     Returning 404 for absent and out-of-organization IDs avoids leaking the
     existence of another tenant's category.
     """
-    _require_category(db, org_id=current_user.org_id, category_id=category_id)
+    category = _require_category(db, org_id=current_user.org_id, category_id=category_id)
+    if not manual_visibility_service.can_access_category(current_user, category):
+        raise NotFoundError("Manual category not found")
 
     children = manual_category_repo.list_children(
         db,
@@ -488,4 +492,6 @@ def get_category_path(
 ):
     """Return the breadcrumb path from root to a category."""
     category = _require_category(db, org_id=current_user.org_id, category_id=category_id)
+    if not manual_visibility_service.can_access_category(current_user, category):
+        raise NotFoundError("Manual category not found")
     return _path_items(category)

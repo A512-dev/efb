@@ -47,7 +47,7 @@ from app.repositories import (
 from app.schemas.auth import ErrorResponse
 from app.schemas.manual import ManualDeleteOut, ManualOut, ManualUpdateOut, ManualUploadOut
 from app.schemas.manual_category import ManualCategoryPathItem
-from app.services import audit_service
+from app.services import audit_service, manual_visibility_service
 from app.services.storage import get_manual_storage, secure_filename
 from app.services.watermark_service import watermark_pdf
 
@@ -580,7 +580,9 @@ def list_manuals(
     preserving a clear 404 for an invalid or cross-tenant filter ID.
     """
     if category_id is not None:
-        _get_category_for_org(db, org_id=current_user.org_id, category_id=category_id)
+        category = _get_category_for_org(db, org_id=current_user.org_id, category_id=category_id)
+        if not manual_visibility_service.can_access_category(current_user, category):
+            raise NotFoundError("Manual category not found")
 
     manuals = manual_repo.list_active(
         db,
@@ -588,6 +590,7 @@ def list_manuals(
         category_id=category_id,
         include_descendants=include_descendants,
     )
+    manuals = manual_visibility_service.filter_manuals(current_user, manuals)
     return [_manual_out(manual) for manual in manuals]
 
 
@@ -616,6 +619,8 @@ def download_manual(
     """
     manual = manual_repo.get_by_id(db, manual_id)
     if manual is None or manual.org_id != current_user.org_id:
+        raise NotFoundError("Manual not found")
+    if not manual_visibility_service.can_access_manual(current_user, manual):
         raise NotFoundError("Manual not found")
 
     storage = get_manual_storage()

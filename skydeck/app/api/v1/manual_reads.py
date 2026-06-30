@@ -17,7 +17,7 @@ from app.models.user import User
 from app.repositories import manual_reads_repo, manual_repo
 from app.schemas.auth import ErrorResponse
 from app.schemas.manual_reads import ManualReadOut
-from app.services import audit_service
+from app.services import audit_service, manual_visibility_service
 
 router = APIRouter(prefix="/manuals", tags=["manual-reads"])
 
@@ -66,6 +66,12 @@ def list_my_manual_reads(
         org_id=current_user.org_id,
         user_id=current_user.id,
     )
+    if manual_visibility_service.allowed_root_slugs(current_user) is not None:
+        reads = [
+            read
+            for read in reads
+            if manual_visibility_service.can_access_manual(current_user, read.manual)
+        ]
     return [_read_out(read) for read in reads]
 
 
@@ -98,6 +104,8 @@ def mark_manual_read(
     """Upsert read state and audit the action in one transaction."""
     manual = manual_repo.get_by_id(db, manual_id)
     if manual is None or manual.org_id != current_user.org_id:
+        raise NotFoundError("Manual not found")
+    if not manual_visibility_service.can_access_manual(current_user, manual):
         raise NotFoundError("Manual not found")
 
     read = manual_reads_repo.mark_read(
@@ -136,6 +144,8 @@ def mark_manual_unread(
     """Clear current-read state while preserving the user's read history."""
     manual = manual_repo.get_by_id(db, manual_id)
     if manual is None or manual.org_id != current_user.org_id:
+        raise NotFoundError("Manual not found")
+    if not manual_visibility_service.can_access_manual(current_user, manual):
         raise NotFoundError("Manual not found")
 
     read = manual_reads_repo.mark_unread(
