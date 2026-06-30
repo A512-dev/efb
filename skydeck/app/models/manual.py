@@ -101,7 +101,7 @@ class Manual(Base):
 
 @event.listens_for(Manual, "before_insert")
 def _assign_fallback_category(_mapper, connection, target: Manual) -> None:
-    """Assign Iranair / General when legacy/demo code omits category_id.
+    """Assign General / General when legacy/demo code omits category_id.
 
     API uploads still require an explicit leaf category. This fallback exists
     only to keep old seed scripts and internal inserts compatible.
@@ -117,7 +117,7 @@ def _assign_fallback_category(_mapper, connection, target: Manual) -> None:
         select(ManualCategory.id).where(
             ManualCategory.org_id == target.org_id,
             ManualCategory.parent_id.is_(None),
-            ManualCategory.slug == "iranair",
+            ManualCategory.slug == "general",
             ManualCategory.is_active.is_(True),
         )
     ).scalar_one_or_none()

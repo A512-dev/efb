@@ -10,70 +10,72 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session as DbSession
 
+from app.models.enums import AircraftType
 from app.models.manual_category import ManualCategory
-
 
 # Shared declarative seed structure used by both the Org mapper event and the
 # repair helper below. List order becomes ``sort_order`` in API navigation.
-DEFAULT_MANUAL_CATEGORY_TREE: list[dict] = [
+STANDARD_MANUAL_CATEGORY_CHILDREN: list[tuple[str, str]] = [
+    ("Aircraft documents", "aircraft-documents"),
+    ("Aircraft Performance", "aircraft-performance"),
+    ("Fleet memos", "fleet-memos"),
+    ("General", "general"),
+    ("MEL CDI", "mel-cdi"),
+    ("training documents", "training-documents"),
+]
+
+GENERAL_MANUAL_CATEGORY_ROOT = {
+    "name": "General",
+    "slug": "general",
+    "children": STANDARD_MANUAL_CATEGORY_CHILDREN,
+}
+
+FLEET_MANUAL_CATEGORY_ROOTS: list[dict] = [
     {
-        "name": "A300/600",
-        "slug": "a300-600",
-        "children": [
-            ("Aircraft documents", "aircraft-documents"),
-            ("Aircraft Performance", "aircraft-performance"),
-            ("Fleet memos", "fleet-memos"),
-            ("General", "general"),
-            ("MEL CDI", "mel-cdi"),
-            ("training documents", "training-documents"),
-        ],
+        "name": AircraftType.A330.value,
+        "slug": "a330",
+        "aircraft_type": AircraftType.A330.value,
+        "children": STANDARD_MANUAL_CATEGORY_CHILDREN,
     },
     {
-        "name": "Iranair",
-        "slug": "iranair",
-        "children": [
-            ("Aircraft documents", "aircraft-documents"),
-            ("Aircraft Performance", "aircraft-performance"),
-            ("Fleet memos", "fleet-memos"),
-            ("General", "general"),
-            ("MEL CDI", "mel-cdi"),
-            ("training documents", "training-documents"),
-        ],
+        "name": AircraftType.A300_A600_A310.value,
+        "slug": "a300-a600-a310",
+        "aircraft_type": AircraftType.A300_A600_A310.value,
+        "children": STANDARD_MANUAL_CATEGORY_CHILDREN,
     },
     {
-        "name": "Training and resources",
-        "slug": "training-and-resources",
-        "children": [
-            ("Aircraft documents", "aircraft-documents"),
-            ("Aircraft Performance", "aircraft-performance"),
-            ("Fleet memos", "fleet-memos"),
-            ("General", "general"),
-            ("MEL CDI", "mel-cdi"),
-            ("training documents", "training-documents"),
-        ],
+        "name": AircraftType.A320.value,
+        "slug": "a320",
+        "aircraft_type": AircraftType.A320.value,
+        "children": STANDARD_MANUAL_CATEGORY_CHILDREN,
     },
     {
-        "name": "Forms",
-        "slug": "forms",
-        "children": [
-            ("REPORTS", "reports"),
-            ("sms", "sms"),
-            ("training", "training"),
-        ],
+        "name": AircraftType.F100.value,
+        "slug": "f100",
+        "aircraft_type": AircraftType.F100.value,
+        "children": STANDARD_MANUAL_CATEGORY_CHILDREN,
     },
     {
-        "name": "Safety Issue",
-        "slug": "safety-issue",
-        "children": [
-            ("Aircraft documents", "aircraft-documents"),
-            ("Aircraft Performance", "aircraft-performance"),
-            ("Fleet memos", "fleet-memos"),
-            ("General", "general"),
-            ("MEL CDI", "mel-cdi"),
-            ("training documents", "training-documents"),
-        ],
+        "name": AircraftType.ATR72_600.value,
+        "slug": "atr72-600",
+        "aircraft_type": AircraftType.ATR72_600.value,
+        "children": STANDARD_MANUAL_CATEGORY_CHILDREN,
     },
 ]
+
+DEFAULT_MANUAL_CATEGORY_TREE: list[dict] = [
+    GENERAL_MANUAL_CATEGORY_ROOT,
+    *FLEET_MANUAL_CATEGORY_ROOTS,
+]
+
+FLEET_ROOT_SLUG_BY_AIRCRAFT_TYPE = {
+    root["aircraft_type"]: root["slug"]
+    for root in FLEET_MANUAL_CATEGORY_ROOTS
+}
+PROTECTED_ROOT_SLUGS = {
+    GENERAL_MANUAL_CATEGORY_ROOT["slug"],
+    *FLEET_ROOT_SLUG_BY_AIRCRAFT_TYPE.values(),
+}
 
 
 def ensure_default_categories(db: DbSession, *, org_id: int) -> dict[str, ManualCategory]:

@@ -17,7 +17,7 @@ from sqlalchemy import text
 
 from app.db.session import SessionLocal
 from app.models.audit_log import AuditLog
-from app.models.enums import UserRole
+from app.models.enums import DEFAULT_FLEET_AIRCRAFT_TYPE, UserRole
 from app.models.manual import Manual
 from app.models.org import Org
 from app.models.user import User
@@ -74,7 +74,7 @@ def seed() -> None:
             settings_json={
                 "timezone": "America/Denver",
                 "base_airport": "KSLC",
-                "fleet_type": ["CRJ-200", "CRJ-700", "ERJ-175"],
+                "fleet_type": ["A330", "A300-A600/A310", "A320", "F100", "ATR72-600"],
                 "regulatory_authority": "FAA",
             },
         )
@@ -125,7 +125,9 @@ def seed() -> None:
                 employee_no="pending",
                 position=_default_position(user_data["name"], user_data["role"]),
                 aircraft_type=(
-                    "A310" if user_data["role"] in {UserRole.pilot, UserRole.chief_pilot} else "N/A"
+                    DEFAULT_FLEET_AIRCRAFT_TYPE.value
+                    if user_data["role"] in {UserRole.pilot, UserRole.chief_pilot}
+                    else "N/A"
                 ),
                 medical_expires_at=_add_years(now, 1),
                 passport_expires_at=_add_years(now, 5),
