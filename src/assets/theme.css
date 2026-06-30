@@ -604,8 +604,9 @@ h5 {
 }
 .dashboard-panel {
   position: fixed;
+  max-height: calc(100vh - 40px);
   top: 20px;
-  bottom: 20px;
+
   right: 12%;
 
   width: 63%;
@@ -614,9 +615,9 @@ h5 {
   background: var(--card);
   box-shadow: var(--boxshadow_3d);
   border-radius: 0.375rem;
+  box-sizing: border-box;
 
   overflow-y: auto;
-  box-sizing: border-box;
 }
 .dashboard-grid {
   display: grid;
