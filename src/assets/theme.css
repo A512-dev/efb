@@ -1653,3 +1653,18 @@ h5 {
     font-size: 12px;
   }
 }
+
+.footer-note {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 10px 20px;
+  color: white;
+  backdrop-filter: blur(5px);
+  border-radius: 7px 7px 0 0;
+  width: 100%;
+  max-width: 99vw;
+}
