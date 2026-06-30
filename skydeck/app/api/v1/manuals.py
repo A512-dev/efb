@@ -562,8 +562,6 @@ def delete_manual(
 
 
 # ── GET / (list) ──────────────────────────────────────────────
-
-
 @router.get(
     "",
     response_model=list[ManualOut],
@@ -594,8 +592,6 @@ def list_manuals(
 
 
 # ── GET /{id}/download ───────────────────────────────────────
-
-
 @router.get(
     "/{manual_id}/download",
     responses={
@@ -648,12 +644,12 @@ def download_manual(
         ip=client_ip,
     )
     manual_repo.touch_last_accessed(db, manual)
-    manual_reads_repo.mark_read(
-        db,
-        org_id=current_user.org_id,
-        user_id=current_user.id,
-        manual_id=manual.id,
-    )
+    # manual_reads_repo.mark_read(
+    #     db,
+    #     org_id=current_user.org_id,
+    #     user_id=current_user.id,
+    #     manual_id=manual.id,
+    # )
     audit_service.record(
         db,
         action="manual.download",
