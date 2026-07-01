@@ -27,7 +27,12 @@ export default function usePdfCache() {
 
     const promise = downloadManual(id)
       .then((blob) => {
-        const url = URL.createObjectURL(blob);
+        const pdfBlob =
+          blob instanceof Blob && blob.type === "application/pdf"
+            ? blob
+            : new Blob([blob], { type: "application/pdf" });
+
+        const url = URL.createObjectURL(pdfBlob);
 
         cacheRef.current.set(id, url);
 
