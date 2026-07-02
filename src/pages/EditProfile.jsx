@@ -14,8 +14,8 @@ const EditProfile = () => {
   const navigate = useNavigate();
 
   const [employeeNo, setEmployeeNo] = useState("");
-const [position, setPosition] = useState("");
-const [aircraftType, setAircraftType] = useState("");
+// const [position, setPosition] = useState("");
+// const [aircraftType, setAircraftType] = useState("");
 const [medicalExpire, setMedicalExpire] = useState("");
 const [passportExpire, setPassportExpire] = useState("");
 const [licenseExpire, setLicenseExpire] = useState("");
@@ -46,8 +46,8 @@ const [licenseExpire, setLicenseExpire] = useState("");
   if (!user) return;
 
   setEmployeeNo(user.employee_no || "");
-  setPosition(user.position || "");
-  setAircraftType(user.aircraft_type || "");
+  // setPosition(user.position || "");
+  // setAircraftType(user.aircraft_type || "");
 
   setMedicalExpire(user.medical_expires_at?.split("T")[0] || "");
   setPassportExpire(user.passport_expires_at?.split("T")[0] || "");
@@ -157,20 +157,20 @@ if (!user) {
 
           <div className="input-group">
             <label>Position</label>
-            <select className="selectProfile"
+            {/* <select className="selectProfile"
   value={position}
   onChange={(e) => setPosition(e.target.value)}
 >
   <option value="">Select Position</option>
   <option value="P1">P1</option>
   <option value="P2">P2</option>
-</select>
+</select> */}
 
           </div>
 
           <div className="input-group">
             <label>Aircraft Type</label>
-         <select
+         {/* <select
   className="selectProfile"
   value={aircraftType}
   onChange={(e) => setAircraftType(e.target.value)}
@@ -181,7 +181,7 @@ if (!user) {
   <option value="A320">A320</option>
   <option value="F100">F100</option>
   <option value="ATR">ATR 72-600</option>
-</select>
+</select> */}
 
 
           </div>

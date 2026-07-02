@@ -335,7 +335,8 @@ const CrewProfile = () => {
   const [showReadsModal, setShowReadsModal] = useState(false);
 
   const { manuals } = useManuals(null);
-
+const [editPosition, setEditPosition] = useState("");
+const [editAircraft, setEditAircraft] = useState("");
   const calcRemainingDays = (date) => {
   if (!date) return null;
 
@@ -459,7 +460,12 @@ const getUserExpiryClass = (user) => {
 
   
 
+useEffect(() => {
+  if (!selectedPilot) return;
 
+  setEditPosition(selectedPilot.position || "");
+  setEditAircraft(selectedPilot.aircraft_type || "");
+}, [selectedPilot]);
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -666,8 +672,32 @@ useEffect(() => {
                 user={selectedPilot}
                 profileImage={profileImage}
               />
+              <div className="adminEditSection">
+  <label>Position</label>
+
+  <select
+    value={editPosition}
+    onChange={(e) => setEditPosition(e.target.value)}
+  >
+    <option value="P1">P1</option>
+    <option value="P2">P2</option>
+  </select>
+
+  <label>Aircraft Type</label>
+
+  <select
+    value={editAircraft}
+    onChange={(e) => setEditAircraft(e.target.value)}
+  >
+    <option value="A300_600">A300-600 / A310</option>
+    <option value="A320">A320</option>
+    <option value="A330">A330</option>
+    <option value="ATR">ATR 72-600</option>
+    <option value="F100">F100</option>
+  </select>
+</div>
 <button
-  className="send-warning-btn" // اسم کلاس CSS برای استایل‌دهی
+  className="send-warning-btn" 
   onClick={() => handleSendWarning(selectedPilot)}
 >
   Send Expiry Warning
