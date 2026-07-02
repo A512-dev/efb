@@ -1,3 +1,4 @@
+#skydeck\app\api\v1\auth.py
 """HTTP boundary for signup, login, refresh, and logout.
 
 These handlers validate request/response shapes and collect request context,
@@ -18,6 +19,8 @@ from app.schemas.auth import (
     ErrorResponse,
     LoginRequest,
     LogoutResponse,
+    PasswordChangeRequest,
+    PasswordChangeResponse,
     RefreshRequest,
     RefreshResponse,
     SignupRequest,
@@ -61,6 +64,8 @@ def signup(
         email=body.email,
         password=body.password,
         role=body.role,
+        position=body.position,           
+        aircraft_type=body.aircraft_type,
         org_id=current_user.org_id,
         actor_user_id=current_user.id,
         ip=request.client.host if request.client else None,
@@ -88,6 +93,34 @@ def login(body: LoginRequest, request: Request, db: DbSession = Depends(get_db))
         refresh_token=result["refresh_token"],
         user=result["user"],
     )
+
+
+@router.post(
+    "/change-password",
+    response_model=PasswordChangeResponse,
+    responses={
+        400: {"model": ErrorResponse},
+        401: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+    },
+    summary="Set initial password using signup key",
+)
+def change_password(
+    body: PasswordChangeRequest,
+    db: DbSession = Depends(get_db),
+):
+    """Allow users to set their initial password using the secret signup key.
+    
+    This endpoint does not require authentication, only the signup key.
+    Users can use this to change their password after initial account creation.
+    """
+    auth_service.change_initial_password(
+        db,
+        email=body.email,
+        signup_key=body.signup_key,
+        new_password=body.new_password,
+    )
+    return PasswordChangeResponse()
 
 
 @router.post(

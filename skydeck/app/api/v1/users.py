@@ -24,6 +24,7 @@ from app.models.user import User
 from app.repositories import user_repo
 from app.schemas.auth import ErrorResponse
 from app.schemas.user import (
+    AdminUserProfileUpdateRequest,
     UserDeleteResponse,
     UserListItemResponse,
     UserMeResponse,
@@ -124,6 +125,57 @@ def update_my_profile(
         db.refresh(current_user)
 
     return UserMeResponse.model_validate(current_user)
+
+@router.patch(
+    "/{user_id}/admin-profile",
+    response_model=UserListItemResponse,
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+    },
+    summary="Admin update of a user's position and aircraft type",
+)
+def update_user_designation(
+    user_id: int,
+    body: AdminUserProfileUpdateRequest,
+    request: Request,
+    current_user: User = Depends(_ADMIN),
+    db: DbSession = Depends(get_db),
+):
+    """Allow administrators to set or change the position and aircraft type of a user."""
+    target_user = user_repo.get_by_id(db, user_id)
+    if target_user is None or target_user.org_id != current_user.org_id:
+        raise NotFoundError("User not found")
+
+    updates = body.model_dump(exclude_unset=True)
+    changed_fields = []
+
+    if "position" in updates and updates["position"] != target_user.position:
+        target_user.position = updates["position"]
+        changed_fields.append("position")
+    if "aircraft_type" in updates and updates["aircraft_type"] != target_user.aircraft_type:
+        target_user.aircraft_type = updates["aircraft_type"]
+        changed_fields.append("aircraft_type")
+
+    if changed_fields:
+        audit_service.record(
+            db,
+            action="user.admin_update",
+            target_type="user",
+            target_id=target_user.id,
+            user_id=current_user.id,
+            org_id=current_user.org_id,
+            ip=request.client.host if request.client else None,
+            metadata={
+                "fields": sorted(changed_fields),
+                "target_email": target_user.email,
+            },
+        )
+        db.commit()
+        db.refresh(target_user)
+
+    return UserListItemResponse.model_validate(target_user)
 
 
 @router.post(

@@ -41,10 +41,35 @@ class SignupRequest(BaseModel):
     path. Authorization for who may call signup is enforced by the route.
     """
 
-    name: str = Field(..., min_length=1, max_length=200)
+    name: str = Field(..., min_length=1)
     email: EmailStr
-    password: str = Field(..., min_length=6, max_length=128)
-    role: UserRole = UserRole.pilot
+    password: str = Field(..., min_length=8)
+    role: UserRole
+    position: str = Field(..., min_length=1, max_length=200)
+    aircraft_type: str = Field(..., min_length=1, max_length=100)
+    
+    @classmethod
+    def _strip_required_text(cls, value: object) -> object:
+        if value is None:
+            raise ValueError("Field cannot be null")
+        if isinstance(value, str):
+            return value.strip()
+        return value
+    
+class PasswordChangeRequest(BaseModel):
+    """Schema for new users to set their password using signup key."""
+    
+    email: EmailStr
+    signup_key: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8)
+    
+    model_config = {"extra": "forbid"}
+
+
+class PasswordChangeResponse(BaseModel):
+    """Response for successful password change."""
+    
+    message: str = "Password changed successfully"
 
 
 # ── embedded objects ──────────────────────────────────────────

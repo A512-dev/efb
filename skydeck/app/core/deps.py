@@ -1,3 +1,4 @@
+#skydeck\app\core\deps.py
 """FastAPI dependencies for request-scoped authentication and RBAC.
 
 Routes declare these functions with ``Depends``. FastAPI then runs token

@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from pydantic import field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # ``config.py`` is app/core/config.py, so three parents reaches ``skydeck``.
@@ -64,6 +64,9 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # the signup keys:
+    SIGNUP_KEY: str = Field(default="", description="Secret key for new users to set their password")
 
     # ── file storage ────────────────────────────────────────
     STORAGE_DIR: str = "storage/manuals"

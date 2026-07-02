@@ -1,3 +1,4 @@
+#skydeck\alembic\versions\0005_user_profile_fields.py
 """Add operational profile and credential-expiry fields to users.
 
 Columns begin nullable so existing rows can be backfilled from IDs, roles, and
