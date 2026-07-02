@@ -98,6 +98,11 @@
 .expiry-item.expire-yellow strong {
   color: #ffd700;
 }
+.expire-critical {
+  background-color: #7f0000 !important;
+  color: white !important;
+  border: 2px solid #ff0000 !important;
+}
 
 .expiry-item.expire-green {
   border-left: 5px solid #4caf50 !important;

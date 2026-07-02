@@ -5,14 +5,17 @@ const PDFCanvas = ({
   numPages,
   setNumPages,
   zoom,
-  setCurrentPage,
+  setPdf,
 }) => {
 
     return (
         <Document
-            file={url}
-            onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-        >
+    file={url}
+    onLoadSuccess={(doc) => {
+        setNumPages(doc.numPages);
+        setPdf(doc);
+    }}
+>
             {Array.from({ length: numPages || 0 }).map((_, index) => (
                 <div
                     key={index}
@@ -28,7 +31,7 @@ const PDFCanvas = ({
                     <Page
                         pageNumber={index + 1}
                         scale={zoom}
-                        renderTextLayer
+                        renderTextLayer={true}
                         renderAnnotationLayer={false}
                     />
                 </div>

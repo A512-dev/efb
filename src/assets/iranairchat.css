@@ -51,7 +51,6 @@
   --boxshadow_3d: 0rem 0.125rem 0.625rem 0.0625rem rgba(255, 255, 255, 0.15);
   --borderBottom: #fff;
 }
-/* ===== IranAirChat Theme-safe styles (uses your CSS variables) ===== */
 
 .chatbox {
   width: min(900px, 92%);
@@ -98,13 +97,11 @@
   font-size: 12px;
 }
 
-/* Form layout */
 .chatbox form {
   display: grid;
   gap: 10px;
 }
 
-/* Inputs */
 .chat-subject-input,
 .chat-recipient-input,
 .chatbox textarea,
@@ -458,4 +455,254 @@
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
+}
+.chatPage {
+  display: flex;
+  gap: 25px;
+  align-items: flex-start;
+}
+.recipientSidebar {
+  width: 320px;
+  position: sticky;
+  top: 20px;
+}
+.chat-recipient-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  scrollbar-width: thin;
+
+  scrollbar-color: #bdbdbd transparent;
+}
+
+.chat-recipient-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-recipient-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-recipient-list::-webkit-scrollbar-thumb {
+  background: #c7c7c7;
+  border-radius: 20px;
+}
+
+.chat-recipient-list::-webkit-scrollbar-thumb:hover {
+  background: #9e9e9e;
+}
+.recipientCard {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+
+  padding: 8px;
+
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+.recipientCard:hover {
+  background: var(--card);
+}
+.recipientCard.selected {
+  background: #eef6ff;
+  color: black;
+  border-color: #0a84ff;
+}
+.recipientInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 15px;
+}
+.recipientCounter {
+  margin-top: 15px;
+  padding: 10px;
+  text-align: center;
+  background: #f3f3f3;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.recipientCard {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+
+  padding: 14px;
+
+  background: var(--card);
+
+  border: 1px solid var(--card-border);
+
+  border-radius: 14px;
+
+  transition: 0.2s;
+
+  cursor: pointer;
+}
+
+.recipientCard:hover {
+  border-color: var(--accent);
+  box-shadow: var(--boxshadow_3d);
+  transform: translateY(-1px);
+}
+
+.recipientCard.selected {
+  border-color: var(--accent);
+  background: var(--bg_input);
+}
+.recipientCard input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+
+  width: 20px;
+  height: 20px;
+
+  border: 2px solid var(--card-border);
+
+  border-radius: 6px;
+
+  background: var(--card);
+
+  cursor: pointer;
+
+  transition: 0.2s;
+
+  position: relative;
+
+  flex-shrink: 0;
+
+  margin-top: 2px;
+}
+
+.recipientCard input[type="checkbox"]:hover {
+  border-color: var(--accent);
+}
+
+.recipientCard input[type="checkbox"]:checked {
+  background: var(--accent);
+
+  border-color: var(--accent);
+}
+
+.recipientCard input[type="checkbox"]:checked::after {
+  content: "✓";
+
+  color: white;
+
+  position: absolute;
+
+  left: 50%;
+  top: 50%;
+
+  transform: translate(-50%, -58%);
+
+  font-size: 13px;
+
+  font-weight: bold;
+}
+.recipientInfo strong {
+  color: var(--text);
+
+  font-size: 14px;
+}
+
+.recipientInfo span {
+  color: var(--accent);
+
+  font-size: 13px;
+}
+
+.recipientInfo small {
+  color: var(--borderBottom);
+
+  font-size: 12px;
+}
+.chat-recipient-filters select {
+  width: 100%;
+
+  padding: 10px 14px;
+
+  background: var(--bg_input);
+
+  color: var(--text);
+
+  border: 1px solid var(--card-border);
+
+  border-radius: 10px;
+
+  transition: 0.2s;
+
+  cursor: pointer;
+}
+
+.chat-recipient-filters select:focus {
+  outline: none;
+
+  border-color: var(--accent);
+
+  box-shadow: var(--boxshadow_3d);
+}
+.recipientActions {
+  display: flex;
+
+  gap: 10px;
+
+  margin: 15px 0;
+}
+
+.recipientActions button {
+  flex: 1;
+
+  padding: 10px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  background: var(--accent);
+
+  color: white;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+.recipientActions button:hover {
+  opacity: 0.9;
+
+  transform: translateY(-1px);
+}
+.recipientActions button:last-child {
+  background: var(--bg-secondary);
+
+  color: white;
+}
+.recipientCounter {
+  margin-top: 18px;
+
+  padding: 12px;
+
+  background: var(--bg_input);
+
+  color: var(--text);
+
+  border: 1px solid var(--card-border);
+
+  border-radius: 12px;
+
+  text-align: center;
+
+  font-weight: 600;
 }

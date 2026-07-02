@@ -309,6 +309,7 @@
 // };
 
 // export default CrewProfile;
+
 import { useEffect, useMemo, useState } from "react";
 import PageWrapper from "../components/PageWrapper";
 import {
@@ -329,22 +330,134 @@ const CrewProfile = () => {
   const [fleetFilter, setFleetFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
-  const [userReads, setUserReads] = useState([]);
+  const [unreadManuals, setUnreadManuals] = useState([]);
+
   const [showReadsModal, setShowReadsModal] = useState(false);
 
   const { manuals } = useManuals(null);
 
-  const getManualTitle = (item) => {
-    const manualId = item.manual_id || item.manualId || item.manual?.id;
+  const calcRemainingDays = (date) => {
+  if (!date) return null;
 
-    if (item.manual?.title) return item.manual.title;
+  const now = new Date();
+  const exp = new Date(date);
+  const diff = exp - now;
 
-    const manual = manuals.find(
-      (m) => String(m.id) === String(manualId)
-    );
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+};
+const formatDate = (date) => {
+  if (!date) return "-";
 
-    return manual?.title || `Manual #${manualId}`;
+  return new Date(date).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+const handleSendWarning = (pilot) => {
+  if (!pilot) return;
+
+  
+  const expiryDetails = [];
+  const remainingDays = (date) => {
+    if (!date) return null;
+    const now = new Date();
+    const exp = new Date(date);
+    const diff = exp - now;
+    if( diff===0 || diff<=0)
+      return 0;
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
+
+  const daysMedical = remainingDays(pilot.medical_expires_at);
+  const daysPassport = remainingDays(pilot.passport_expires_at);
+  const daysLicense = remainingDays(pilot.license_expires_at);
+if (daysMedical===0)
+  expiryDetails.push(`Medical expired! `)
+  else if (daysMedical !== null && daysMedical <= 30) {
+    expiryDetails.push(`Medical expires in ${daysMedical} days`);
+  }
+  if(daysPassport===0)
+    expiryDetails.push(`Passport expired! `); 
+  else if (daysPassport !== null && daysPassport <= 30) {
+    expiryDetails.push(`Passport expires in ${daysPassport} days`);
+  }
+  if (daysLicense===0)
+    expiryDetails.push(`License expired! `)
+  else if (daysLicense !== null && daysLicense <= 30) {
+    expiryDetails.push(`License expires in ${daysLicense} days`);
+  }
+
+  if (expiryDetails.length === 0) {
+    alert("No expiring documents found for this pilot.");
+    return;
+  }
+
+  const warningMessage = `Dear ${pilot.name},\nThis is an automated reminder that some of your documents are expiring soon:\n- ${expiryDetails.join("\n- ")}\nPlease take action to renew them.\nRegards,\nAdmin`;
+
+  
+  window.location.href = `/dashboard/chat?recipientIds=${pilot.id}&message=${encodeURIComponent(warningMessage)}&subject=Expiry Warning`;
+  
+};
+
+const getUserExpiryClass = (user) => {
+  const medical = calcRemainingDays(user.medical_expires_at);
+  const passport = calcRemainingDays(user.passport_expires_at);
+  const license = calcRemainingDays(user.license_expires_at);
+
+  const allExpiries = {
+    medical: medical,
+    passport: passport,
+    license: license,
+  };
+
+  let criticalExp = null;
+  let redExp = null;
+  let yellowExp = null;
+
+  
+  if (medical !== null && medical <= 3) criticalExp = "medical";
+  else if (passport !== null && passport <= 3) criticalExp = "passport";
+  else if (license !== null && license <= 3) criticalExp = "license";
+
+  if (!criticalExp) {
+    if (medical !== null && medical <= 10) redExp = "medical";
+    else if (passport !== null && passport <= 10) redExp = "passport";
+    else if (license !== null && license <= 10) redExp = "license";
+  }
+
+  if (!criticalExp && !redExp) {
+    if (medical !== null && medical <= 30) yellowExp = "medical";
+    else if (passport !== null && passport <= 30) yellowExp = "passport";
+    else if (license !== null && license <= 30) yellowExp = "license";
+  }
+
+  let baseClass = "expire-green";
+
+  if (criticalExp) {
+    baseClass = "expire-critical";
+    
+    if (criticalExp === "license") {
+      return `${baseClass} expire-critical-license`;
+    }
+  } else if (redExp) {
+    baseClass = "expire-red";
+     if (redExp === "license") {
+      return `${baseClass} expire-red-license`;
+    }
+  } else if (yellowExp) {
+    baseClass = "expire-yellow";
+     if (yellowExp === "license") {
+      return `${baseClass} expire-yellow-license`;
+    }
+  }
+  
+  return baseClass;
+};
+
+
+
+  
 
 
   useEffect(() => {
@@ -378,26 +491,31 @@ const CrewProfile = () => {
     return [...new Set(fleets)];
   }, [pilots]);
 useEffect(() => {
-  if (!selectedPilot) return;
+  if (!selectedPilot || !manuals.length) return;
 
-  const loadReads = async () => {
+  const loadUnreadManuals = async () => {
     try {
       const userId = selectedPilot.id || selectedPilot.user_id;
       const data = await getAllManualReads();
       const items = Array.isArray(data) ? data : data?.items || [];
 
-      const filtered = items.filter(
-        (r) => String(r.user_id) === String(userId)
+      const userReadIds = items
+        .filter((r) => String(r.user_id) === String(userId))
+        .map((r) => String(r.manual_id || r.manual?.id));
+
+      const unread = manuals.filter(
+        (manual) => !userReadIds.includes(String(manual.id))
       );
 
-      setUserReads(filtered);
+      setUnreadManuals(unread);
     } catch (err) {
-      console.error("Error loading user reads:", err);
+      console.error("Error loading unread manuals:", err);
     }
   };
 
-  loadReads();
-}, [selectedPilot]);
+  loadUnreadManuals();
+}, [selectedPilot, manuals]);
+
 
   useEffect(() => {
     if (!selectedPilot) return;
@@ -428,16 +546,34 @@ useEffect(() => {
   }, [selectedPilot]);
 
   const filteredPilots = useMemo(() => {
-    return pilots.filter((pilot) => {
-      const matchType =
-        crewType === "all" ? true : pilot.position === crewType;
+  const filtered = pilots.filter((pilot) => {
+    const matchType =
+      crewType === "all" ? true : pilot.position === crewType;
 
-      const matchFleet =
-        fleetFilter === "all" ? true : pilot.aircraft_type === fleetFilter;
+    const matchFleet =
+      fleetFilter === "all"
+        ? true
+        : pilot.aircraft_type === fleetFilter;
 
-      return matchType && matchFleet;
-    });
-  }, [pilots, crewType, fleetFilter]);
+    return matchType && matchFleet;
+  });
+
+  const getPriority = (pilot) => {
+  const status = getUserExpiryClass(pilot);
+
+  if (status === "expire-critical") return 0;
+  if (status === "expire-red") return 1;
+  if (status === "expire-yellow") return 2;
+
+  return 3;
+};
+
+
+  return filtered.sort(
+    (a, b) => getPriority(a) - getPriority(b)
+  );
+}, [pilots, crewType, fleetFilter]);
+
 
   const handleDeleteUser = async () => {
     if (!selectedPilot) return;
@@ -495,11 +631,11 @@ useEffect(() => {
         {loading && <p style={{ padding: "20px" }}>Loading crew...</p>}
 
         {!loading && (
-          <div className="dashboard-grid">
+          <div className={`dashboard-grid`}>
             {filteredPilots.map((pilot) => (
               <article
                 key={pilot.id || pilot.user_id}
-                className="dashboard-card"
+                  className={`dashboard-card ${getUserExpiryClass(pilot)}`}
                 style={{ cursor: "pointer" }}
                 onClick={() => setSelectedPilot(pilot)}
               >
@@ -530,13 +666,19 @@ useEffect(() => {
                 user={selectedPilot}
                 profileImage={profileImage}
               />
-
+<button
+  className="send-warning-btn" // اسم کلاس CSS برای استایل‌دهی
+  onClick={() => handleSendWarning(selectedPilot)}
+>
+  Send Expiry Warning
+</button>
               <button
-                className="viewReadsBtn"
-                onClick={() => setShowReadsModal(true)}
-              >
-                View Read Manuals
-              </button>
+  className="viewReadsBtn"
+  onClick={() => setShowReadsModal(true)}
+>
+  View Unread Manuals
+</button>
+
             </div>
 
             <button
@@ -565,29 +707,34 @@ useEffect(() => {
               </button>
 
               <h3 style={{ marginBottom: "12px" }}>
-                {selectedPilot?.name} — Read Manuals
-              </h3>
+  {selectedPilot?.name} — Unread Manuals
+</h3>
 
-              {userReads.length === 0 ? (
-                <p>No manuals read</p>
-              ) : (
-                <div className="adminReadList">
-                  {userReads.map((r) => (
-                    <div
-                      key={r.id || r.manual_id}
-                      className="adminReadRow"
-                    >
-                      <span>{getManualTitle(r)}</span>
 
-                      {r.read_at && (
-                        <small>
-                          {new Date(r.read_at).toLocaleDateString()}
-                        </small>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+              {unreadManuals.length === 0 ? (
+  <p>All manuals have been read</p>
+) : (
+  <div className="adminReadList">
+    {unreadManuals.map((manual) => {
+  const uploadDate =
+    manual.uploaded_at ||
+    manual.updated_at ||
+    manual.created_at;
+
+  return (
+    <div key={manual.id} className="adminReadRow">
+      <span>{manual.title}</span>
+
+      <small>
+        {uploadDate ? formatDate(uploadDate) : "-"}
+      </small>
+    </div>
+  );
+})}
+
+  </div>
+)}
+
             </div>
           </div>
         )}

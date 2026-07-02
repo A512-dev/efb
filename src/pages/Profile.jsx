@@ -15,7 +15,8 @@ const Profile = () => {
   const { manuals } = useManuals(null);
 
   const [profileImage, setProfileImage] = useState(null);
-  const [readManuals, setReadManuals] = useState([]);
+  
+
 
   const calcRemainingDays = (date) => {
     if (!date) return null;
@@ -28,11 +29,20 @@ const Profile = () => {
   };
 
   const getExpiryClass = (days) => {
-    if (days === null) return "";
-    if (days <= 10) return "expire-red";
-    if (days <= 30) return "expire-yellow";
-    return "expire-green";
-  };
+  if (days === null) return "";
+
+
+  if (days <= 3) return "expire-critical";
+
+
+  if (days <= 10) return "expire-red";
+
+
+  if (days <= 30) return "expire-yellow";
+
+  return "expire-green";
+};
+
 
   const formatDate = (date) => {
     if (!date) return "-";
@@ -85,18 +95,8 @@ const Profile = () => {
     };
   }, [user]);
 
-  useEffect(() => {
-    const loadReadManuals = async () => {
-      try {
-        const data = await getMyManualReads();
-        setReadManuals(Array.isArray(data) ? data : data?.items || []);
-      } catch (err) {
-        console.error("Failed to load read manuals:", err);
-      }
-    };
+  
 
-    loadReadManuals();
-  }, []);
 
   if (loading) return <div>Loading...</div>;
   if (!user) return <div>Not authenticated</div>;
@@ -196,36 +196,7 @@ const Profile = () => {
           Edit Profile
         </Link>
       </div>
-      <div className="profileManualReads">
-  <div className="profileManualHeader">
-    <h3>Read Manuals</h3>
-    <span className="manualCount">{readManuals.length}</span>
-  </div>
 
-  {readManuals.length === 0 ? (
-    <p className="noManuals">No manuals read yet</p>
-  ) : (
-    <div className="readManualList">
-      {readManuals.map((item) => {
-        const manualId = getReadManualId(item);
-
-        return (
-          <div key={item.id || manualId} className="readManualRow">
-            <span className="manualTitle">
-              {getManualTitle(item)}
-            </span>
-
-            {item.read_at && (
-              <span className="manualDate">
-                {formatDate(item.read_at)}
-              </span>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  )}
-</div>
     </PageWrapper>
   );
 };

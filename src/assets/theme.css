@@ -55,8 +55,7 @@
   --borderBottom: #fff;
 }
 
-html,
-body {
+html {
   height: 100%;
   overflow-y: auto;
 }
@@ -67,6 +66,7 @@ body {
   color: var(--text);
   font-family: sans-serif;
   display: block;
+  overflow-y: auto;
 }
 
 .logOutButton {
@@ -576,7 +576,20 @@ h5 {
     background 0.3s ease,
     color 0.3s ease;
 }
-
+.nav-item.active {
+  background: #333;
+  color: #00d8ff;
+}
+.manualRoute {
+  font-size: 12px;
+  color: var(--h3);
+  text-decoration: underline;
+  display: block;
+  margin-top: 2px;
+}
+.manualRoute:hover {
+  transform: scale(1.1);
+}
 .Aircraftdocument {
   font-size: 20px;
   text-decoration: none;
@@ -589,6 +602,47 @@ h5 {
 .pdfs {
   cursor: pointer;
 }
+
+.expire-critical-license {
+  border-left: 5px solid red !important;
+  box-shadow: -2px 0 5px rgba(255, 0, 0, 0.5) !important;
+}
+
+.expire-critical-license .expiry-warning-message {
+  color: red;
+  font-weight: bold;
+  margin-top: 5px;
+  font-size: 0.8em;
+}
+
+.expire-red-license {
+  border-left: 5px solid orange !important;
+  box-shadow: -2px 0 5px rgba(255, 165, 0, 0.5) !important;
+}
+
+.expire-red-license .expiry-warning-message {
+  color: orange;
+  font-weight: bold;
+  margin-top: 5px;
+  font-size: 0.8em;
+}
+
+.expire-yellow-license {
+  border-left: 5px solid yellow !important;
+  box-shadow: -2px 0 5px rgba(255, 255, 0, 0.5) !important;
+}
+
+.expire-yellow-license .expiry-warning-message {
+  color: #d3d300;
+  font-weight: bold;
+  margin-top: 5px;
+  font-size: 0.8em;
+}
+
+.dashboard-card .expiry-warning-message {
+  display: block;
+}
+
 .headersForManuals {
   border-radius: 0;
   border-bottom: 1px solid #c7c7c7a8;
@@ -632,6 +686,54 @@ h5 {
   border-radius: 8px;
   padding: 16px;
   box-shadow: var(--boxshadow_3d);
+}
+.dashboard-card.expire-red {
+  background-color: #ff4d4d !important;
+  color: black !important;
+  border: 2px solid #ff0000 !important;
+}
+
+.dashboard-card.expire-yellow {
+  background-color: #ffd700 !important;
+  color: black !important;
+  border: 2px solid #ffb700 !important;
+}
+.sidebar-expiry-alert {
+  width: 20px;
+  height: 20px;
+  min-width: 18px;
+
+  border-radius: 50%;
+
+  margin-left: auto;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+
+  color: white;
+}
+
+.sidebar-expiry-alert.expire-yellow {
+  background: #ffd666;
+}
+
+.sidebar-expiry-alert.expire-red {
+  background: #ff4d4f;
+}
+
+.sidebar-expiry-alert.expire-critical {
+  background: #7f0000;
+}
+
+.dashboard-card.expire-green {
+  background-color: #4caf50 !important;
+  color: black !important;
+  border: 2px solid #52c41a !important;
 }
 
 .dashboard-card span {

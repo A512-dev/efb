@@ -1,5 +1,7 @@
 import cardImg from "../assets/icons/2d3ae130-4dab-480a-9f81-1612825326e5.webp";
 
+
+ 
 const CrewCard = ({ user, profileImage }) => {
   if (!user) return null;
 
@@ -21,11 +23,20 @@ const CrewCard = ({ user, profileImage }) => {
   };
 
   const getExpiryClass = (days) => {
-    if (days === null) return "";
-    if (days <= 10) return "expire-red";
-    if (days <= 30) return "expire-yellow";
-    return "expire-green";
-  };
+  if (days === null) return "";
+
+
+  if (days <= 3) return "expire-critical";
+
+
+  if (days <= 10) return "expire-red";
+
+
+  if (days <= 30) return "expire-yellow";
+
+  return "expire-green";
+};
+
 
   const medicalRemaining = calcRemainingDays(user.medical_expires_at);
   const passportRemaining = calcRemainingDays(user.passport_expires_at);

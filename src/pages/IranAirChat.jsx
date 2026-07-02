@@ -1584,7 +1584,7 @@ import refreshIcon from "../assets/icons/icons8-refresh-500.svg";
 import riskicon from "../assets/icons/risk-icon.svg";
 import PageWrapper from "../components/PageWrapper";
 import attachmentIcon from '../assets/icons/attachment.svg'
-
+import { useLocation } from "react-router-dom";
 const IranAirChat = () => {
   const [activeTab, setActiveTab] = useState("submit");
 
@@ -1598,7 +1598,7 @@ const [showRecipientMenu, setShowRecipientMenu] = useState(false);
 const [fleetFilter, setFleetFilter] = useState("all");
 const [positionFilter, setPositionFilter] = useState("all");
 const [selectedRecipients, setSelectedRecipients] = useState([]);
-
+ const location = useLocation(); 
 const fileInputRef = useRef(null);
 
   const [loading, setLoading] = useState(false);
@@ -1658,7 +1658,33 @@ console.log("ITEMS:", items);
       setLoading(false);
     }
   };
+useEffect(() => {
+    loadCurrentUser();
 
+    // چک کردن پارامترهای URL
+    const queryParams = new URLSearchParams(location.search);
+    const recipientIdsParam = queryParams.get("recipientIds");
+    const messageParam = queryParams.get("message");
+    const subjectParam = queryParams.get("subject");
+
+    if (recipientIdsParam && messageParam) {
+      
+      setRecipientIds(recipientIdsParam);
+      setSelectedRecipients(recipientIdsParam.split(',').map(Number));
+      setMessageText(decodeURIComponent(messageParam));
+      setSubject(subjectParam || "Expiry Warning");
+      setActiveTab("submit"); 
+      setShowRecipientMenu(true);
+
+      
+      setTimeout(() => {
+        formRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
+    }
+  }, [location]); 
   useEffect(() => {
     loadCurrentUser();
   }, []);
@@ -1723,9 +1749,7 @@ console.log("ITEMS:", items);
         body: trimmedMessage,
       };
 
-      // اگر بک‌اند پشتیبانی کرد:
-      // if (replyTo?.id) payload.reply_to_message_id = replyTo.id;
-      
+
 
 
       if (isAdmin) {
@@ -1857,6 +1881,106 @@ useEffect(() => {
   return (
 
     <PageWrapper>
+      <div className="chatPage">
+      {isAdmin && (
+  <div className="manualsContainerLeft recipientSidebar">
+
+    <h3>Recipients</h3>
+
+    <div className="chat-recipient-filters">
+
+      <select
+        value={fleetFilter}
+        onChange={(e) => {
+          setFleetFilter(e.target.value);
+          setPositionFilter("all");
+        }}
+      >
+        <option value="all">All Fleets</option>
+        <option value="A300_600">A300-600 / A310</option>
+        <option value="A320">A320</option>
+        <option value="A330">A330</option>
+        <option value="F100">F100</option>
+        <option value="ATR">ATR72-600</option>
+      </select>
+
+      <select
+        value={positionFilter}
+        onChange={(e) => setPositionFilter(e.target.value)}
+      >
+        <option value="all">All Positions</option>
+        <option value="P1">P1</option>
+        <option value="P2">P2</option>
+      </select>
+
+    </div>
+<div className="recipientActions">
+
+  <button
+    type="button"
+    onClick={() =>
+      setSelectedRecipients(filteredRecipients.map(u => u.id || u.user_id))
+    }
+  >
+    Select All
+  </button>
+
+  <button
+    type="button"
+    onClick={() => setSelectedRecipients([])}
+  >
+    Clear
+  </button>
+
+</div>
+    <div className="chat-recipient-list">
+
+      {filteredRecipients.map((user) => {
+
+        const userId = user.id || user.user_id;
+
+        return (
+          <label
+            key={userId}
+            className={`recipientCard ${
+              selectedRecipients.includes(userId)
+                ? "selected"
+                : ""
+            }`}
+          >
+
+            <input
+              type="checkbox"
+              checked={selectedRecipients.includes(userId)}
+              onChange={() => toggleRecipient(userId)}
+            />
+
+            <div className="recipientInfo">
+
+              <strong>{user.name}</strong>
+
+              <span>
+                {aircraftLabels[user.aircraft_type] ||
+                  user.aircraft_type}
+              </span>
+
+              <small>{user.position}</small>
+
+            </div>
+
+          </label>
+        );
+
+      })}
+
+    </div>
+
+    <div className="recipientCounter">
+      {selectedRecipients.length} selected
+    </div>
+
+  </div>
+)}
     <div className="manualsContainer chatbox">
       <h4 className="testReport">Report your issue</h4>
 
@@ -1864,8 +1988,9 @@ useEffect(() => {
 
       
 
-
+        
       <div className="chat-tabs">
+
         <button
           type="button"
           className={`chat-tab-btn ${activeTab === "submit" ? "active" : ""}`}
@@ -1959,87 +2084,23 @@ style={{width:'30px' , cursor:'pointer',position:'absolute',right:'30px',marginT
   </div>
 )}
 
+{isAdmin && (
+  <input
+  type="text"
+  value={recipientIds}
+  onChange={(e) => setRecipientIds(e.target.value)}
+  onBlur={() => {
+    const ids = recipientIds
+      .split(",")
+      .map(id => Number(id.trim()))
+      .filter(id => Number.isInteger(id) && id > 0);
 
-            {isAdmin && (
-  <div className="chat-recipient-box">
-    <div className="chat-recipient-header">
-      <label className="chat-recipient-label">Recipients</label>
-
-      <button
-        type="button"
-        className="chat-recipient-toggle"
-        onClick={() => setShowRecipientMenu((prev) => !prev)}
-      >
-        {showRecipientMenu ? "Hide Recipient Selector" : "Choose Recipients"}
-      </button>
-    </div>
-
-    {showRecipientMenu && (
-      <>
-        <div className="chat-recipient-filters">
-          <select
-            value={fleetFilter}
-            onChange={(e) => {
-              setFleetFilter(e.target.value);
-              setPositionFilter("all");
-            }}
-            className="chat-recipient-select"
-          >
-            <option value="all">All Fleets</option>
-            <option value="A300_600">A300-600 / A310</option>
-            <option value="A320">A320</option>
-            <option value="A330">A330</option>
-            <option value="F100">F100</option>
-            <option value="ATR">ATR72-600</option>
-          </select>
-
-          <select
-            value={positionFilter}
-            onChange={(e) => setPositionFilter(e.target.value)}
-            className="chat-recipient-select"
-          >
-            <option value="all">All Positions</option>
-            <option value="P1">P1</option>
-            <option value="P2">P2</option>
-          </select>
-        </div>
-
-        <div className="chat-recipient-list">
-          {filteredRecipients.length > 0 ? (
-            filteredRecipients.map((user) => {
-              const userId = user.id || user.user_id;
-              const checked = selectedRecipients.includes(userId);
-
-              return (
-                <label key={userId} className="chat-recipient-item">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleRecipient(userId)}
-                  />
-                  <span>
-                    {user.email} —{" "}
-                    {aircraftLabels[user.aircraft_type] || user.aircraft_type || "-"} —{" "}
-                    {user.position || "-"}
-                  </span>
-                </label>
-              );
-            })
-          ) : (
-            <small className="chat-recipient-help">
-              No users found for selected filters.
-            </small>
-          )}
-        </div>
-      </>
-    )}
-
-    <small className="chat-recipient-help">
-      Selected IDs: {recipientIds || "None"}
-    </small>
-  </div>
+    setSelectedRecipients(ids);
+  }}
+  placeholder="Recipient IDs (comma separated)"
+  className="chat-recipient-input"
+/>
 )}
-
 
             <button
               type="submit"
@@ -2202,6 +2263,7 @@ const isRead = Boolean(msg.is_read || msg.read_at);
           )}
         </div>
       )}
+    </div>
     </div>
     </PageWrapper>
 

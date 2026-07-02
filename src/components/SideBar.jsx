@@ -341,8 +341,35 @@ import folderIcon from '../assets/icons/folder-Core.svg'
 import { listMessages } from "../services/apiService";
 import FlightFolder from "../pages/FlightFolder";
 import { span } from "framer-motion/client";
+
+
+const calcRemainingDays = (date) => {
+  if (!date) return null;
+
+  const now = new Date();
+  const exp = new Date(date);
+  const diff = exp - now;
+
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+};
+
+const getExpiryStatus = (user) => {
+  const medical = calcRemainingDays(user.medical_expires_at);
+  const passport = calcRemainingDays(user.passport_expires_at);
+  const license = calcRemainingDays(user.license_expires_at);
+
+  const allDays = [medical, passport, license].filter((d) => d !== null);
+
+  if (allDays.some((d) => d <= 3)) return "expire-critical";
+  if (allDays.some((d) => d <= 10)) return "expire-red";
+  if (allDays.some((d) => d <= 30)) return "expire-yellow";
+
+  return null;
+};
+
 const SideBar = () => {
   const { user } = useAuth();
+const expiryStatus = user ? getExpiryStatus(user) : null;
 
   const { updateCount } = useNotifications();
 
@@ -393,8 +420,11 @@ const SideBar = () => {
 
       {canSeeChat && (
         <>
-          <NavLink className="nav-item" to={`${user.role==='pilot' ? "/dashboard/profile" : "/dashboard/CrewProfile"} `}>
-            <img src={crewProfileSvg} alt="" className="navIcon" /> {user.role==='admin' && <span> Crew </span>} Profile
+          <NavLink className="nav-item" to={`${user.role==='pilot' ? "/dashboard/profile" : "/dashboard/CrewProfile"}`}>
+            <img src={crewProfileSvg} alt="" className="navIcon" /> {user.role==='admin' && <span> Crew </span>} Profile {expiryStatus && (
+  <span className={`sidebar-expiry-alert ${expiryStatus}`}> ! </span>
+)}
+
           </NavLink>
         <NavLink className="nav-item" to="/dashboard/flightFolder">
 
@@ -422,14 +452,13 @@ const SideBar = () => {
           </NavLink>
 
           <NavLink className="nav-item" to="/dashboard/setting">
+  <img src={settingIcon} alt="" className="navIcon chatboxicon" />
+  Settings
 
-            <img src={settingIcon} alt="" className="navIcon chatboxicon" /> Settings
-
-            {updateCount > 0 && (
-              <span className="update-alert-count">{updateCount}</span>
-            )}
-
-          </NavLink>
+  {user.role !== "admin" && updateCount > 0 && (
+    <span className="update-alert-count">{updateCount}</span>
+  )}
+</NavLink>
           
         </>
       )}

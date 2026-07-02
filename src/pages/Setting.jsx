@@ -4,13 +4,29 @@ import { useNotifications } from "../Context/NotificationContext";
 import { useAuth } from "../auth/useAuth.js";
 import logoutSvg from "../assets/icons/Power-Button--Streamline-Ultimate.svg";
 import PageWrapper from "../components/PageWrapper.jsx";
-import { useState } from "react";
 
+import { useState, useEffect } from "react";
+import { getCurrentUser } from "../services/apiService";
 const Setting = () => {
   const { updateCount } = useNotifications();
   const { logout } = useAuth();
+const [currentUser, setCurrentUser] = useState(null);
+const isAdmin = currentUser?.role === "admin";
+  const [activeTab, setActiveTab] = useState(null);
+useEffect(() => {
+  const loadUser = async () => {
+    try {
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+    } catch (err) {
+      console.error("Failed to load current user:", err);
+    }
+  };
 
-  const [activeTab, setActiveTab] = useState(null); // help | about | null
+  loadUser();
+}, []);
+
+
 
   return (
     <>
@@ -33,21 +49,23 @@ const Setting = () => {
             About
           </NavLink>
 
-          <NavLink
-            className={`headersForManuals ${
-              updateCount === 0 ? "unactive" : ""
-            }`}
-            to={updateCount > 0 ? "/dashboard/UpdateManuals" : "#"}
-            onClick={(e) => {
-              if (updateCount === 0) e.preventDefault();
-            }}
-          >
-            <span>Updates</span>
+          {!isAdmin && (
+  <NavLink
+    className={`headersForManuals ${
+      updateCount === 0 ? "unactive" : ""
+    }`}
+    to={updateCount > 0 ? "/dashboard/UpdateManuals" : "#"}
+    onClick={(e) => {
+      if (updateCount === 0) e.preventDefault();
+    }}
+  >
+    <span>Updates</span>
 
-            {updateCount > 0 && (
-              <span className="update-alert-count">{updateCount}</span>
-            )}
-          </NavLink>
+    {updateCount > 0 && (
+      <span className="update-alert-count">{updateCount}</span>
+    )}
+  </NavLink>
+)}
 
           <NavLink
             to="#"

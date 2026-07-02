@@ -4,8 +4,9 @@ import { useNotifications } from "../Context/NotificationContext";
 import { useAuth } from "../auth/useAuth";
 import logoutSvg from "../assets/icons/Power-Button--Streamline-Ultimate.svg";
 import PageWrapper from "../components/PageWrapper";
-import { useState } from "react";
 
+import { useEffect, useState } from "react";
+import { getManuals } from "../services/apiService";
 const UpdateManuals = () => {
   const {
     updates = [],
@@ -17,10 +18,21 @@ const UpdateManuals = () => {
   } = useNotifications();
 
   const { logout } = useAuth();
-
+const [manuals, setManuals] = useState([]);
   const [activeTab, setActiveTab] = useState("updates"); 
 const [updatesTab, setUpdatesTab] = useState("unread"); 
+useEffect(() => {
+  const loadManuals = async () => {
+    try {
+      const data = await getManuals();
+      setManuals(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
+  loadManuals();
+}, []);
   const handleUpdateClick = (item) => {
     if (seenIds.includes(String(item.id))) return;
     markAsSeen(item.id);
@@ -200,7 +212,7 @@ const readUpdates = updates.filter(
               {(updatesTab === "unread" ? unreadUpdates : readUpdates).map((item) => {
 
                 const isSeen = seenIds.includes(String(item.id));
-
+const manual = manuals.find((m) => m.id === item.manual_id);
                 return (
                   <div
                     key={item.id}
@@ -209,11 +221,18 @@ const readUpdates = updates.filter(
                     }`}
                     onClick={() => handleUpdateClick(item)}
                   >
+    
                     <div className="manual-update-top">
                       <div className="manual-update-title">
                         {item.title || "Untitled manual"}
                       </div>
-
+                <p style={{ fontSize: "12px", color: "#666" }}>
+  {manual?.original_filename} |{" "}
+  <b>
+    Category:{" "}
+    {manual?.category_path_text || manual?.category_name || "Uncategorized"}
+  </b>
+</p>
                       <div
                         className={`manual-update-action action-${(
                           item.action || "updated"
