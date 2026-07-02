@@ -1,3 +1,4 @@
+#skydeck\app\repositories\user_repo.py
 """Repository queries and persistence helpers for users and profile pictures.
 
 Normal lookups hide soft-deleted users. Selection helpers require an

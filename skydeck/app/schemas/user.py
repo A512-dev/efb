@@ -17,13 +17,15 @@ class UserProfileUpdateRequest(BaseModel):
     """Partial profile update accepted from the current authenticated user."""
 
     employee_no: Optional[str] = Field(default=None, min_length=1, max_length=100)
-    position: Optional[str] = Field(default=None, min_length=1, max_length=200)
-    aircraft_type: Optional[str] = Field(default=None, min_length=1, max_length=100)
     medical_expires_at: Optional[datetime] = None
     passport_expires_at: Optional[datetime] = None
     license_expires_at: Optional[datetime] = None
 
-    @field_validator("employee_no", "position", "aircraft_type", mode="before")
+    # NOTE: the admin can only update or assign these two fields
+    # position: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    # aircraft_type: Optional[str] = Field(default=None, min_length=1, max_length=100)
+
+    @field_validator("employee_no", mode="before")
     @classmethod
     def _strip_required_text(cls, value: object) -> object:
         """Reject explicit nulls and normalize surrounding whitespace."""
@@ -49,6 +51,26 @@ class UserProfileUpdateRequest(BaseModel):
             return datetime.combine(parsed, time.min, tzinfo=timezone.utc)
         return value
 
+    # Reject misspelled/unknown fields instead of silently ignoring a client's
+    # intended update.
+    model_config = {"extra": "forbid"}
+
+
+class AdminUserProfileUpdateRequest(BaseModel):
+    """Partial profile update accepted from the current authenticated admin."""
+
+    position: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    aircraft_type: Optional[str] = Field(default=None, min_length=1, max_length=100)
+
+    @field_validator("position", "aircraft_type", mode="before")
+    @classmethod
+    def _strip_required_text(cls, value: object) -> object:
+        """Reject explicit nulls and normalize surrounding whitespace."""
+        if value is None:
+            raise ValueError("Field cannot be null")
+        if isinstance(value, str):
+            return value.strip()
+        return value
     # Reject misspelled/unknown fields instead of silently ignoring a client's
     # intended update.
     model_config = {"extra": "forbid"}

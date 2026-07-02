@@ -48,12 +48,18 @@ class User(Base):
     # CIText keeps email lookup case-insensitive at the database layer.
     email: Mapped[str] = mapped_column(CIText(), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # a field for later:
+    #password_changed_at: Optional[datetime] = Column(DateTime(timezone=True), nullable=True)
+
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, name="user_role", create_constraint=False, native_enum=True),
         nullable=False,
+        default= UserRole.pilot,
     )
     employee_no: Mapped[str] = mapped_column(Text, nullable=False)
     position: Mapped[str] = mapped_column(Text, nullable=False)
+
     aircraft_type: Mapped[str] = mapped_column(Text, nullable=False)
     medical_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     passport_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
