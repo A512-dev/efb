@@ -75,8 +75,6 @@ const [licenseExpire, setLicenseExpire] = useState("");
 
       await updateProfile({
         employee_no: employeeNo,
-        position: position,
-        aircraft_type: aircraftType,
         medical_expires_at: medicalExpire
           ? new Date(medicalExpire).toISOString()
           : null,
@@ -155,8 +153,7 @@ if (!user) {
             />
           </div>
 
-          <div className="input-group">
-            <label>Position</label>
+          
             {/* <select className="selectProfile"
   value={position}
   onChange={(e) => setPosition(e.target.value)}
@@ -166,10 +163,26 @@ if (!user) {
   <option value="P2">P2</option>
 </select> */}
 
-          </div>
+          
 
-          <div className="input-group">
-            <label>Aircraft Type</label>
+
+            <div className="input-group">
+  <label>Position</label>
+
+  <input
+    value={user.position || ""}
+    disabled
+  />
+</div>
+
+<div className="input-group">
+  <label>Aircraft Type</label>
+
+  <input
+    value={user.aircraft_type || ""}
+    disabled
+  />
+
          {/* <select
   className="selectProfile"
   value={aircraftType}

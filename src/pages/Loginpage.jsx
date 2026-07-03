@@ -154,7 +154,7 @@ id="passwordInput"
               className="toggle-password"
               onClick={() => setShowPassword((prev) => !prev)}
             >
-              {showPassword ? <EyeOff style={{paddingLeft:'5px'}} size={20} color="#000"/> : <Eye style={{paddingLeft:'5px'}} size={20} color="#000"/>}
+              {showPassword ? <EyeOff style={{marginLeft:'-45px'}} size={20} color="#000"/> : <Eye style={{marginLeft:'-45px'}} size={20} color="#000"/>}
             </button>
           
           {error && <p className="loginError">{error}</p>}

@@ -33,7 +33,14 @@ export const updateProfile = async (profileData) => {
   const response = await apiClient.patch("/users/me/profile", profileData);
   return response.data;
 };
+export const updateUserAdminProfile = async (userId, profileData) => {
+  const response = await apiClient.patch(
+    `/users/${userId}/admin-profile`,
+    profileData,
+  );
 
+  return response.data;
+};
 export const uploadProfilePicture = async (file) => {
   const formData = new FormData();
   formData.append("file", file);

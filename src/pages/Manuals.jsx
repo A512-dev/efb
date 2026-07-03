@@ -269,6 +269,8 @@ setSelectedManual((prev) =>
     : prev
 );
     alert("Updated successfully");
+    setOpenDoc(null);
+setSelectedManual(null);
   } catch (err) {
     alert("Update failed");
   } finally {
@@ -306,6 +308,10 @@ const handleDeleteClick = async (manual) => {
   try {
     await handleDelete(manual.id, note);
     alert("Deleted");
+    setOpenDoc(null);
+setSelectedManual(null);
+
+
   } catch {
     alert("Delete failed");
   }
@@ -523,10 +529,16 @@ useEffect(() => {
   };
 }, [openDoc]);
     useEffect(() => {
-    if (!isLeafCategory) {
-      setSelectedManual(null);
+  if (!isLeafCategory) {
+    if (openDoc) {
+      URL.revokeObjectURL(openDoc);
     }
-  }, [isLeafCategory, categoryId]);
+
+    setOpenDoc(null);
+    setSelectedManual(null);
+    setLoadingPdf(false);
+  }
+}, [isLeafCategory, categoryId]);
 
 
 
@@ -615,11 +627,12 @@ useEffect(() => {
               <div
                 key={manual.id}
                 className="headersForManuals"
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
+                  className="headersForManuals"
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  }}
               >
                 <span
                   style={{
@@ -705,7 +718,7 @@ useEffect(() => {
   ) : (
     !hideReadCheckbox[manual.id] && (
       <input
-        type="checkbox"
+        type="checkbox" style={{marginLeft:'20px'}}
         className="readAndSignButton"
         checked={readManuals.includes(manual.id)}
         disabled={
@@ -735,11 +748,19 @@ useEffect(() => {
               </div>
             ))}
         </div>
+        <div className="manualsRightColumn">
+
   {!categoryId && (
     <div className="profileManualReads manualsContainer" style={{ marginTop: "20px" }}>
       
       <div className="profileManualHeader">
-        <h3>Unread Manuals</h3>
+        <h2   style={{
+    color: "#ae1515",
+    fontWeight: 700,
+    textAlign: "center",
+    width: "100%",
+  }}
+>Unread Manuals</h2>
 
         <span className="manualCount">
           {unreadUserManuals.length}
@@ -804,14 +825,16 @@ useEffect(() => {
       )}
     </div>
   )}
+
   {isAdmin && !categoryId && (
   <form
     onSubmit={handleUpload}
-    className="manualUploadForm"
+    className="manualUploadForm "
     style={{
       padding: "16px",
       borderBottom: "1px solid var(--card-border)",
       display: "flex",
+      marginTop:'auto',
       flexDirection: "column",
       gap: "10px",
     }}
@@ -854,12 +877,12 @@ useEffect(() => {
     </button>
   </form>
 )}
-        {isLeafCategory && (
-          <div className="manualsContainer">
+  {isLeafCategory && (
+          <div className="manualPreviewContainer">
   <div
     style={{
       width: "100%",
-      height: "100vh",
+      height: "100%",
       position: "relative",
     }}
   >
@@ -951,6 +974,11 @@ useEffect(() => {
   </div>
 </div>
         )}
+
+</div>
+  
+
+        
       </PageWrapper>
     );
   };

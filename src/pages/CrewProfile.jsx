@@ -322,7 +322,9 @@ import CrewCard from "../components/CrewCard";
 import crossMarkIcon from "../assets/icons/Delete-1--Streamline-Sharp.svg";
 import { useManuals } from "../hooks/useManuals";
 import { getAllManualReads } from "../services/apiService";
-
+import {
+  updateUserAdminProfile,
+} from "../services/apiService";
 const CrewProfile = () => {
   const [users, setUsers] = useState([]);
   const [selectedPilot, setSelectedPilot] = useState(null);
@@ -331,7 +333,7 @@ const CrewProfile = () => {
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
   const [unreadManuals, setUnreadManuals] = useState([]);
-
+const [showEditModal, setShowEditModal] = useState(false);
   const [showReadsModal, setShowReadsModal] = useState(false);
 
   const { manuals } = useManuals(null);
@@ -354,6 +356,33 @@ const formatDate = (date) => {
     month: "short",
     year: "numeric",
   });
+};
+const handleAdminSave = async () => {
+  if (!selectedPilot) return;
+
+  try {
+    const updated = await updateUserAdminProfile(
+      selectedPilot.id,
+      {
+        position: editPosition,
+        aircraft_type: editAircraft,
+      }
+    );
+
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === updated.id ? updated : u
+      )
+    );
+
+    setSelectedPilot(updated);
+
+    alert("Profile updated successfully");
+    setShowEditModal(false);
+  } catch (err) {
+    console.error(err);
+    alert("Update failed");
+  }
 };
 const handleSendWarning = (pilot) => {
   if (!pilot) return;
@@ -599,6 +628,9 @@ useEffect(() => {
       );
 
       setSelectedPilot(null);
+      
+setShowEditModal(false);
+setShowReadsModal(false);
     } catch (err) {
       console.error("Delete error:", err);
       alert("Failed to delete user");
@@ -672,54 +704,108 @@ useEffect(() => {
                 user={selectedPilot}
                 profileImage={profileImage}
               />
-              <div className="adminEditSection">
-  <label>Position</label>
+              <div className="pilotActions">
 
-  <select
-    value={editPosition}
-    onChange={(e) => setEditPosition(e.target.value)}
-  >
-    <option value="P1">P1</option>
-    <option value="P2">P2</option>
-  </select>
+    <button
+        className="editProfileBtn"
+        onClick={() => setShowEditModal(true)}
+    >
+        Edit Profile
+    </button>
 
-  <label>Aircraft Type</label>
+    <button
+        className="viewReadsBtn"
+        onClick={() => setShowReadsModal(true)}
+    >
+        View Unread Manuals
+    </button>
 
-  <select
-    value={editAircraft}
-    onChange={(e) => setEditAircraft(e.target.value)}
-  >
-    <option value="A300_600">A300-600 / A310</option>
-    <option value="A320">A320</option>
-    <option value="A330">A330</option>
-    <option value="ATR">ATR 72-600</option>
-    <option value="F100">F100</option>
-  </select>
+    <button
+        className="send-warning-btn"
+        onClick={() => handleSendWarning(selectedPilot)}
+    >
+        Send Expiry Warning
+    </button>
+
 </div>
-<button
-  className="send-warning-btn" 
-  onClick={() => handleSendWarning(selectedPilot)}
->
-  Send Expiry Warning
-</button>
-              <button
-  className="viewReadsBtn"
-  onClick={() => setShowReadsModal(true)}
->
-  View Unread Manuals
-</button>
 
             </div>
 
-            <button
-              onClick={handleDeleteUser}
-              className="deleteBtn deleteProfile"
-            >
-              Delete
-            </button>
+            
           </div>
-        )}
+        )}{showEditModal && (
+  <div
+    className="modal-overlay"
+    onClick={() => setShowEditModal(false)}
+  >
+    <div
+      className="adminEditModal"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        className="modal-close"
+        onClick={() => setShowEditModal(false)}
+      >
+        ✕
+      </button>
 
+      <div className="adminEditHeader">
+        <h2>Edit Crew Profile</h2>
+        
+      </div>
+
+      <div className="adminEditSection">
+
+        <div className="adminField">
+          <label>Position</label>
+
+          <select
+            value={editPosition}
+            onChange={(e) => setEditPosition(e.target.value)}
+          >
+            <option value="P1">P1</option>
+            <option value="P2">P2</option>
+          </select>
+        </div>
+
+        <div className="adminField">
+          <label>Aircraft Type</label>
+
+          <select
+            value={editAircraft}
+            onChange={(e) => setEditAircraft(e.target.value)}
+          >
+            <option value="A300_600">A300-600 / A310</option>
+            <option value="A320">A320</option>
+            <option value="A330">A330</option>
+            <option value="ATR">ATR 72-600</option>
+            <option value="F100">F100</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div className="adminEditActions">
+
+        <button
+          className="save-btn"
+          onClick={handleAdminSave}
+        >
+          Save Changes
+        </button>
+
+        <button
+          className="deleteBtn"
+          onClick={handleDeleteUser}
+        >
+          Delete User
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+)}
         {showReadsModal && (
           <div
             className="modal-overlay"
