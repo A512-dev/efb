@@ -4,7 +4,7 @@ import { useNotifications } from "../Context/NotificationContext";
 import { useAuth } from "../auth/useAuth.js";
 import logoutSvg from "../assets/icons/Power-Button--Streamline-Ultimate.svg";
 import PageWrapper from "../components/PageWrapper.jsx";
-
+import { Construction } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getCurrentUser } from "../services/apiService";
 const Setting = () => {
@@ -12,7 +12,8 @@ const Setting = () => {
   const { logout } = useAuth();
 const [currentUser, setCurrentUser] = useState(null);
 const isAdmin = currentUser?.role === "admin";
-  const [activeTab, setActiveTab] = useState(null);
+const [activeTab, setActiveTab] = useState("about");
+
 useEffect(() => {
   const loadUser = async () => {
     try {
@@ -78,14 +79,27 @@ useEffect(() => {
             Help
           </NavLink>
 
-          <NavLink className="headersForManuals" to="/dashboard/manuals/chat">
-            What's new
-          </NavLink>
+          <NavLink
+  to="#"
+  className="headersForManuals"
+  onClick={(e) => {
+    e.preventDefault();
+    setActiveTab("whatsnew");
+  }}
+>
+  What's new
+</NavLink>
 
-          <NavLink className="headersForManuals" to="/dashboard/manuals/chat">
-            Change Password
-          </NavLink>
-
+<NavLink
+  to="#"
+  className="headersForManuals"
+  onClick={(e) => {
+    e.preventDefault();
+    setActiveTab("password");
+  }}
+>
+  Change Password
+</NavLink>
           <h5 className="card-header">App theme</h5>
 
           <div className="divDarkLight">
@@ -134,10 +148,30 @@ useEffect(() => {
               <h1>produced by SkyTechSharif</h1>
               <h2>EFB Crew App</h2>
               <p>Version: 1.0.0</p>
+         <button
+  className="versionButton"
+  // onClick={() => navigator.clipboard.writeText("1.0.0")}
+>
+  
+  <span>Update Version</span>
+</button>
               <p>© All rights reserved by SkyTechSharif</p>
             </div>
           </div>
         )}
+        {(activeTab === "whatsnew" ||
+  activeTab === "password") && (
+  <div className="manualsContainer">
+    <div className="comingSoonBox">
+      <h2><Construction size={48} strokeWidth={1.8} color="var(--accent)" /> Coming Soon</h2>
+
+      <p>
+        This feature is currently under development and
+        will be available in a future update.
+      </p>
+    </div>
+  </div>
+)}
       </PageWrapper>
     </>
   );

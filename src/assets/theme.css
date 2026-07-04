@@ -1963,3 +1963,78 @@ input[type="file"] {
   text-decoration: none;
   cursor: pointer;
 }
+.versionButton {
+  margin-top: 18px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.25s;
+}
+
+.versionButton:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.comingSoonBox {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.comingSoonBox h2 {
+  font-size: 30px;
+  margin: 0;
+  color: var(--accent);
+}
+
+.comingSoonBox p {
+  max-width: 420px;
+  color: var(--text);
+  opacity: 0.8;
+  line-height: 1.6;
+}
+.versionButton {
+  margin-top: 18px;
+  padding: 10px 18px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: var(--accent);
+  color: #fff;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.versionButton:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.versionButton:active {
+  transform: translateY(0);
+}
+
+.versionButton svg {
+  flex-shrink: 0;
+}
+h1 {
+  color: var(--h3);
+}
