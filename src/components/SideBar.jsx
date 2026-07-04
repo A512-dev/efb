@@ -433,10 +433,11 @@ const expiryStatus = user ? getExpiryStatus(user) : null;
             
 
           </NavLink>
+          {user.role==='pilot' &&
           <NavLink to="/dashboard/manuals" className="nav-item">
             <img src={documentSvg} alt="" className="navIcon" /> Documents
           </NavLink>
-
+}
           <NavLink className="nav-item" to="/dashboard/Chat">
             <img src={chatboxicon} alt="" className="navIcon chatboxicon" />
 
@@ -465,7 +466,7 @@ const expiryStatus = user ? getExpiryStatus(user) : null;
 
       {user.role === "admin" && (
         <>
-          <NavLink to="/dashboard/manuals-admin" className="nav-item">
+          <NavLink to="/dashboard/manuals" className="nav-item">
             <img src={manualsAdminSvg} alt="" className="navIcon" /> Manage Documents
           </NavLink>
 

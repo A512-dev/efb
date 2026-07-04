@@ -750,7 +750,7 @@ useEffect(() => {
         </div>
         <div className="manualsRightColumn">
 
-  {!categoryId && (
+  {!categoryId && !isAdmin &&(
     <div className="profileManualReads manualsContainer" style={{ marginTop: "20px" }}>
       
       <div className="profileManualHeader">
@@ -834,7 +834,7 @@ useEffect(() => {
       padding: "16px",
       borderBottom: "1px solid var(--card-border)",
       display: "flex",
-      marginTop:'auto',
+      
       flexDirection: "column",
       gap: "10px",
     }}
