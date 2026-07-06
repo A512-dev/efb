@@ -1,4 +1,4 @@
---index-url https://mirror2.chabokan.net/pypi/simple/
+--index-url https://package-mirror.liara.ir/repository/pypi/simple
 alembic==1.14.1
 annotated-types==0.7.0
 anyio==4.14.1
