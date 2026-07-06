@@ -20,12 +20,14 @@ import EditProfile from "../pages/EditProfile";
 import FlightFolder from "../pages/FlightFolder";
 import InsideFolder from "../pages/InsideFolder";
 import CrewProfile from "../pages/CrewProfile";
+import ChangePassword from "../pages/ChangePassword";
 export default function AppRouter() {
   return (
       <AnimatePresence mode="wait">
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Loginpage />} />
+        <Route path="/change-password" element={<ChangePassword />} />
 
         <Route element={<RequireAuth />}>
           <Route path="/dashboard" element={<DashboardLayout />}>

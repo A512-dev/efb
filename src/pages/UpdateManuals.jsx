@@ -228,10 +228,7 @@ const manual = manuals.find((m) => m.id === item.manual_id);
                       </div>
                 <p style={{ fontSize: "12px", color: "#666" }}>
   {manual?.original_filename} |{" "}
-  <b>
-    Category:{" "}
-    {manual?.category_path_text || manual?.category_name || "Uncategorized"}
-  </b>
+  
 </p>
                       <div
                         className={`manual-update-action action-${(

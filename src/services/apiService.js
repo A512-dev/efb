@@ -14,6 +14,14 @@ export const logoutUser = async (refreshToken) => {
     refresh_token: refreshToken,
   });
 };
+export const changePassword = async (email, signupKey, newPassword) => {
+  const response = await apiClient.post("/auth/change-password", {
+    email: email,
+    signup_key: signupKey,
+    new_password: newPassword,
+  });
+  return response.data;
+};
 
 export const createPilotUser = async (userData) => {
   const payload = {

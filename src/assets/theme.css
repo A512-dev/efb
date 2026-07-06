@@ -440,7 +440,7 @@ label {
 }
 .LoginRedesigned {
   margin-left: -900px;
-  margin-top: -400px;
+  margin-top: -200px;
   background-color: #cdcdcd82;
   width: 500px;
   border-radius: 8px;
@@ -2037,4 +2037,59 @@ input[type="file"] {
 }
 h1 {
   color: var(--h3);
+}
+.change-password-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  background-color: #f8fafc;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 20px;
+}
+
+.input-group {
+  width: 100%;
+  margin-bottom: 15px;
+  position: relative;
+}
+
+.loginInput {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.password-group .loginInput {
+  padding-right: 40px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  z-index: 10;
+}
+
+.toggle-password:hover {
+  opacity: 0.7;
+}
+
+.toggle-password:focus {
+  outline: none;
 }

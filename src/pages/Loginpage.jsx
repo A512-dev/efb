@@ -164,12 +164,16 @@ id="passwordInput"
             {isLoading ? "Logging in..." : "Login"}
           </button>
 
-          <div className="loginLinks">
-            
-            <a href="#" style={{ color: '#000000' }}>Forgot password?</a>
-        
-        
-          </div>
+<div className="loginLinks">
+  <a 
+    href="#" 
+    onClick={(e) => { e.preventDefault(); navigate("/change-password"); }} 
+    style={{ color: '#000000' }}
+  >
+    Forgot password?
+  </a>
+</div>
+
 
         
           <img src={loginImg} alt="Login illustration" className="imgLogin" />

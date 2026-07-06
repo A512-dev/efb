@@ -204,29 +204,35 @@
 // };
 
 // export default SignUp;
-
 import PageWrapper from "../components/PageWrapper";
 import { useState, useEffect, useMemo } from "react";
 import { createPilotUser, getAllUsers } from "../services/apiService";
 import { createPortal } from "react-dom";
-const SignUp = () => {
 
+const SignUp = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    password: "",
     role: "pilot",
+    position: "P2",
+    aircraft_type: "A320",
   });
-const [errorModal, setErrorModal] = useState({
-  open: false,
-  message: "",
-});
+
+  const [errorModal, setErrorModal] = useState({
+    open: false,
+    message: "",
+  });
+  
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [fleetFilter, setFleetFilter] = useState("all");
-const [successModal, setSuccessModal] = useState({
-  open: false,
-  email: "",
-});
+  
+  const [successModal, setSuccessModal] = useState({
+    open: false,
+    email: "",
+  });
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -234,44 +240,47 @@ const [successModal, setSuccessModal] = useState({
     });
   };
 
-const handleCreatePilot = async (e) => {
-  e.preventDefault();
-  setLoading(true);
+  const handleCreatePilot = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
-  try {
-    const email = formData.email;
+    try {
+      const email = formData.email;
 
-    await createPilotUser(formData);
+      await createPilotUser(formData);
 
-    setSuccessModal({
-      open: true,
-      email,
-    });
+      setSuccessModal({
+        open: true,
+        email,
+      });
 
-    setFormData({
-      name: "",
-      email: "",
-      role: "pilot",
-    });
-  }catch (err) {
-  console.error(err);
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        role: "pilot",
+        position: "P2",
+        aircraft_type: "A320",
+      });
+    } catch (err) {
+      console.error(err);
 
-  if (err.response?.status === 409) {
-    setErrorModal({
-      open: true,
-      message:
-        "This user already exists.\n\nIf you want to recreate this user, please delete their profile from Crew Profile first.",
-    });
-  } else {
-    setErrorModal({
-      open: true,
-      message: "Failed to create the user. Please try again.",
-    });
-  }
-} finally {
-    setLoading(false);
-  }
-};
+      if (err.response?.status === 409) {
+        setErrorModal({
+          open: true,
+          message:
+            "This user already exists.\n\nIf you want to recreate this user, please delete their profile from Crew Profile first.",
+        });
+      } else {
+        setErrorModal({
+          open: true,
+          message: "Failed to create the user. Please try again.",
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -289,9 +298,7 @@ const handleCreatePilot = async (e) => {
   const filteredUsers = useMemo(() => {
     if (fleetFilter === "all") return users;
 
-    return users.filter(
-      (u) => u.aircraft_type === fleetFilter
-    );
+    return users.filter((u) => u.aircraft_type === fleetFilter);
   }, [users, fleetFilter]);
 
   const { p1Count, p2Count } = useMemo(() => {
@@ -303,9 +310,7 @@ const handleCreatePilot = async (e) => {
 
   return (
     <PageWrapper>
-
       <section className="dashboard-panel">
-
         <h2 style={{ padding: "10px 20px" }}>Crew Status</h2>
 
         <div className="dashboard-filters">
@@ -323,7 +328,6 @@ const handleCreatePilot = async (e) => {
         </div>
 
         <div className="dashboard-grid">
-
           <article className="dashboard-card">
             <span>Total Pilots</span>
             <strong>{filteredUsers.length}</strong>
@@ -338,15 +342,12 @@ const handleCreatePilot = async (e) => {
             <span>P2</span>
             <strong>{p2Count}</strong>
           </article>
-
         </div>
 
         <div className="signupContainer">
-
           <h2>Create New User</h2>
 
           <form onSubmit={handleCreatePilot} className="create-user-form">
-
             <div className="form-group">
               <label>Name</label>
               <input
@@ -370,83 +371,107 @@ const handleCreatePilot = async (e) => {
                 required
               />
             </div>
+            
+            <div className="form-group">
+              <label>Password</label>
+              <input
+                type="password"
+                name="password"
+                placeholder="Enter password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
 
             <div className="form-group">
               <label>Role</label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-              >
+              <select name="role" value={formData.role} onChange={handleChange}>
                 <option value="pilot">Pilot</option>
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label>Position</label>
+              <select name="position" value={formData.position} onChange={handleChange}>
+                <option value="P1">P1 (Captain)</option>
+                <option value="P2">P2 (First Officer)</option>
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label>Aircraft Type</label>
+              <select name="aircraft_type" value={formData.aircraft_type} onChange={handleChange}>
+                <option value="A330">A330</option>
+                <option value="A300_600">A300-600 / A310</option>
+                <option value="A320">A320</option>
+                <option value="F100">F100</option>
+                <option value="ATR">ATR 72-600</option>
               </select>
             </div>
 
             <button type="submit" disabled={loading}>
               {loading ? "Creating..." : "Create User"}
             </button>
-
           </form>
-
         </div>
-
       </section>
-{createPortal(
-  <>
-    {successModal.open && (
-      <div className="signup-modal-overlay">
-        <div className="signup-modal-content">
-          <h2>User Created Successfully</h2>
 
-          <pt>
-            The user account has been created successfully.
-          </pt>
+      {createPortal(
+        <>
+          {successModal.open && (
+            <div className="signup-modal-overlay">
+              <div className="signup-modal-content">
+                <h2>User Created Successfully</h2>
+                <p>The user account has been created successfully.</p>
+                <p>
+                  <strong>Email:</strong> {successModal.email}
+                </p>
+                <button
+                  className="signup-modal-button"
+                  onClick={() =>
+                    setSuccessModal({
+                      open: false,
+                      email: "",
+                    })
+                  }
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          )}
 
-          <p>
-            <strong>Email:</strong> {successModal.email}
-          </p>
-
-          <button
-            className="signup-modal-button"
-            onClick={() =>
-              setSuccessModal({
-                open: false,
-                email: "",
-              })
-            }
-          >
-            OK
-          </button>
-        </div>
-      </div>
-    )}
-
-    {errorModal.open && (
-      <div className="signup-modal-overlay">
-        <div className="signup-modal-content">
-          <h2 style={{color:'#dc2626'}}>Unable to Create User</h2>
-
-          <p style={{ whiteSpace: "pre-line", borderBottom:'1px solid red', color:'#dc2626' }}>
-            {errorModal.message}
-          </p>
-
-          <button
-            className="signup-modal-button"
-            onClick={() =>
-              setErrorModal({
-                open: false,
-                message: "",
-              })
-            }
-          >
-            OK
-          </button>
-        </div>
-      </div>
-    )}
-  </>,
-  document.body
-)}
+          {errorModal.open && (
+            <div className="signup-modal-overlay">
+              <div className="signup-modal-content">
+                <h2 style={{ color: "#dc2626" }}>Unable to Create User</h2>
+                <p
+                  style={{
+                    whiteSpace: "pre-line",
+                    borderBottom: "1px solid red",
+                    color: "#dc2626",
+                  }}
+                >
+                  {errorModal.message}
+                </p>
+                <button
+                  className="signup-modal-button"
+                  onClick={() =>
+                    setErrorModal({
+                      open: false,
+                      message: "",
+                    })
+                  }
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          )}
+        </>,
+        document.body
+      )}
     </PageWrapper>
   );
 };
