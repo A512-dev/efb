@@ -97,7 +97,9 @@ class TestUpload:
             "/api/v1/manuals/upload",
             data={
                 "title": "Should Fail",
-                "category_id": str(_leaf_category_id(client, _login(client, SEED_EMAIL, SEED_PASSWORD))),
+                "category_id": str(
+                    _leaf_category_id(client, _login(client, SEED_EMAIL, SEED_PASSWORD))
+                ),
             },
             files={"file": ("fail.pdf", pdf, "application/pdf")},
             headers=_auth_header(token),
@@ -176,6 +178,7 @@ class TestFleetVisibility:
                 "email": email,
                 "password": password,
                 "role": "pilot",
+                "position": "Captain",
                 "aircraft_type": "A320",
             },
             headers=_auth_header(admin_token),

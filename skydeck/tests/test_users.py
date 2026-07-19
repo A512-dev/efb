@@ -39,8 +39,6 @@ def _profile_payload(user: dict) -> dict:
     """Extract only fields accepted by the profile PATCH endpoint."""
     return {
         "employee_no": user["employee_no"],
-        "position": user["position"],
-        "aircraft_type": user["aircraft_type"],
         "medical_expires_at": user["medical_expires_at"],
         "passport_expires_at": user["passport_expires_at"],
         "license_expires_at": user["license_expires_at"],
@@ -56,8 +54,6 @@ class TestUserProfileUpdate:
         original = _me(client, token)
         update = {
             "employee_no": f"pytest-{uuid4().hex[:12]}",
-            "position": "Training Captain",
-            "aircraft_type": "A320",
             "medical_expires_at": "2031-01-02",
             "passport_expires_at": "2032-03-04T00:00:00+00:00",
             "license_expires_at": "2033-05-06T00:00:00+00:00",
@@ -72,8 +68,8 @@ class TestUserProfileUpdate:
             assert resp.status_code == 200, resp.text
             body = resp.json()
             assert body["employee_no"] == update["employee_no"]
-            assert body["position"] == update["position"]
-            assert body["aircraft_type"] == update["aircraft_type"]
+            assert body["position"] == original["position"]
+            assert body["aircraft_type"] == original["aircraft_type"]
             assert body["medical_expires_at"].startswith("2031-01-02")
             assert "profile_picture_url" in body
         finally:
@@ -177,7 +173,14 @@ class TestAdminUserManagement:
 
         signup_resp = client.post(
             "/api/v1/auth/signup",
-            json={"name": "Delete Me", "email": email, "password": password},
+            json={
+                "name": "Delete Me",
+                "email": email,
+                "password": password,
+                "role": "technical",
+                "position": "Engineer",
+                "aircraft_type": "N/A",
+            },
             headers=_auth_header(admin_token),
         )
         assert signup_resp.status_code == 201, signup_resp.text
@@ -214,6 +217,7 @@ class TestAdminUserManagement:
                 "email": email,
                 "password": password,
                 "role": "pilot",
+                "position": "Captain",
                 "aircraft_type": "A320",
             },
             headers=_auth_header(admin_token),
@@ -229,8 +233,8 @@ class TestAdminUserManagement:
         finally:
             client.delete(f"/api/v1/users/{user_id}", headers=_auth_header(admin_token))
 
-    def test_admin_signup_defaults_pilot_aircraft_type(self, client: TestClient):
-        """Omitted pilot aircraft type defaults to the A300/A310 fleet."""
+    def test_admin_signup_requires_operational_assignment(self, client: TestClient):
+        """Admins must explicitly assign role, position, and aircraft type."""
         admin_token = _login(client, SEED_EMAIL, SEED_PASSWORD)
         password = "SkyDeck@2026!"
         email = f"default-aircraft-{uuid4().hex[:12]}@example.com"
@@ -240,16 +244,9 @@ class TestAdminUserManagement:
             json={"name": "Default Aircraft Pilot", "email": email, "password": password},
             headers=_auth_header(admin_token),
         )
-        assert signup_resp.status_code == 201, signup_resp.text
-        user_id = signup_resp.json()["user_id"]
-
-        try:
-            list_resp = client.get("/api/v1/users", headers=_auth_header(admin_token))
-            assert list_resp.status_code == 200, list_resp.text
-            created = next(user for user in list_resp.json() if user["id"] == user_id)
-            assert created["aircraft_type"] == "A300-A600/A310"
-        finally:
-            client.delete(f"/api/v1/users/{user_id}", headers=_auth_header(admin_token))
+        assert signup_resp.status_code == 422, signup_resp.text
+        missing_fields = {item["loc"][-1] for item in signup_resp.json()["detail"]}
+        assert {"role", "position", "aircraft_type"} <= missing_fields
 
     def test_admin_cannot_delete_self(self, client: TestClient):
         """The final active admin cannot accidentally delete their own session user."""
