@@ -237,6 +237,7 @@ defaults in `app/core/config.py`.
 | `MESSAGE_ATTACHMENT_MASTER_KEY` | `None` | Legacy fallback key for encrypted attachments |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | JWT access-token lifetime |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | `7` | Refresh-token lifetime |
+| `SIGNUP_KEY` | empty | Shared secret accepted by `/auth/change-password` |
 | `CORS_ORIGINS` | localhost Vite/React origins | Allowed browser origins |
 | `STORAGE_DIR` | `storage/manuals` | Manual PDF storage |
 | `MESSAGE_ATTACHMENTS_STORAGE_DIR` | `storage/message_attachments` | Encrypted message attachment storage |
@@ -544,7 +545,7 @@ All API paths below are prefixed with:
 #### `POST /auth/signup`
 
 Admin-only endpoint for creating a user in the current admin's organization.
-If `role` is omitted, the new user defaults to `pilot`.
+The administrator must assign the user's role, position, and aircraft type.
 
 Supported roles:
 
@@ -566,10 +567,16 @@ Request:
 {
   "name": "Ali",
   "email": "ali@example.com",
-  "password": "123456",
-  "role": "pilot"
+  "password": "Secur3Passw0rd!",
+  "role": "pilot",
+  "position": "First Officer",
+  "aircraft_type": "A320"
 }
 ```
+
+The supplied password works immediately. Fleet crew must use one of the
+canonical fleet values (`A330`, `A300-A600/A310`, `A320`, `F100`, or
+`ATR72-600`); non-fleet assignments may use `N/A`.
 
 Response:
 
@@ -610,6 +617,25 @@ Response:
   }
 }
 ```
+
+#### `POST /auth/change-password`
+
+Replaces an existing active user's password when the caller provides the
+server's shared `SIGNUP_KEY`. This endpoint is unauthenticated and the current
+implementation does not enforce one-time use, so configure a strong secret and
+rotate it if exposed.
+
+```json
+{
+  "email": "ali@example.com",
+  "signup_key": "<secret-signup-key>",
+  "new_password": "An0therSecurePassword!"
+}
+```
+
+Invalid keys return `401`; unknown or inactive users return `404`. Successful
+changes are recorded as `auth.password_change` without storing the secret or
+password in audit metadata.
 
 #### `POST /auth/refresh`
 

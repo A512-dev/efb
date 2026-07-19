@@ -37,8 +37,8 @@ class RefreshRequest(BaseModel):
 class SignupRequest(BaseModel):
     """Validated fields required to create a new account.
 
-    The role defaults to ``pilot`` to keep omission on the least-privileged
-    path. Authorization for who may call signup is enforced by the route.
+    The administrator explicitly assigns role, position, and aircraft type.
+    Authorization for who may call signup is enforced by the route.
     """
 
     name: str = Field(..., min_length=1, max_length=200)

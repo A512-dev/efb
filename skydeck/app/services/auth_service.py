@@ -169,29 +169,18 @@ def change_initial_password(
     signup_key: str,
     new_password: str,
 ) -> None:
-    """Allow new users to set their password using the signup key.
-    
-    This is a one-time operation that requires the secret signup key.
-    """
+    """Replace an active user's password after validating the shared signup key."""
     from app.core.config import settings
-    
-    # Verify the signup key
+
     if not settings.SIGNUP_KEY or signup_key != settings.SIGNUP_KEY:
         raise AuthenticationError("Invalid signup key")
-    
-    # Find the user
+
     user = user_repo.get_by_email(db, email)
     if user is None:
         raise NotFoundError("User not found")
-    
-    # Check if password is still the default (optional)
-    # You might want to add a flag or check if password has been changed before
-    # For now, we'll allow any user with valid credentials to change password
-    
-    # Update the password
+
     user.password_hash = hash_password(new_password)
-    
-    # Record the audit trail
+
     audit_service.record(
         db,
         action="auth.password_change",
@@ -199,10 +188,10 @@ def change_initial_password(
         target_id=user.id,
         user_id=user.id,
         org_id=user.org_id,
-        ip=None,  # Could be passed from endpoint if needed
+        ip=None,
         metadata={"method": "signup_key"},
     )
-    
+
     db.commit()
 
 

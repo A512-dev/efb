@@ -109,10 +109,9 @@ def change_password(
     body: PasswordChangeRequest,
     db: DbSession = Depends(get_db),
 ):
-    """Allow users to set their initial password using the secret signup key.
-    
-    This endpoint does not require authentication, only the signup key.
-    Users can use this to change their password after initial account creation.
+    """Replace a user's password after validating the shared signup key.
+
+    The endpoint is unauthenticated and does not enforce one-time use.
     """
     auth_service.change_initial_password(
         db,
