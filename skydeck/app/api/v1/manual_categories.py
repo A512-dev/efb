@@ -273,7 +273,10 @@ def reorder_categories(
         parent_id=parent_id,
     )
     if set(submitted_ids) != set(expected_ids):
-        raise AppError("Category reorder list must contain every active sibling exactly once", code=400)
+        raise AppError(
+            "Category reorder list must contain every active sibling exactly once",
+            code=400,
+        )
 
     manual_category_repo.reorder(db, org_id=current_user.org_id, category_ids=submitted_ids)
     audit_service.record(

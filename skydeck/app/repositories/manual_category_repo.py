@@ -11,7 +11,8 @@ import re
 from typing import Optional
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session as DbSession, selectinload
+from sqlalchemy.orm import Session as DbSession
+from sqlalchemy.orm import selectinload
 
 from app.models.manual import Manual
 from app.models.manual_category import ManualCategory

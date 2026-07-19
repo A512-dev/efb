@@ -87,11 +87,18 @@ def test_admin_can_manage_empty_category_tree(client: TestClient):
 
         reordered = client.patch(
             "/api/v1/manual-categories/reorder",
-            json={"parent_id": root_id, "category_ids": [child_b["id"], child_a["id"], child_c["id"]]},
+            json={
+                "parent_id": root_id,
+                "category_ids": [child_b["id"], child_a["id"], child_c["id"]],
+            },
             headers=_auth_header(token),
         )
         assert reordered.status_code == 200, reordered.text
-        assert [item["id"] for item in reordered.json()] == [child_b["id"], child_a["id"], child_c["id"]]
+        assert [item["id"] for item in reordered.json()] == [
+            child_b["id"],
+            child_a["id"],
+            child_c["id"],
+        ]
 
         moved = client.patch(
             f"/api/v1/manual-categories/{child_c['id']}/move",
