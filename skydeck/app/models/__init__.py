@@ -12,6 +12,7 @@ from app.models.enums import ManualAction, UserRole
 from app.models.login_attempt import LoginAttempt
 from app.models.manual import Manual
 from app.models.manual_access_log import ManualAccessLog
+from app.models.manual_annotation import ManualAnnotation
 from app.models.manual_category import ManualCategory
 from app.models.manual_reads import ManualRead
 from app.models.manual_update_event import ManualUpdateEvent
@@ -28,6 +29,7 @@ __all__ = [
     "LoginAttempt",
     "Manual",
     "ManualAccessLog",
+    "ManualAnnotation",
     "ManualAction",
     "ManualCategory",
     "ManualRead",
