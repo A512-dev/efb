@@ -28,7 +28,7 @@ from app.schemas.manual_annotation import (
     ManualAnnotationSyncOut,
     ManualAnnotationSyncRequest,
 )
-from app.services import audit_service
+from app.services import audit_service, manual_visibility_service
 
 router = APIRouter(
     prefix="/manuals/{manual_id}/annotations",
@@ -47,7 +47,12 @@ _ALL_ROLES = require_roles(
 
 def _get_current_manual(db: DbSession, *, manual_id: int, user: User) -> Manual:
     manual = manual_repo.get_by_id(db, manual_id)
-    if manual is None or manual.org_id != user.org_id or not manual.is_active:
+    if (
+        manual is None
+        or manual.org_id != user.org_id
+        or not manual.is_active
+        or not manual_visibility_service.can_access_manual(user, manual)
+    ):
         raise NotFoundError("Manual not found")
     return manual
 
