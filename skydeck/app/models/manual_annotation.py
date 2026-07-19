@@ -19,7 +19,8 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PostgreSQLUUID
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -63,7 +64,7 @@ class ManualAnnotation(Base):
     )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
-    client_id: Mapped[UUID] = mapped_column(PostgreSQLUUID(as_uuid=True), nullable=False)
+    client_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
     org_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False
     )
