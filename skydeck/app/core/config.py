@@ -66,7 +66,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # the signup keys:
-    SIGNUP_KEY: str = Field(default="", description="Secret key for new users to set their password")
+    SIGNUP_KEY: str = Field(
+        default="",
+        description="Secret key for new users to set their password",
+    )
 
     # ── file storage ────────────────────────────────────────
     STORAGE_DIR: str = "storage/manuals"
