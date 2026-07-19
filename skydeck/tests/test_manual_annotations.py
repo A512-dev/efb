@@ -38,6 +38,12 @@ def _headers(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
+def _user_id(client: TestClient, token: str) -> int:
+    response = client.get("/api/v1/users/me", headers=_headers(token))
+    assert response.status_code == 200, response.text
+    return response.json()["id"]
+
+
 def _first_leaf_id(nodes: list[dict]) -> int:
     for node in nodes:
         children = node.get("children", [])
@@ -67,9 +73,9 @@ def _delete_manual(client: TestClient, admin_token: str, manual_id: int) -> None
     client.delete(f"/api/v1/manuals/{manual_id}", headers=_headers(admin_token))
 
 
-def _text_payload(annotation_type: str, version: int = 1) -> dict:
+def _text_payload(user_id: int, annotation_type: str, version: int = 1) -> dict:
     return {
-        "client_id": str(uuid4()),
+        "user_id": user_id,
         "manual_version_number": version,
         "annotation_type": annotation_type,
         "page_number": 1,
@@ -82,13 +88,13 @@ def _text_payload(annotation_type: str, version: int = 1) -> dict:
     }
 
 
-def _payloads_for_all_types() -> list[dict]:
+def _payloads_for_all_types(user_id: int) -> list[dict]:
     return [
-        _text_payload("highlight"),
-        _text_payload("underline"),
-        _text_payload("strikeout"),
+        _text_payload(user_id, "highlight"),
+        _text_payload(user_id, "underline"),
+        _text_payload(user_id, "strikeout"),
         {
-            "client_id": str(uuid4()),
+            "user_id": user_id,
             "manual_version_number": 1,
             "annotation_type": "sticky_note",
             "page_number": 1,
@@ -97,7 +103,7 @@ def _payloads_for_all_types() -> list[dict]:
             "note_text": "Ask training about this procedure",
         },
         {
-            "client_id": str(uuid4()),
+            "user_id": user_id,
             "manual_version_number": 1,
             "annotation_type": "ink",
             "page_number": 1,
@@ -107,7 +113,7 @@ def _payloads_for_all_types() -> list[dict]:
             "style": {"stroke_color": "#E53935", "stroke_width": 0.002, "opacity": 1},
         },
         {
-            "client_id": str(uuid4()),
+            "user_id": user_id,
             "manual_version_number": 1,
             "annotation_type": "rectangle",
             "page_number": 1,
@@ -120,7 +126,7 @@ def _payloads_for_all_types() -> list[dict]:
             },
         },
         {
-            "client_id": str(uuid4()),
+            "user_id": user_id,
             "manual_version_number": 1,
             "annotation_type": "ellipse",
             "page_number": 1,
@@ -133,7 +139,7 @@ def _payloads_for_all_types() -> list[dict]:
             },
         },
         {
-            "client_id": str(uuid4()),
+            "user_id": user_id,
             "manual_version_number": 1,
             "annotation_type": "line",
             "page_number": 1,
@@ -154,6 +160,8 @@ class TestManualAnnotationCrud:
         admin_token = _login(client, SEED_EMAIL, SEED_PASSWORD)
         pilot_token = _login(client, PILOT_EMAIL, PILOT_PASSWORD)
         second_pilot_token = _login(client, SECOND_PILOT_EMAIL, PILOT_PASSWORD)
+        pilot_id = _user_id(client, pilot_token)
+        second_pilot_id = _user_id(client, second_pilot_token)
         manual_id = _upload_manual(
             client,
             admin_token,
@@ -163,43 +171,44 @@ class TestManualAnnotationCrud:
         before_storage = _manual_storage_state(manual_id)
 
         try:
-            payloads = _payloads_for_all_types()
+            payloads = _payloads_for_all_types(pilot_id)
             created = []
             for payload in payloads:
                 response = client.post(annotation_url, json=payload, headers=_headers(pilot_token))
                 assert response.status_code == 201, response.text
-                assert response.json()["revision"] == 1
+                assert response.json()["user_id"] == pilot_id
+                assert "client_id" not in response.json()
+                assert "revision" not in response.json()
                 created.append(response.json())
 
-            retry = client.post(annotation_url, json=payloads[0], headers=_headers(pilot_token))
-            assert retry.status_code == 201, retry.text
-            assert retry.json()["id"] == created[0]["id"]
-
-            reused_id = deepcopy(payloads[0])
-            reused_id["style"]["opacity"] = 0.8
-            conflict = client.post(
+            wrong_owner_payload = _text_payload(second_pilot_id, "highlight")
+            wrong_owner = client.post(
                 annotation_url,
-                json=reused_id,
+                json=wrong_owner_payload,
                 headers=_headers(pilot_token),
             )
-            assert conflict.status_code == 409
+            assert wrong_owner.status_code == 403
 
             mine = client.get(annotation_url, headers=_headers(pilot_token))
             assert mine.status_code == 200, mine.text
+            assert mine.json()["user_id"] == pilot_id
             assert mine.json()["manual_version_number"] == 1
             assert len(mine.json()["annotations"]) == 8
 
             other_user = client.get(annotation_url, headers=_headers(second_pilot_token))
             assert other_user.status_code == 200
+            assert other_user.json()["user_id"] == second_pilot_id
             assert other_user.json()["annotations"] == []
 
             admin_view = client.get(annotation_url, headers=_headers(admin_token))
             assert admin_view.status_code == 200
             assert admin_view.json()["annotations"] == []
 
+            private_update_payload = deepcopy(payloads[0])
+            private_update_payload["user_id"] = second_pilot_id
             private_update = client.put(
                 f"{annotation_url}/{created[0]['id']}",
-                json={"expected_revision": 1, "annotation": payloads[0]},
+                json=private_update_payload,
                 headers=_headers(second_pilot_token),
             )
             assert private_update.status_code == 404
@@ -208,19 +217,14 @@ class TestManualAnnotationCrud:
             updated_payload["note_text"] = "Updated private note"
             update = client.put(
                 f"{annotation_url}/{created[0]['id']}",
-                json={"expected_revision": 1, "annotation": updated_payload},
+                json=updated_payload,
                 headers=_headers(pilot_token),
             )
             assert update.status_code == 200, update.text
-            assert update.json()["revision"] == 2
+            assert update.json()["note_text"] == "Updated private note"
 
-            stale_delete = client.delete(
-                f"{annotation_url}/{created[0]['id']}?expected_revision=1",
-                headers=_headers(pilot_token),
-            )
-            assert stale_delete.status_code == 409
             deleted = client.delete(
-                f"{annotation_url}/{created[0]['id']}?expected_revision=2",
+                f"{annotation_url}/{created[0]['id']}",
                 headers=_headers(pilot_token),
             )
             assert deleted.status_code == 204
@@ -241,13 +245,14 @@ class TestManualAnnotationCrud:
     def test_invalid_geometry_and_authentication_are_rejected(self, client: TestClient):
         admin_token = _login(client, SEED_EMAIL, SEED_PASSWORD)
         pilot_token = _login(client, PILOT_EMAIL, PILOT_PASSWORD)
+        pilot_id = _user_id(client, pilot_token)
         manual_id = _upload_manual(client, admin_token, f"Annotation Validation {uuid4().hex}")
         annotation_url = f"/api/v1/manuals/{manual_id}/annotations"
 
         try:
             assert client.get(annotation_url).status_code == 401
 
-            invalid = _text_payload("highlight")
+            invalid = _text_payload(pilot_id, "highlight")
             invalid["geometry"]["rects"][0] = {
                 "x": 0.9,
                 "y": 0.2,
@@ -257,7 +262,7 @@ class TestManualAnnotationCrud:
             response = client.post(annotation_url, json=invalid, headers=_headers(pilot_token))
             assert response.status_code == 422
 
-            oversized_note = _text_payload("highlight")
+            oversized_note = _text_payload(pilot_id, "highlight")
             oversized_note["note_text"] = "x" * 5001
             response = client.post(
                 annotation_url,
@@ -274,78 +279,18 @@ class TestManualAnnotationCrud:
         finally:
             _delete_manual(client, admin_token, manual_id)
 
-
-class TestManualAnnotationSync:
-    def test_bulk_sync_applies_independent_changes_and_returns_conflicts(self, client: TestClient):
+    def test_offline_sync_endpoint_is_removed(self, client: TestClient):
         admin_token = _login(client, SEED_EMAIL, SEED_PASSWORD)
         pilot_token = _login(client, PILOT_EMAIL, PILOT_PASSWORD)
-        manual_id = _upload_manual(client, admin_token, f"Annotation Sync {uuid4().hex}")
-        annotation_url = f"/api/v1/manuals/{manual_id}/annotations"
+        manual_id = _upload_manual(client, admin_token, f"No Annotation Sync {uuid4().hex}")
 
         try:
-            first = _text_payload("highlight")
-            second = _text_payload("underline")
-            initial = client.post(
-                f"{annotation_url}/sync",
-                json={
-                    "manual_version_number": 1,
-                    "changes": [
-                        {"operation": "upsert", "expected_revision": 0, "annotation": first},
-                        {"operation": "upsert", "expected_revision": 0, "annotation": second},
-                    ],
-                },
+            response = client.post(
+                f"/api/v1/manuals/{manual_id}/annotations/sync",
+                json={"manual_version_number": 1, "changes": []},
                 headers=_headers(pilot_token),
             )
-            assert initial.status_code == 200, initial.text
-            assert len(initial.json()["applied"]) == 2
-
-            first_record = next(
-                item
-                for item in initial.json()["annotations"]
-                if item["client_id"] == first["client_id"]
-            )
-            direct_update = deepcopy(first)
-            direct_update["note_text"] = "Changed on another device"
-            updated = client.put(
-                f"{annotation_url}/{first_record['id']}",
-                json={"expected_revision": 1, "annotation": direct_update},
-                headers=_headers(pilot_token),
-            )
-            assert updated.status_code == 200, updated.text
-
-            third = _text_payload("strikeout")
-            stale_first = deepcopy(first)
-            stale_first["note_text"] = "Offline edit"
-            reconciled = client.post(
-                f"{annotation_url}/sync",
-                json={
-                    "manual_version_number": 1,
-                    "changes": [
-                        {
-                            "operation": "upsert",
-                            "expected_revision": 1,
-                            "annotation": stale_first,
-                        },
-                        {
-                            "operation": "delete",
-                            "client_id": second["client_id"],
-                            "expected_revision": 1,
-                        },
-                        {"operation": "upsert", "expected_revision": 0, "annotation": third},
-                    ],
-                },
-                headers=_headers(pilot_token),
-            )
-            assert reconciled.status_code == 200, reconciled.text
-            body = reconciled.json()
-            assert len(body["applied"]) == 2
-            assert len(body["conflicts"]) == 1
-            assert body["conflicts"][0]["reason"] == "revision_mismatch"
-            assert body["conflicts"][0]["server_revision"] == 2
-            assert {item["client_id"] for item in body["annotations"]} == {
-                first["client_id"],
-                third["client_id"],
-            }
+            assert response.status_code == 405
         finally:
             _delete_manual(client, admin_token, manual_id)
 
@@ -354,11 +299,12 @@ class TestManualAnnotationVersions:
     def test_replacement_archives_old_annotations(self, client: TestClient):
         admin_token = _login(client, SEED_EMAIL, SEED_PASSWORD)
         pilot_token = _login(client, PILOT_EMAIL, PILOT_PASSWORD)
+        pilot_id = _user_id(client, pilot_token)
         manual_id = _upload_manual(client, admin_token, f"Annotation Version {uuid4().hex}")
         annotation_url = f"/api/v1/manuals/{manual_id}/annotations"
 
         try:
-            version_one = _text_payload("highlight", version=1)
+            version_one = _text_payload(pilot_id, "highlight", version=1)
             created = client.post(annotation_url, json=version_one, headers=_headers(pilot_token))
             assert created.status_code == 201, created.text
 
@@ -381,7 +327,7 @@ class TestManualAnnotationVersions:
             assert current.json()["manual_version_number"] == 2
             assert current.json()["annotations"] == []
 
-            stale = _text_payload("underline", version=1)
+            stale = _text_payload(pilot_id, "underline", version=1)
             stale_response = client.post(
                 annotation_url,
                 json=stale,
@@ -389,7 +335,7 @@ class TestManualAnnotationVersions:
             )
             assert stale_response.status_code == 409
 
-            version_two = _text_payload("underline", version=2)
+            version_two = _text_payload(pilot_id, "underline", version=2)
             fresh = client.post(annotation_url, json=version_two, headers=_headers(pilot_token))
             assert fresh.status_code == 201, fresh.text
 
