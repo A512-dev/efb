@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Annotated, Literal, Optional, Union
-from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -86,7 +85,9 @@ class ShapeStyle(StrokeStyle):
 
 
 class _AnnotationPayloadBase(_StrictSchema):
-    client_id: UUID
+    """Common annotation fields sent by an authenticated frontend client."""
+
+    user_id: int = Field(..., ge=1)
     manual_version_number: int = Field(..., ge=1)
     page_number: int = Field(..., ge=1)
 
@@ -130,49 +131,9 @@ AnnotationPayload = Annotated[
 ]
 
 
-class ManualAnnotationReplace(_StrictSchema):
-    expected_revision: int = Field(..., ge=1)
-    annotation: AnnotationPayload
-
-
-class AnnotationUpsertChange(_StrictSchema):
-    operation: Literal["upsert"]
-    expected_revision: int = Field(..., ge=0)
-    annotation: AnnotationPayload
-
-
-class AnnotationDeleteChange(_StrictSchema):
-    operation: Literal["delete"]
-    client_id: UUID
-    expected_revision: int = Field(..., ge=1)
-
-
-AnnotationSyncChange = Annotated[
-    Union[AnnotationUpsertChange, AnnotationDeleteChange],
-    Field(discriminator="operation"),
-]
-
-
-class ManualAnnotationSyncRequest(_StrictSchema):
-    manual_version_number: int = Field(..., ge=1)
-    changes: list[AnnotationSyncChange] = Field(..., max_length=500)
-
-    @model_validator(mode="after")
-    def validate_unique_client_ids(self):
-        client_ids = [
-            change.annotation.client_id
-            if change.operation == "upsert"
-            else change.client_id
-            for change in self.changes
-        ]
-        if len(client_ids) != len(set(client_ids)):
-            raise ValueError("Each client_id may appear only once per sync request")
-        return self
-
-
 class ManualAnnotationOut(BaseModel):
     id: int
-    client_id: UUID
+    user_id: int
     manual_id: int
     manual_version_number: int
     annotation_type: str
@@ -181,32 +142,12 @@ class ManualAnnotationOut(BaseModel):
     style: dict
     selected_text: Optional[str] = None
     note_text: Optional[str] = None
-    revision: int
     created_at: datetime
     updated_at: Optional[datetime] = None
 
 
 class ManualAnnotationCollectionOut(BaseModel):
+    user_id: int
     manual_id: int
     manual_version_number: int
     annotations: list[ManualAnnotationOut]
-
-
-class AnnotationAppliedOut(BaseModel):
-    operation: Literal["upsert", "delete"]
-    client_id: UUID
-    revision: int
-
-
-class AnnotationConflictOut(BaseModel):
-    operation: Literal["upsert", "delete"]
-    client_id: UUID
-    reason: str
-    server_revision: Optional[int] = None
-    server_deleted: bool = False
-    server_annotation: Optional[ManualAnnotationOut] = None
-
-
-class ManualAnnotationSyncOut(ManualAnnotationCollectionOut):
-    applied: list[AnnotationAppliedOut]
-    conflicts: list[AnnotationConflictOut]
