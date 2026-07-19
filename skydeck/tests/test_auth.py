@@ -110,6 +110,8 @@ class TestSignup:
                 "email": email,
                 "password": password,
                 "role": "safety",
+                "position": "Safety Officer",
+                "aircraft_type": "N/A",
             },
             headers=_auth_header(admin_token),
         )
@@ -132,8 +134,8 @@ class TestSignup:
         )
         assert delete_resp.status_code == 200, delete_resp.text
 
-    def test_signup_defaults_to_pilot_role(self, client: TestClient):
-        """Omitting role follows the least-privileged pilot default."""
+    def test_signup_requires_operational_assignment(self, client: TestClient):
+        """Omitting admin-controlled assignment fields is rejected."""
         admin_token = _login(client)
         email = f"pilot-{uuid4().hex[:12]}@example.com"
 
@@ -147,14 +149,9 @@ class TestSignup:
             headers=_auth_header(admin_token),
         )
 
-        assert signup_resp.status_code == 201, signup_resp.text
-        assert signup_resp.json()["role"] == "pilot"
-
-        delete_resp = client.delete(
-            f"/api/v1/users/{signup_resp.json()['user_id']}",
-            headers=_auth_header(admin_token),
-        )
-        assert delete_resp.status_code == 200, delete_resp.text
+        assert signup_resp.status_code == 422, signup_resp.text
+        missing_fields = {item["loc"][-1] for item in signup_resp.json()["detail"]}
+        assert {"role", "position", "aircraft_type"} <= missing_fields
 
     def test_signup_requires_admin(self, client: TestClient):
         """An unauthenticated caller cannot create accounts."""
@@ -165,6 +162,8 @@ class TestSignup:
                 "email": f"no-auth-{uuid4().hex[:12]}@example.com",
                 "password": "SkyDeck@2026!",
                 "role": "technical",
+                "position": "Engineer",
+                "aircraft_type": "N/A",
             },
         )
 
@@ -181,6 +180,8 @@ class TestSignup:
                 "email": f"unknown-{uuid4().hex[:12]}@example.com",
                 "password": "SkyDeck@2026!",
                 "role": "copilot",
+                "position": "First Officer",
+                "aircraft_type": "A320",
             },
             headers=_auth_header(admin_token),
         )
